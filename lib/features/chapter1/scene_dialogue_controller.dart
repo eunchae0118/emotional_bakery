@@ -72,6 +72,11 @@ class SceneDialogueController extends ChangeNotifier {
   bool _autoAdvancePending = false;
   Timer? _autoAdvanceTimer;
 
+  // 공용 메뉴 AUTO 토글용 타이머. line 노드 타이핑이 끝난 시점(또는 탭 스킵으로 끝난 시점)에
+  // StoryState.isAutoAdvanceEnabled가 켜져 있으면 2초 뒤 advanceScene()을 대신 호출해줌.
+  // 위 _autoAdvanceTimer(GIF 전용 자동진행)랑은 별개 필드라 서로 안 겹침
+  Timer? _autoAdvanceModeTimer;
+
   // 대사 없는 연출용 노드는 타이핑할 글자가 없어 진입 즉시 "다 읽음"으로 판단돼 연속 탭에 순식간에 지나칠 수 있음
   // 이를 막기 위한 최소 노출 시간(현재 500ms, 조정 가능)
   bool _emptyNodeHoldElapsed = true;
@@ -100,6 +105,7 @@ class SceneDialogueController extends ChangeNotifier {
     _typingTimer?.cancel();
     _bubbleRevealTimer?.cancel();
     _autoAdvanceTimer?.cancel();
+    _autoAdvanceModeTimer?.cancel();
     final graph = sceneDialogue;
     if (nodeId == null || graph == null || !graph.nodes.containsKey(nodeId)) {
       sceneNodeId = null;
@@ -257,6 +263,7 @@ class SceneDialogueController extends ChangeNotifier {
       _emptyNodeHoldElapsed = false;
       _typingTimer = Timer(_emptyNodeMinHold, () {
         _emptyNodeHoldElapsed = true;
+        _maybeScheduleAutoAdvance(node);
         _notify();
       });
       return;
@@ -265,8 +272,21 @@ class SceneDialogueController extends ChangeNotifier {
       typedCharCount++;
       if (typedCharCount >= fullLength) {
         timer.cancel();
+        _maybeScheduleAutoAdvance(node);
       }
       _notify();
+    });
+  }
+
+  // AUTO 모드가 켜져 있으면, line 타입 노드의 타이핑이 끝난(또는 탭으로 스킵된) 시점에
+  // 2초 뒤 advanceScene()을 대신 호출해주는 타이머를 건다. choice 노드나 GIF 전용
+  // 자동진행(_autoAdvancePending) 노드는 애초에 이 함수가 호출되는 경로를 안 타서 자동 제외됨
+  void _maybeScheduleAutoAdvance(DialogueNode node) {
+    if (!StoryState.isAutoAdvanceEnabled) return;
+    _autoAdvanceModeTimer?.cancel();
+    _autoAdvanceModeTimer = Timer(const Duration(seconds: 2), () {
+      if (_isDisposed || sceneNodeId != node.id) return;
+      advanceScene();
     });
   }
 
@@ -311,6 +331,9 @@ class SceneDialogueController extends ChangeNotifier {
     if (typedCharCount < fullLength) {
       _typingTimer?.cancel();
       typedCharCount = fullLength;
+      // 탭으로 스킵해서 전체 텍스트가 한 번에 드러난 것도 "타이핑 끝"으로 쳐서 AUTO 타이머를
+      // 걸어줌 - 안 그러면 AUTO 켜진 상태에서 실수로 탭했을 때 자동진행이 멈춰버림
+      _maybeScheduleAutoAdvance(node);
       _notify();
       return;
     }
@@ -374,6 +397,7 @@ class SceneDialogueController extends ChangeNotifier {
     _typingTimer?.cancel();
     _bubbleRevealTimer?.cancel();
     _autoAdvanceTimer?.cancel();
+    _autoAdvanceModeTimer?.cancel();
     _temperatureChangeTimer?.cancel();
     _choiceLockedMessageTimer?.cancel();
     super.dispose();

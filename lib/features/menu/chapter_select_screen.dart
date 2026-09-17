@@ -24,9 +24,6 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
   final ScrollController _scrollController = ScrollController();
   double _scrollProgress = 0.0;
 
-  // 챕터 1의 동적 해금 상태를 관리할 상태 변수 선언
-  bool _isChapter1Unlocked = false;
-
   @override
   void initState() {
     super.initState();
@@ -53,6 +50,15 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     double h = MediaQuery.of(context).size.height;
     double rW(double px) => (px / 874) * w;
     double rH(double px) => (px / 402) * h;
+
+    // 가장 최근에 해금된 챕터 번호. 재플레이 잠금 판단 기준으로 씀 - 이 번호보다 작은 챕터는
+    // 이미 지나간 챕터고, 이 번호랑 같아도 엔딩까지 봤으면(hasSeenEnding) 더는 재진입 못 하게 함
+    int highestUnlocked = 0;
+    if (ChapterProgress.isChapter1Unlocked) highestUnlocked = 1;
+    if (ChapterProgress.isChapter2Unlocked) highestUnlocked = 2;
+    if (ChapterProgress.isChapter3Unlocked) highestUnlocked = 3;
+    if (ChapterProgress.isChapter4Unlocked) highestUnlocked = 4;
+    if (ChapterProgress.isChapter5Unlocked) highestUnlocked = 5;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -88,14 +94,19 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   true,
                   rW,
                   rH,
+                  // 프롤로그는 재플레이 잠금 대상(챕터 1~5) 밖이라 번호 없음
+                  null,
+                  highestUnlocked,
                 ),
                 _buildChapterCard(
                   "Chapter 1",
                   "색을 잃은 아이",
                   "ch1.png",
-                  _isChapter1Unlocked, // 동적 상태 변수 반영
+                  ChapterProgress.isChapter1Unlocked, // 프롤로그 클리어하면 전역으로 해금됨
                   rW,
                   rH,
+                  1,
+                  highestUnlocked,
                 ),
                 _buildChapterCard(
                   "Chapter 2",
@@ -104,6 +115,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   ChapterProgress.isChapter2Unlocked, // 챕터1 종료하면 전역으로 해금됨
                   rW,
                   rH,
+                  2,
+                  highestUnlocked,
                 ),
                 _buildChapterCard(
                   "Chapter 3",
@@ -112,6 +125,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   ChapterProgress.isChapter3Unlocked, // 챕터2 종료하면 전역으로 해금됨
                   rW,
                   rH,
+                  3,
+                  highestUnlocked,
                 ),
                 _buildChapterCard(
                   "Chapter 4",
@@ -120,6 +135,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   ChapterProgress.isChapter4Unlocked, // 챕터3 종료하면 전역으로 해금됨
                   rW,
                   rH,
+                  4,
+                  highestUnlocked,
                 ),
                 _buildChapterCard(
                   "Chapter 5",
@@ -128,6 +145,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   ChapterProgress.isChapter5Unlocked, // 챕터4 챕터5행 엔딩 보면 전역으로 해금됨
                   rW,
                   rH,
+                  5,
+                  highestUnlocked,
                 ),
               ],
             ),
@@ -313,6 +332,9 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     bool isUnlocked,
     Function rW,
     Function rH,
+    // 재플레이 잠금 판단용 챕터 번호(1~5). 프롤로그는 이 잠금 대상이 아니라 null로 넘어옴
+    int? chapterNumber,
+    int highestUnlocked,
   ) {
     return Padding(
       padding: EdgeInsets.only(right: rW(40)),
@@ -336,6 +358,22 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
           GestureDetector(
             onTap: () async {
               if (isUnlocked) {
+                // 이미 지나간 챕터(번호가 highestUnlocked보다 작음)거나, 마지막으로 도달한
+                // 챕터인데 엔딩까지 이미 봤으면 재진입 막음 - 재플레이로 온도/선택 변수
+                // 조작하는 걸 막으려는 거임. 프롤로그는 chapterNumber가 null이라 대상 아님
+                if (chapterNumber != null &&
+                    (chapterNumber < highestUnlocked ||
+                        (chapterNumber == highestUnlocked &&
+                            ChapterProgress.hasSeenEnding))) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        '이미 완료한 챕터예요. 다시 플레이하려면 처음부터 시작해주세요.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
                 if (title == "Prolog") {
                   final result = await Navigator.push(
                     context,
@@ -346,8 +384,11 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   );
 
                   if (result == true) {
+                    // 다른 챕터들이랑 동일하게 ChapterProgress(static)에 저장해야 챕터 선택창이
+                    // 다시 생성돼도(다른 챕터 클리어 후 돌아올 때 등) 안 풀림. setState는 지금
+                    // 이 화면(같은 인스턴스)에서 바로 카드 잠금이 풀린 걸 반영하려고 여전히 필요함
                     setState(() {
-                      _isChapter1Unlocked = true;
+                      ChapterProgress.isChapter1Unlocked = true;
                     });
                     print("챕터 1 잠금장치가 해제되었습니다!");
                   }

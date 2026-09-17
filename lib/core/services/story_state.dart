@@ -14,6 +14,10 @@ class StoryState {
   // 때마다 여기에 동기화해서 화면이 몇 번을 갈아끼워져도 값이 안 끊기게 함
   static int currentTemperature = 3;
 
+  // 공용 메뉴 오버레이의 AUTO 토글 상태. currentTemperature랑 같은 패턴으로 전역에 둬서,
+  // 화면이 바뀌어도(챕터 경계 넘어갈 때 등) 값이 안 풀리게 함
+  static bool isAutoAdvanceEnabled = false;
+
   // chapter2_ingredient_quiz.json의 q1(eat/sleep/play) + q2(game/movie/exercise) +
   // q3(red/yellow/blue) 답변 조합으로 정해지는 마법 재료 이름.
   // line_ingredient_reveal의 {{ingredient}} 자리에 들어감

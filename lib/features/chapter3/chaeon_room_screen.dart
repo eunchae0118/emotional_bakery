@@ -12,7 +12,10 @@ import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
+import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
+import 'package:emotional_bakery/core/services/app_exit.dart';
+import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
     show ReentryChapter;
 import 'package:emotional_bakery/features/chapter1/scene_dialogue_controller.dart';
@@ -511,66 +514,26 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 rH: rH,
               ),
 
-            // 9층: 설정 팝업. 다른 화면들이랑 동일한 구성
+            // 9층: 공용 메뉴 오버레이. 다른 화면들이랑 동일한 MenuOverlay 재사용
             if (_isSettingOpen)
-              Builder(
-                builder: (context) {
-                  double popupW = w * 0.8;
-                  double popupH = h * 0.8;
-
-                  const double imageAspect = 650 / 343;
-                  double renderedW, renderedH;
-                  if (imageAspect > popupW / popupH) {
-                    renderedW = popupW;
-                    renderedH = popupW / imageAspect;
-                  } else {
-                    renderedH = popupH;
-                    renderedW = popupH * imageAspect;
-                  }
-                  double offsetX = (popupW - renderedW) / 2;
-                  double offsetY = (popupH - renderedH) / 2;
-
-                  return Positioned.fill(
-                    key: const ValueKey('chaeon_room_setting_popup'),
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {},
-                      child: Container(
-                        color: Colors.black.withOpacity(0.5),
-                        child: Center(
-                          child: SizedBox(
-                            width: popupW,
-                            height: popupH,
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  left: offsetX,
-                                  top: offsetY,
-                                  width: renderedW,
-                                  height: renderedH,
-                                  child: Image.asset(
-                                    'assets/images/main_setting_ex.png',
-                                    fit: BoxFit.fill,
-                                  ),
-                                ),
-                                Positioned(
-                                  right: offsetX + renderedW * (5 / 650),
-                                  top: offsetY + renderedH * (5 / 343),
-                                  width: renderedW * (45 / 650),
-                                  height: renderedH * (45 / 343),
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _isSettingOpen = false),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              MenuOverlay(
+                rW: rW,
+                rH: rH,
+                isAutoAdvanceEnabled: StoryState.isAutoAdvanceEnabled,
+                onClose: () => setState(() => _isSettingOpen = false),
+                onToggleAuto: () => setState(
+                  () => StoryState.isAutoAdvanceEnabled =
+                      !StoryState.isAutoAdvanceEnabled,
+                ),
+                onGoToChapterSelect: () => Navigator.pushReplacement(
+                  context,
+                  fadeThroughBlackRoute(const ChapterSelectScreen()),
+                ),
+                onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
+                  fadeThroughBlackRoute(const ChoiceScreen()),
+                  (route) => false,
+                ),
+                onExitGame: exitGame,
               ),
 
             // 10층: 챕터4 배드엔딩 컷씬. chapter4_temp_low.json(line_001)까지 끝났을 때만
@@ -583,6 +546,8 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 child: DialogueOverlay(
                   data: chapter4BadEndingData,
                   onComplete: () {
+                    // 배드엔딩 도달 - 재플레이로 온도/선택 변수 조작 못 하게 전역 플래그 켬
+                    ChapterProgress.hasSeenEnding = true;
                     setState(() {
                       _showChapter4BadEndingCutscene = false;
                       _isChapter4BadEnding = true;
@@ -620,6 +585,8 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 child: DialogueOverlay(
                   data: chapter4EndingNormalData,
                   onComplete: () {
+                    // 노말엔딩 도달 - 배드엔딩이랑 동일한 이유로 전역 플래그 켬
+                    ChapterProgress.hasSeenEnding = true;
                     setState(() {
                       _showChapter4EndingNormalCutscene = false;
                       _showChapterEndPlaceholder = true;

@@ -3,11 +3,16 @@
 import 'package:flutter/material.dart';
 import 'dart:async'; // 연속 이동 (화살표 꾹 누르기)
 import '../chapter1/game_play_screen.dart';
+import 'package:emotional_bakery/core/services/app_exit.dart';
+import 'package:emotional_bakery/core/services/story_state.dart';
+import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
     show ReentryChapter;
 import 'package:emotional_bakery/features/chapter1/game_play_widgets.dart'
     as widgets;
+import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
+import 'package:emotional_bakery/features/menu/choice_screen.dart';
 
 // 마을 상호작용 구역 하나 (1~4번 집, 빵집 문)
 class _HouseZone {
@@ -419,67 +424,27 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   rH: rH,
                 ),
 
-              // 설정 팝업. chaeon_room_screen.dart와 동일한 패턴
+              // 공용 메뉴 오버레이. 다른 화면들이랑 동일한 MenuOverlay 재사용
               if (_isSettingOpen)
-                Builder(
-                  builder: (context) {
-                    double popupW = w * 0.8;
-                    double popupH = h * 0.8;
-
-                    const double imageAspect = 650 / 343;
-                    double renderedW, renderedH;
-                    if (imageAspect > popupW / popupH) {
-                      renderedW = popupW;
-                      renderedH = popupW / imageAspect;
-                    } else {
-                      renderedH = popupH;
-                      renderedW = popupH * imageAspect;
-                    }
-                    double offsetX = (popupW - renderedW) / 2;
-                    double offsetY = (popupH - renderedH) / 2;
-
-                    return Positioned.fill(
-                      key: const ValueKey('tutorial_setting_popup'),
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {},
-                        child: Container(
-                          color: Colors.black.withOpacity(0.5),
-                          child: Center(
-                            child: SizedBox(
-                              width: popupW,
-                              height: popupH,
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    left: offsetX,
-                                    top: offsetY,
-                                    width: renderedW,
-                                    height: renderedH,
-                                    child: Image.asset(
-                                      'assets/images/main_setting_ex.png',
-                                      fit: BoxFit.fill,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    right: offsetX + renderedW * (5 / 650),
-                                    top: offsetY + renderedH * (5 / 343),
-                                    width: renderedW * (45 / 650),
-                                    height: renderedH * (45 / 343),
-                                    child: GestureDetector(
-                                      onTap: () => setState(
-                                        () => _isSettingOpen = false,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                MenuOverlay(
+                  rW: rW,
+                  rH: rH,
+                  isAutoAdvanceEnabled: StoryState.isAutoAdvanceEnabled,
+                  onClose: () => setState(() => _isSettingOpen = false),
+                  onToggleAuto: () => setState(
+                    () => StoryState.isAutoAdvanceEnabled =
+                        !StoryState.isAutoAdvanceEnabled,
+                  ),
+                  onGoToChapterSelect: () => Navigator.pushReplacement(
+                    context,
+                    fadeThroughBlackRoute(const ChapterSelectScreen()),
+                  ),
+                  onGoToMainScreen: () =>
+                      Navigator.of(context).pushAndRemoveUntil(
+                        fadeThroughBlackRoute(const ChoiceScreen()),
+                        (route) => false,
                       ),
-                    );
-                  },
+                  onExitGame: exitGame,
                 ),
             ],
           ),

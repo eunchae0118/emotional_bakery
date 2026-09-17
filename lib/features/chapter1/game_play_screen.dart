@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
+import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
+import 'package:emotional_bakery/core/services/app_exit.dart';
+import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
+import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
@@ -1464,69 +1468,26 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                 onTap: () => setState(() => _isSettingOpen = true),
               ),
 
-            // 17층: 설정 팝업. 16층 설정 버튼보다 위에 있어야 팝업이 버튼에 가려지지 않음
+            // 17층: 공용 메뉴 오버레이. 다른 화면들이랑 동일한 MenuOverlay 재사용
             if (_isSettingOpen)
-              Builder(
-                builder: (context) {
-                  double popupW = w * 0.8;
-                  double popupH = h * 0.8;
-
-                  // 이미지 원본 비율 650x343 기준으로 레터박스 맞춰서 중앙에 배치
-                  const double imageAspect = 650 / 343;
-                  double renderedW, renderedH;
-                  if (imageAspect > popupW / popupH) {
-                    renderedW = popupW;
-                    renderedH = popupW / imageAspect;
-                  } else {
-                    renderedH = popupH;
-                    renderedW = popupH * imageAspect;
-                  }
-                  double offsetX = (popupW - renderedW) / 2;
-                  double offsetY = (popupH - renderedH) / 2;
-
-                  return Positioned.fill(
-                    key: const ValueKey('setting_popup'),
-                    child: GestureDetector(
-                      // 배경 탭 흡수해서 뒤 설정 버튼 안 눌리게 막음 (팝업은 안 닫힘)
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {},
-                      child: Container(
-                        color: Colors.black.withOpacity(0.5),
-                        child: Center(
-                          child: SizedBox(
-                            width: popupW,
-                            height: popupH,
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  left: offsetX,
-                                  top: offsetY,
-                                  width: renderedW,
-                                  height: renderedH,
-                                  child: Image.asset(
-                                    'assets/images/main_setting_ex.png',
-                                    fit: BoxFit.fill,
-                                  ),
-                                ),
-                                // 이미지에 그려진 X 닫기 버튼 위치에 맞춘 히트박스 (원본 650x343 비율 그대로, 레터박스 오프셋 더함)
-                                Positioned(
-                                  right: offsetX + renderedW * (5 / 650),
-                                  top: offsetY + renderedH * (5 / 343),
-                                  width: renderedW * (45 / 650),
-                                  height: renderedH * (45 / 343),
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _isSettingOpen = false),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              MenuOverlay(
+                rW: rW,
+                rH: rH,
+                isAutoAdvanceEnabled: StoryState.isAutoAdvanceEnabled,
+                onClose: () => setState(() => _isSettingOpen = false),
+                onToggleAuto: () => setState(
+                  () => StoryState.isAutoAdvanceEnabled =
+                      !StoryState.isAutoAdvanceEnabled,
+                ),
+                onGoToChapterSelect: () => Navigator.pushReplacement(
+                  context,
+                  fadeThroughBlackRoute(const ChapterSelectScreen()),
+                ),
+                onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
+                  fadeThroughBlackRoute(const ChoiceScreen()),
+                  (route) => false,
+                ),
+                onExitGame: exitGame,
               ),
 
             // 18층: 회상 컷씬(구름 드래그 미니게임 + 놀이공원 연출). 최상단에서 화면을 전부 덮음

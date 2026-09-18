@@ -32,6 +32,10 @@ class BakeryGame extends FlameGame {
   BakeryGame({
     this.skipChapter1Events = false,
     this.reentryChapter = ReentryChapter.none,
+    this.resumeChaeonX,
+    this.resumeLillianArrivalX,
+    bool resumeSkipGuideTrigger = false,
+    bool resumeSkipPostSceneEndTrigger = false,
   }) {
     // 챕터3 빵집 재진입 모드: 가이드 대사(x=650)/릴리안 등장(x=1305) 트리거를 처음부터
     // "이미 발동됨" 상태로 시작해서 무효화하고, 계단 트리거만 살아있게 함
@@ -40,6 +44,18 @@ class BakeryGame extends FlameGame {
       _hasTriggeredPostSceneEnd = true;
       isKitchenApproachActive = true;
     }
+    // 저장/불러오기로 특정 지점부터 재개하는 경우, resumeChaeonX로 옮겨놓을 위치가 하필
+    // 가이드/릴리안 등장 트리거 좌표랑 겹칠 수 있어서(예: 챕터1 table.json 재개 지점은
+    // x=1305, 릴리안 등장 트리거랑 동일) 그대로 두면 update()가 "막 도달한 것"으로 착각해서
+    // 가이드 대사나 계단 등장 애니메이션을 또 틔워버림. game_play_screen.dart가 이미 그
+    // 상태를 지나온 걸로 치고 재개하는 거라, 필요한 경우에만 각 트리거를 미리 소모시켜달라고
+    // 요청받음(skipChapter1Events 처리랑 동일한 방식)
+    if (resumeSkipGuideTrigger) {
+      _hasTriggeredGuide = true;
+    }
+    if (resumeSkipPostSceneEndTrigger) {
+      _hasTriggeredPostSceneEnd = true;
+    }
   }
 
   // true면 챕터3에서 빵집에 다시 들어온 경우. 챕터1 최초 플레이 흐름과 구분하는 용도
@@ -47,6 +63,13 @@ class BakeryGame extends FlameGame {
   // chapter3_door.json 트리거처럼 챕터별로 갈라야 하는 로직 전용. skipChapter1Events가 true여도
   // 이게 chapter3가 아니면(예: chapter4) chapter3 문 대사는 안 뜸
   final ReentryChapter reentryChapter;
+  // 저장/불러오기 재개 전용. null이 아니면 onLoad()에서 chaeon을 이 x좌표로 옮기고 카메라도
+  // 그 자리에 맞춰 스냅함(reentryChapter==chapter5가 이미 하는 것과 동일한 패턴). null이면
+  // (기본값) 기존 스폰 위치 그대로라 정상 진행에 영향 없음
+  final double? resumeChaeonX;
+  // 재개 시점에 릴리안이 이미 등장해있어야 하면 같이 넘김(챕터1 첫 만남 이후 지점들).
+  // null이면 릴리안 관련 카메라 중간점 계산 없이 chaeon만 따라감
+  final double? resumeLillianArrivalX;
 
   Chaeon? chaeon;
   final double mapWidth = 1852; // 배경 이미지 가로 길이
@@ -155,6 +178,22 @@ class BakeryGame extends FlameGame {
       isMovementBlocked = true;
       movePlayer(0);
       onReachChapter5Start?.call();
+    }
+
+    // 저장/불러오기 재개 지점. resumeChaeonX가 있으면 chaeon을 그 자리로 옮기고 카메라도
+    // 바로 스냅시킴 - 위 챕터5 블록이랑 동일한 이유(size가 0인 onLoad() 안에서 직접 카메라
+    // 계산하면 위험해서 requestCameraSnap으로 다음 update() 틱에 미룸). 여기서 chaeon.x를
+    // 옮기면 update()의 위치 기반 트리거(가이드/postSceneEnd)가 "막 도달한 것"으로 다시
+    // 착각할 수 있는데, 그건 game_play_screen.dart가 resumeSkipGuideTrigger/
+    // resumeSkipPostSceneEndTrigger로 미리 소모시켜서 넘어오는 걸 전제로 함
+    if (resumeChaeonX != null) {
+      chaeon?.position.x = resumeChaeonX!;
+      if (resumeLillianArrivalX != null) {
+        lillianArrivalX = resumeLillianArrivalX;
+      }
+      requestCameraSnap();
+      isMovementBlocked = true;
+      movePlayer(0);
     }
   }
 

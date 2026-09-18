@@ -10,6 +10,8 @@ import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
+import 'package:emotional_bakery/core/services/save_checkpoints.dart';
+import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
@@ -61,12 +63,17 @@ const double kRoomDoorHeight = 250;
 const double kRoomDoorNearMinX = 620;
 const double kRoomDoorNearMaxX = 700;
 
+// "저장되었습니다" 배지가 뜨는 top 위치(874x402 기준, rH로 스케일됨). kitchen_screen.dart랑
+// 동일한 값을 씀 - 화면 보면서 조정 예정
+const double _saveConfirmationBadgeTopRef = 80;
+
 class ChaeonRoomScreen extends StatefulWidget {
   const ChaeonRoomScreen({
     super.key,
     this.initialTemperature = 3,
     this.mode = ChaeonRoomMode.chapter3,
     this.enterFromDoor = false,
+    this.resumeCheckpoint,
   });
 
   final int initialTemperature;
@@ -74,6 +81,10 @@ class ChaeonRoomScreen extends StatefulWidget {
   // true면 진입 대사 없이, 채온이가 문 쪽(화면 오른쪽)에서 걸어 들어와 원래 서있는
   // 위치(kChaeonRoomX)에 멈추는 연출부터 시작함(kitchen_screen.dart 챕터4 퇴장 연출용)
   final bool enterFromDoor;
+  // 저장된 세이브를 불러와서 들어온 경우에만 넘어옴. kitchen_screen.dart의 resumeCheckpoint랑
+  // 동일한 패턴 - mode/enterFromDoor는 이 체크포인트가 속한 조합이랑 맞게 호출부에서 같이
+  // 넘겨줘야 함. null이면(기본값) 지금까지와 100% 동일하게 동작함
+  final SaveCheckpoint? resumeCheckpoint;
 
   @override
   State<ChaeonRoomScreen> createState() => _ChaeonRoomScreenState();
@@ -108,6 +119,9 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   bool _showChapterEndPlaceholder = false;
 
   bool _isSettingOpen = false;
+  // 메뉴 "저장" 버튼 누르면 잠깐 뜨는 확인 문구. null이면 안 보임. kitchen_screen.dart랑 동일한 패턴
+  String? _saveConfirmationText;
+  Timer? _saveConfirmationTimer;
 
   // 문 근접 판정 실패 안내 문구, 배경 오브젝트 클릭 정보 둘 다 여기 띄움. 탭하면 닫힘
   String? _interactionText;
@@ -159,7 +173,11 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
       initialTemperature: StoryState.currentTemperature,
     );
     _sceneController.addListener(_onSceneControllerChanged);
-    if (widget.enterFromDoor) {
+    // 세이브 불러와서 들어온 경우, 정상 진입 흐름(아래) 대신 체크포인트가 가리키는 지점부터
+    // 바로 시작함. resumeCheckpoint가 null이면 이 분기 자체를 안 타서 기존 동작 그대로임
+    if (widget.resumeCheckpoint != null) {
+      _resumeFromCheckpoint(widget.resumeCheckpoint!);
+    } else if (widget.enterFromDoor) {
       // 문에서 걸어 들어오는 연출: 진입 대사 없이 바로 걸어 들어오는 애니메이션부터 시작하고,
       // 다 걸어 들어오면 그때 dpad/문이 뜨게 함(_dialogueFinished를 그대로 재사용)
       _chaeonX = kChaeonRoomEnterStartX;
@@ -175,6 +193,96 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     // 배경 오브젝트 클릭 정보(chapter3_room.json) 로드
     InteractionLoader.loadStageObjects('room_bg.png').then((objects) {
       if (mounted) setState(() => _interactionObjects = objects);
+    });
+  }
+
+  // resumeCheckpoint로 들어온 경우 initState에서 호출됨. kitchen_screen.dart의
+  // _resumeFromCheckpoint랑 동일한 패턴 - 체크포인트 이전에 있었어야 할 플래그들을 미리
+  // 켜주고 해당 파일을 바로 로드함. StoryState/ChapterProgress는 이 화면 진입 전에
+  // 이미 복원되어 있는 걸 전제로 함
+  void _resumeFromCheckpoint(SaveCheckpoint checkpoint) {
+    switch (checkpoint) {
+      case SaveCheckpoint.chapter3ChaeonRoom:
+        _sceneController.loadDialogue(
+          'assets/lines/chapter3/chapter3_chaeon_room.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4StartRoom:
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_start_room.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4RoomChoice:
+        // enterFromDoor 걷기 연출을 건너뛰고 도착 위치에 바로 세워둠(_startEnterWalk 끝 상태랑 동일)
+        _chaeonX = kChaeonRoomEnterStopX;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_room_choice.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4TempLow:
+        _chaeonX = kChaeonRoomEnterStopX;
+        _hasLoadedChapter4RoomChoice = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_temp_low.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4TempHigh:
+        _chaeonX = kChaeonRoomEnterStopX;
+        _hasLoadedChapter4RoomChoice = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_temp_high.json',
+        );
+        break;
+      default:
+        // 이 화면(chaeon_room_screen.dart) 소관 아닌 체크포인트가 잘못 넘어온 경우를 대비한
+        // 방어적 분기 - 그냥 이 mode/enterFromDoor의 정상 진입 흐름으로 흘려보냄
+        if (widget.enterFromDoor) {
+          _chaeonX = kChaeonRoomEnterStartX;
+          _startEnterWalk();
+        } else {
+          _sceneController.loadDialogue(
+            widget.mode == ChaeonRoomMode.chapter4
+                ? 'assets/lines/chapter4/chapter4_start_room.json'
+                : 'assets/lines/chapter3/chapter3_chaeon_room.json',
+          );
+        }
+    }
+  }
+
+  // 지금 mode/enterFromDoor/플래그 조합 기준으로 "가장 최근에 통과한 체크포인트"를 찾음.
+  // kitchen_screen.dart의 _detectCurrentCheckpoint랑 동일한 이유로, 저장 버튼이 떠 있다는
+  // 것 자체가 컷씬/미니게임 같은 중간 연출이 아니라 안정된 상태라는 뜻이라 이 시점 플래그
+  // 조합만으로 체크포인트를 확정할 수 있음
+  SaveCheckpoint _detectCurrentCheckpoint() {
+    if (widget.mode == ChaeonRoomMode.chapter4 && !widget.enterFromDoor) {
+      return SaveCheckpoint.chapter4StartRoom;
+    }
+    if (!widget.enterFromDoor) {
+      return SaveCheckpoint.chapter3ChaeonRoom;
+    }
+    // enterFromDoor(챕터4 방 복귀) 흐름. temp_low/temp_high 중 어느 쪽이 로드됐었는지는 온도로
+    // 다시 판단함 - 두 분기 사이엔 온도가 안 바뀌어서 지금 온도로 재확인해도 항상 같은 결과가 나옴
+    if (_hasLoadedChapter4RoomChoice) {
+      return _sceneController.temperature <= 3
+          ? SaveCheckpoint.chapter4TempLow
+          : SaveCheckpoint.chapter4TempHigh;
+    }
+    return SaveCheckpoint.chapter4RoomChoice;
+  }
+
+  // 메뉴 "저장" 버튼(MenuOverlay.onSave)이 부름. kitchen_screen.dart의 _handleSave랑 동일한 패턴
+  void _handleSave() async {
+    final SaveCheckpoint checkpoint = _detectCurrentCheckpoint();
+    await SaveManager.save(checkpoint);
+    if (!mounted) return;
+    setState(() {
+      _isSettingOpen = false;
+      _saveConfirmationText = '저장되었습니다';
+    });
+    _saveConfirmationTimer?.cancel();
+    _saveConfirmationTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _saveConfirmationText = null);
     });
   }
 
@@ -211,6 +319,7 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   @override
   void dispose() {
     _moveTimer?.cancel();
+    _saveConfirmationTimer?.cancel();
     _sceneController.removeListener(_onSceneControllerChanged);
     _sceneController.dispose();
     super.dispose();
@@ -525,15 +634,27 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                   () => StoryState.isAutoAdvanceEnabled =
                       !StoryState.isAutoAdvanceEnabled,
                 ),
-                onGoToChapterSelect: () => Navigator.pushReplacement(
-                  context,
-                  fadeThroughBlackRoute(const ChapterSelectScreen()),
-                ),
+                onSave: _handleSave,
                 onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
                   fadeThroughBlackRoute(const ChoiceScreen()),
                   (route) => false,
                 ),
                 onExitGame: exitGame,
+              ),
+
+            // 9-1층: 저장 완료 안내 배지. kitchen_screen.dart 9-1층이랑 동일한 패턴
+            if (_saveConfirmationText != null)
+              Positioned(
+                top: rH(_saveConfirmationBadgeTopRef),
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: widgets.buildSaveConfirmationBadge(
+                    _saveConfirmationText!,
+                    rW: rW,
+                    rH: rH,
+                  ),
+                ),
               ),
 
             // 10층: 챕터4 배드엔딩 컷씬. chapter4_temp_low.json(line_001)까지 끝났을 때만

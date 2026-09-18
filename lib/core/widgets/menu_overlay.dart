@@ -20,6 +20,16 @@
 // 것과 톤을 맞추려는 거임. 버튼 좌표는 여전히 650x342 캔버스 기준 비율이라 배경이 작아진
 // 만큼 같이 축소되게 아래 로컬 스케일 함수를 다시 계산함)
 
+// (업데이트 3: 챕터이동 자리(191,265,123,39)를 저장 버튼으로 바꿈 - 저장/불러오기 시스템
+// 연결하면서 메뉴에 저장 기능이 필요해졌는데, 자리가 4개뿐이라 챕터이동을 대신 뺌. 전용
+// 이미지 에셋이 없어서 다른 버튼들처럼 투명 히트박스만 얹는 대신, 배경에 박힌 "챕터이동"
+// 글자를 가리도록 간단한 텍스트 라벨을 그 위에 얹었음. onGoToChapterSelect 콜백은 없어지고
+// onSave로 대체됨 - 이 위젯을 쓰는 화면들 전부 호출부를 맞춰줘야 함)
+
+// (업데이트 4: main_setting_ex.png 시안이 저장 버튼 그림까지 포함해서 새로 교체됨 - 위
+// 업데이트 3에서 코드로 얹던 텍스트 라벨은 이제 필요 없어져서 뺐고, 다른 버튼들이랑 동일하게
+// 투명 히트박스만 남겨둠)
+
 import 'package:flutter/material.dart';
 
 class MenuOverlay extends StatelessWidget {
@@ -30,7 +40,7 @@ class MenuOverlay extends StatelessWidget {
     required this.isAutoAdvanceEnabled,
     required this.onClose,
     required this.onToggleAuto,
-    required this.onGoToChapterSelect,
+    required this.onSave,
     required this.onGoToMainScreen,
     required this.onExitGame,
   });
@@ -44,7 +54,7 @@ class MenuOverlay extends StatelessWidget {
   final bool isAutoAdvanceEnabled;
   final VoidCallback onClose;
   final VoidCallback onToggleAuto;
-  final VoidCallback onGoToChapterSelect;
+  final VoidCallback onSave;
   final VoidCallback onGoToMainScreen;
   final VoidCallback onExitGame;
 
@@ -131,18 +141,18 @@ class MenuOverlay extends StatelessWidget {
                 ),
               ),
 
-              // 챕터이동 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음
+              // 저장 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음
               Positioned(
-                left: localX(191),
+                left: localX(329),
                 top: localY(265),
                 width: localW(123),
                 height: localH(39),
-                child: GestureDetector(onTap: onGoToChapterSelect),
+                child: GestureDetector(onTap: onSave),
               ),
 
               // 메인화면으로 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음
               Positioned(
-                left: localX(329),
+                left: localX(191),
                 top: localY(265),
                 width: localW(123),
                 height: localH(39),

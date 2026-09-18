@@ -10,6 +10,8 @@ import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
+import 'package:emotional_bakery/core/services/save_checkpoints.dart';
+import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
@@ -87,6 +89,10 @@ const Duration _chapter5BearIntroGuideDelay = Duration(seconds: 1);
 // 재사용했었는데 실제로 켜보니 너무 짧아서 챕터5 전용으로 따로 뺌
 const Duration _chapter5PlaygroundHoldDuration = Duration(seconds: 3);
 
+// "저장되었습니다" 배지가 뜨는 top 위치(874x402 기준, rH로 스케일됨). 임시값이라 화면
+// 보면서 조정 예정
+const double _saveConfirmationBadgeTopRef = 80;
+
 // 이 화면이 챕터1 엔딩용인지 챕터2 시작용인지 구분. 배경/캐릭터는 같은 주방을 재사용하고
 // 이동 가능 여부, 처음 로드하는 대사만 다름
 enum KitchenScreenMode {
@@ -111,11 +117,17 @@ class KitchenScreen extends StatefulWidget {
     super.key,
     this.initialTemperature = 3,
     this.mode = KitchenScreenMode.chapter1End,
+    this.resumeCheckpoint,
   });
 
   // GamePlayScreen에서 이어받는 온도계 값 (화면이 바뀌어도 온도계가 끊기지 않게)
   final int initialTemperature;
   final KitchenScreenMode mode;
+  // 저장된 세이브를 불러와서 들어온 경우에만 넘어옴. mode는 이 체크포인트가 속한 모드랑
+  // 맞게 호출부에서 같이 넘겨줘야 함(체크포인트 하나가 어느 파일을 로드할지는 정해주지만,
+  // 그 이후 onDialogueEnd 체이닝이 어느 챕터 분기를 탈지는 여전히 mode가 결정하기 때문).
+  // null이면(기본값) 지금까지와 100% 동일하게 동작함
+  final SaveCheckpoint? resumeCheckpoint;
 
   @override
   State<KitchenScreen> createState() => _KitchenScreenState();
@@ -146,6 +158,9 @@ class _KitchenScreenState extends State<KitchenScreen>
   bool _pendingChapter4RoomExit = false;
 
   bool _isSettingOpen = false;
+  // 메뉴 "저장" 버튼 누르면 잠깐 뜨는 확인 문구. null이면 안 보임
+  String? _saveConfirmationText;
+  Timer? _saveConfirmationTimer;
   // kitchen_arrival.json(챕터1)이나 chapter2_ingredient_quiz.json(챕터2)이 끝나면 true.
   // 지금은 안내 문구만 있는 임시 화면으로 대체함
   bool _showChapterEndPlaceholder = false;
@@ -467,13 +482,265 @@ class _KitchenScreenState extends State<KitchenScreen>
     InteractionLoader.loadStageObjects('kitchen_main.png').then((objects) {
       if (mounted) setState(() => _interactionObjects = objects);
     });
-    // 챕터2는 걷기 없이 화면 들어오자마자 바로 대사 시작
-    if (widget.mode == KitchenScreenMode.chapter2Start) {
-      _sceneController.loadDialogue(
-        'assets/lines/chapter2/chapter2_ready.json',
-      );
+    // 세이브 불러와서 들어온 경우, 정상 진입 흐름(아래) 대신 체크포인트가 가리키는 지점부터
+    // 바로 시작함. resumeCheckpoint가 null이면 이 분기 자체를 안 타서 기존 동작 그대로임
+    if (widget.resumeCheckpoint != null) {
+      _resumeFromCheckpoint(widget.resumeCheckpoint!);
+    } else {
+      // 챕터2는 걷기 없이 화면 들어오자마자 바로 대사 시작
+      if (widget.mode == KitchenScreenMode.chapter2Start) {
+        _sceneController.loadDialogue(
+          'assets/lines/chapter2/chapter2_ready.json',
+        );
+      }
+      // 챕터3은 chapter1End처럼 트리거 지점 도달 시 _checkDialogueTrigger에서 로드하므로 여기선 안 함
     }
-    // 챕터3은 chapter1End처럼 트리거 지점 도달 시 _checkDialogueTrigger에서 로드하므로 여기선 안 함
+  }
+
+  // resumeCheckpoint로 들어온 경우 initState에서 호출됨. 원래는 dpad 트리거(_checkDialogueTrigger)나
+  // onDialogueEnd 체이닝이 순서대로 _hasLoadedXxx 플래그를 하나씩 켜가면서 도달하는 지점들인데,
+  // "이미 여기까지 왔다"고 치고 그 체크포인트 이전에 있었어야 할 플래그들을 한 번에 미리 켜준
+  // 다음 해당 파일을 바로 로드함. StoryState/ChapterProgress(온도, 선택 변수, 해금 상태)는
+  // 이 화면 진입 전에 SaveManager.load()로 이미 복원되어 있는 걸 전제로 함 - 여기선 안 건드림
+  void _resumeFromCheckpoint(SaveCheckpoint checkpoint) {
+    // 챕터3/4/5는 원래 dpad로 걸어가서 kKitchenDialogueTriggerX 트리거 지점에 도달해야
+    // 첫 대사가 시작되는데(_checkDialogueTrigger 참고), 저장된 지점부터 재생할 땐 그 워킹
+    // 과정을 다시 시킬 필요가 없어서 이미 트리거를 통과한 걸로 쳐줌. 챕터2는 원래도
+    // initState 맨 위에서 무조건 movementLocked라 따로 안 건드려도 됨
+    void lockAtTrigger() {
+      _hasTriggeredDialogue = true;
+      _movementLocked = true;
+      _chaeonX = kKitchenDialogueTriggerX;
+    }
+
+    switch (checkpoint) {
+      case SaveCheckpoint.chapter2Ready:
+        _sceneController.loadDialogue(
+          'assets/lines/chapter2/chapter2_ready.json',
+        );
+        break;
+      case SaveCheckpoint.chapter1KitchenArrival:
+        lockAtTrigger();
+        _sceneController.loadDialogue(
+          'assets/lines/chapter1/kitchen_arrival.json',
+        );
+        break;
+      case SaveCheckpoint.chapter3ChaeonRoomAfter:
+        lockAtTrigger();
+        _sceneController.loadDialogue(
+          'assets/lines/chapter3/chapter3_chaeon_room_after.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4BeforeCutscene:
+        lockAtTrigger();
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_before_cutscene.json',
+        );
+        break;
+      case SaveCheckpoint.chapter5Bear:
+        lockAtTrigger();
+        _sceneController.loadDialogue('assets/lines/chapter5/chapter5_bear.json');
+        break;
+      case SaveCheckpoint.chapter2IngredientQuiz:
+        _hasLoadedIngredientQuiz = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter2/chapter2_ingredient_quiz.json',
+        );
+        break;
+      case SaveCheckpoint.chapter2AfterQuiz:
+        _hasLoadedIngredientQuiz = true;
+        _hasLoadedAfterQuizDialogue = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter2/chapter2_after_quiz.json',
+        );
+        break;
+      case SaveCheckpoint.chapter2MakingBread:
+        _hasLoadedIngredientQuiz = true;
+        _hasLoadedAfterQuizDialogue = true;
+        _hasLoadedMakingBreadDialogue = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter2/chapter2_making_bread.json',
+        );
+        break;
+      case SaveCheckpoint.chapter2AfterFirstGame:
+        _hasLoadedIngredientQuiz = true;
+        _hasLoadedAfterQuizDialogue = true;
+        _hasLoadedMakingBreadDialogue = true;
+        _hasLoadedAfterFirstGameDialogue = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter2/chapter2_after_first_game.json',
+        );
+        break;
+      case SaveCheckpoint.chapter2AfterSecondGame:
+        _hasLoadedIngredientQuiz = true;
+        _hasLoadedAfterQuizDialogue = true;
+        _hasLoadedMakingBreadDialogue = true;
+        _hasLoadedAfterFirstGameDialogue = true;
+        _hasLoadedAfterSecondGameDialogue = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter2/chapter2_after_second_game.json',
+        );
+        break;
+      case SaveCheckpoint.chapter3BeforeGame:
+        lockAtTrigger();
+        _hasLoadedBeforeGame = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter3/chapter3_before_game.json',
+        );
+        break;
+      case SaveCheckpoint.chapter3AfterFirstGame:
+        lockAtTrigger();
+        _hasLoadedBeforeGame = true;
+        _hasLoadedChapter3AfterFirstGameDialogue = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter3/chapter3_after_first_game.json',
+        );
+        break;
+      case SaveCheckpoint.chapter3AfterEat:
+        lockAtTrigger();
+        _hasLoadedBeforeGame = true;
+        _hasLoadedChapter3AfterFirstGameDialogue = true;
+        _hasLoadedChapter3AfterEatDialogue = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter3/chapter3_after_eat.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4AfterPast:
+        lockAtTrigger();
+        _hasLoadedChapter4AfterPast = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_after_past.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4MakingBread:
+        lockAtTrigger();
+        _hasLoadedChapter4AfterPast = true;
+        _hasLoadedChapter4MakingBread = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_making_bread.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4AfterLetter:
+        lockAtTrigger();
+        _hasLoadedChapter4AfterPast = true;
+        _hasLoadedChapter4MakingBread = true;
+        _hasLoadedChapter4AfterLetter = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_after_letter.json',
+        );
+        break;
+      case SaveCheckpoint.chapter4AfterMaking:
+        lockAtTrigger();
+        _hasLoadedChapter4AfterPast = true;
+        _hasLoadedChapter4MakingBread = true;
+        _hasLoadedChapter4AfterLetter = true;
+        _hasLoadedChapter4AfterMaking = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter4/chapter4_after_making.json',
+        );
+        break;
+      case SaveCheckpoint.chapter5Eat:
+        lockAtTrigger();
+        _hasLoadedChapter5Eat = true;
+        _sceneController.loadDialogue('assets/lines/chapter5/chapter5_eat.json');
+        break;
+      case SaveCheckpoint.chapter5AfterEat:
+        lockAtTrigger();
+        _hasLoadedChapter5Eat = true;
+        _hasLoadedChapter5AfterEat = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter5/chapter5_after_eat.json',
+        );
+        break;
+      case SaveCheckpoint.chapter5Hidden:
+        lockAtTrigger();
+        _hasLoadedChapter5Eat = true;
+        _hasLoadedChapter5AfterEat = true;
+        _hasLoadedChapter5Hidden = true;
+        _sceneController.loadDialogue(
+          'assets/lines/chapter5/chapter5_hidden.json',
+        );
+        break;
+      default:
+        // 이 화면(kitchen_screen.dart) 소관이 아닌 체크포인트(chaeon_room_screen.dart/
+        // game_play_screen.dart 쪽)가 잘못 넘어온 경우를 대비한 방어적 분기 - 그냥 이
+        // mode의 정상 진입 흐름으로 흘려보냄
+        if (widget.mode == KitchenScreenMode.chapter2Start) {
+          _sceneController.loadDialogue(
+            'assets/lines/chapter2/chapter2_ready.json',
+          );
+        }
+    }
+  }
+
+  // 지금 mode 기준으로, _hasLoadedXxx 플래그들을 훑어서 "가장 최근에 통과한 체크포인트"를
+  // 찾음. onDialogueEnd 체이닝이랑 동일한 순서로, 가장 나중 단계 플래그부터 거꾸로 확인함.
+  // 저장 버튼(MenuOverlay.onSave)이 이 화면에 떠 있다는 것 자체가 컷씬/미니게임/팝업 같은
+  // 중간 연출이 아니라 안정된 상태라는 뜻이라(그런 연출 중엔 설정 버튼 자체가 안 눌림),
+  // 이 시점의 플래그 조합만으로 체크포인트를 확정할 수 있음
+  SaveCheckpoint _detectCurrentCheckpoint() {
+    switch (widget.mode) {
+      case KitchenScreenMode.chapter2Start:
+        if (_hasLoadedAfterSecondGameDialogue) {
+          return SaveCheckpoint.chapter2AfterSecondGame;
+        }
+        if (_hasLoadedAfterFirstGameDialogue) {
+          return SaveCheckpoint.chapter2AfterFirstGame;
+        }
+        if (_hasLoadedMakingBreadDialogue) {
+          return SaveCheckpoint.chapter2MakingBread;
+        }
+        if (_hasLoadedAfterQuizDialogue) return SaveCheckpoint.chapter2AfterQuiz;
+        if (_hasLoadedIngredientQuiz) return SaveCheckpoint.chapter2IngredientQuiz;
+        return SaveCheckpoint.chapter2Ready;
+      case KitchenScreenMode.chapter3Start:
+        if (_hasLoadedChapter3AfterEatDialogue) {
+          return SaveCheckpoint.chapter3AfterEat;
+        }
+        if (_hasLoadedChapter3AfterFirstGameDialogue) {
+          return SaveCheckpoint.chapter3AfterFirstGame;
+        }
+        if (_hasLoadedBeforeGame) return SaveCheckpoint.chapter3BeforeGame;
+        return SaveCheckpoint.chapter3ChaeonRoomAfter;
+      case KitchenScreenMode.chapter4Start:
+        if (_hasLoadedChapter4AfterMaking) {
+          return SaveCheckpoint.chapter4AfterMaking;
+        }
+        if (_hasLoadedChapter4AfterLetter) {
+          return SaveCheckpoint.chapter4AfterLetter;
+        }
+        if (_hasLoadedChapter4MakingBread) {
+          return SaveCheckpoint.chapter4MakingBread;
+        }
+        if (_hasLoadedChapter4AfterPast) return SaveCheckpoint.chapter4AfterPast;
+        return SaveCheckpoint.chapter4BeforeCutscene;
+      case KitchenScreenMode.chapter5Start:
+        if (_hasLoadedChapter5Hidden) return SaveCheckpoint.chapter5Hidden;
+        if (_hasLoadedChapter5AfterEat) return SaveCheckpoint.chapter5AfterEat;
+        if (_hasLoadedChapter5Eat) return SaveCheckpoint.chapter5Eat;
+        return SaveCheckpoint.chapter5Bear;
+      case KitchenScreenMode.chapter1End:
+        // 이 모드는 체크포인트가 chapter1KitchenArrival 하나뿐임(kitchen_arrival.json이
+        // 끝나면 바로 임시 종료 화면으로 감, 그 사이 추가 체크포인트 없음)
+        return SaveCheckpoint.chapter1KitchenArrival;
+    }
+  }
+
+  // 메뉴 "저장" 버튼(MenuOverlay.onSave)이 부름. 지금 통과한 체크포인트를 판단해서 저장하고,
+  // 메뉴를 닫은 뒤 확인 문구를 2초간 띄움
+  void _handleSave() async {
+    final SaveCheckpoint checkpoint = _detectCurrentCheckpoint();
+    await SaveManager.save(checkpoint);
+    if (!mounted) return;
+    setState(() {
+      _isSettingOpen = false;
+      _saveConfirmationText = '저장되었습니다';
+    });
+    _saveConfirmationTimer?.cancel();
+    _saveConfirmationTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _saveConfirmationText = null);
+    });
   }
 
   void _onSceneControllerChanged() {
@@ -697,6 +964,7 @@ class _KitchenScreenState extends State<KitchenScreen>
     _chapter3DiaryEndBlackoutTimer?.cancel();
     _chapter5PlaygroundTimer?.cancel();
     _chapter5BearIntroGuideTimer?.cancel();
+    _saveConfirmationTimer?.cancel();
     _stairsUpController.dispose();
     _sceneController.removeListener(_onSceneControllerChanged);
     _sceneController.dispose();
@@ -1231,15 +1499,28 @@ class _KitchenScreenState extends State<KitchenScreen>
                   () => StoryState.isAutoAdvanceEnabled =
                       !StoryState.isAutoAdvanceEnabled,
                 ),
-                onGoToChapterSelect: () => Navigator.pushReplacement(
-                  context,
-                  fadeThroughBlackRoute(const ChapterSelectScreen()),
-                ),
+                onSave: _handleSave,
                 onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
                   fadeThroughBlackRoute(const ChoiceScreen()),
                   (route) => false,
                 ),
                 onExitGame: exitGame,
+              ),
+
+            // 9-1층: 저장 완료 안내 배지. _handleSave가 저장 끝내고 잠깐(2초) 띄웠다가 스스로 지움.
+            // 딤을 더 진하게 주려고 buildSaveConfirmationBadge(0.7) 재사용, 위치는 화면 상단 중앙
+            if (_saveConfirmationText != null)
+              Positioned(
+                top: rH(_saveConfirmationBadgeTopRef),
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: widgets.buildSaveConfirmationBadge(
+                    _saveConfirmationText!,
+                    rW: rW,
+                    rH: rH,
+                  ),
+                ),
               ),
 
             // 9-2층: 재료 획득 팝업. chapter2_ingredient_quiz.json의 재료 이름 대사가 끝나고

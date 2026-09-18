@@ -3,12 +3,13 @@
 import 'dart:async';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/services/save_checkpoints.dart';
+import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/services/app_exit.dart';
-import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
@@ -50,6 +51,10 @@ const Duration _stairsDescentDuration = Duration(milliseconds: 700);
 const double _chaeonStairsDescentStartY = 180;
 const double _chaeonWalkFloorBottomOffset = 50; // "bottom: rH(50)" 채온이 바닥선 기준값
 
+// "저장되었습니다" 배지가 뜨는 top 위치(874x402 기준, rH로 스케일됨). kitchen_screen.dart랑
+// 동일한 값을 씀 - 화면 보면서 조정 예정
+const double _saveConfirmationBadgeTopRef = 80;
+
 class GamePlayScreen extends StatefulWidget {
   final bool isPrologue;
   // 챕터3 재진입 모드: true면 가이드 대사/table.json/first_bread.json 단계를 전부 건너뛰고,
@@ -60,12 +65,17 @@ class GamePlayScreen extends StatefulWidget {
   // 챕터3 재진입 시 방/골목길에서 이어받아 온도계에 표시할 시작 온도.
   // chaeon_room_screen.dart처럼 이전 화면의 _sceneController.temperature를 그대로 넘겨받음
   final int initialTemperature;
+  // 저장된 세이브를 불러와서 들어온 경우에만 넘어옴. kitchen_screen.dart/chaeon_room_screen.dart의
+  // resumeCheckpoint랑 동일한 패턴 - skipChapter1Events/reentryChapter는 이 체크포인트가 속한
+  // 조합이랑 맞게 호출부에서 같이 넘겨줘야 함. null이면(기본값) 지금까지와 100% 동일하게 동작함
+  final SaveCheckpoint? resumeCheckpoint;
   const GamePlayScreen({
     super.key,
     this.isPrologue = false,
     this.skipChapter1Events = false,
     this.reentryChapter = ReentryChapter.none,
     this.initialTemperature = 3,
+    this.resumeCheckpoint,
   });
 
   @override
@@ -81,6 +91,9 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   List<String> _dialogueTexts = [];
   String? _interactionText;
   bool _isSettingOpen = false;
+  // 메뉴 "저장" 버튼 누르면 잠깐 뜨는 확인 문구. null이면 안 보임. kitchen_screen.dart랑 동일한 패턴
+  String? _saveConfirmationText;
+  Timer? _saveConfirmationTimer;
 
   // 채온이 상태 변수
   String _chaeonState = 'idle';
@@ -148,9 +161,51 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   void initState() {
     super.initState();
 
+    // resumeCheckpoint로 들어온 경우, BakeryGame을 만들 때 재개 위치를 같이 넘겨줘야 함 -
+    // _game이 만들어진 다음에 chaeon 위치를 옮기려고 하면 그 시점엔 chaeon이 아직 mount되기
+    // 전(Flame onLoad()가 비동기라 나중에 돎)이라 안 먹힘. 체크포인트별 좌표는 실제 정상
+    // 진행에서 그 대사가 시작되는 지점(x=650 가이드/첫 만남, x=1305 릴리안 계단 등장 완료)을
+    // 그대로 따라감 - kChapter5StartX가 마침 챕터1 첫 만남 지점(650)이랑 같은 값이라 재사용함
+    double? resumeChaeonX;
+    double? resumeLillianArrivalX;
+    bool resumeSkipGuideTrigger = false;
+    bool resumeSkipPostSceneEndTrigger = false;
+    switch (widget.resumeCheckpoint) {
+      case SaveCheckpoint.chapter1FirstMeet:
+        resumeChaeonX = kChapter5StartX;
+        resumeLillianArrivalX = 900;
+        resumeSkipGuideTrigger = true;
+        break;
+      case SaveCheckpoint.chapter1Table:
+      case SaveCheckpoint.chapter1FirstBread:
+        resumeChaeonX = 1305;
+        resumeLillianArrivalX = 900;
+        resumeSkipGuideTrigger = true;
+        resumeSkipPostSceneEndTrigger = true;
+        break;
+      case SaveCheckpoint.chapter3Door:
+        // chapter3_door.json 트리거 지점에 세워두면 BakeryGame.update()가 알아서
+        // onReachChapter3Door를 자연스럽게 다시 발동시켜줌(_resumeFromCheckpoint 참고)
+        resumeChaeonX = kChapter3DoorTriggerX;
+        break;
+      case SaveCheckpoint.chapter5Start:
+      case null:
+        // 챕터5는 reentryChapter==chapter5일 때 BakeryGame.onLoad()의 챕터5 전용 블록이
+        // 위치/카메라/대사 로드까지 이미 다 처리해줘서 여기선 안 건드림. resumeCheckpoint가
+        // null이면(정상 진행) 당연히 아무 것도 안 함
+        break;
+      default:
+        // 이 화면(game_play_screen.dart) 소관 아닌 체크포인트가 잘못 넘어온 경우 방어적으로 무시
+        break;
+    }
+
     _game = BakeryGame(
       skipChapter1Events: widget.skipChapter1Events,
       reentryChapter: widget.reentryChapter,
+      resumeChaeonX: resumeChaeonX,
+      resumeLillianArrivalX: resumeLillianArrivalX,
+      resumeSkipGuideTrigger: resumeSkipGuideTrigger,
+      resumeSkipPostSceneEndTrigger: resumeSkipPostSceneEndTrigger,
     );
     // 챕터3 재진입 모드면, 릴리안-채온 첫 만남 대사/회상 컷씬/빵 먹는 대사 단계를 전부 건너뜀
     if (widget.skipChapter1Events) {
@@ -413,6 +468,127 @@ class _GamePlayScreenState extends State<GamePlayScreen>
         });
       });
     };
+
+    // 세이브 불러와서 들어온 경우, 위에서 등록한 트리거/애니메이션 콜백들이 자연스럽게 발동하길
+    // 기다리는 대신 체크포인트가 가리키는 지점부터 바로 시작함. resumeCheckpoint가 null이면
+    // 이 분기 자체를 안 타서 기존 동작 그대로임. 위 콜백들이 전부 등록된 다음(initState 맨
+    // 마지막)에 불러야 함 - _lillianController 리스너 등 일부 로직이 여기서 필요함
+    if (widget.resumeCheckpoint != null) {
+      _resumeFromCheckpoint(widget.resumeCheckpoint!);
+    }
+  }
+
+  // 릴리안이 계단 등장까지 다 마치고 채온이 옆에 도착해있는 상태로 스냅. first_meet/table/
+  // first_bread 체크포인트 재개에 공통으로 필요해서 뺐음. 실제 걷기/계단 애니메이션은 재생
+  // 안 하고 도착 결과만 그대로 세팅함. _lillianController.value를 직접 1.0으로 두는 방식도
+  // 생각해봤는데, 그러면 "도착 완료" 상태 리스너(제일 처음 first_meet.json 로드하는 그
+  // 리스너)가 setState를 동반해서 initState 도중에 바로 발동해버려 위험함(빌드 되기 전에
+  // setState 호출하는 셈이라 에러남). 그래서 _lillianStartX를 목표 지점(_lillianTargetX)이랑
+  // 똑같이 맞춰서, 컨트롤러 값이 뭐든 Tween(begin,end).evaluate 결과가 항상 도착 위치로
+  // 고정되게 하는 방식으로 우회함
+  void _snapLillianArrived() {
+    _isLillianVisible = true;
+    _isLillianFacingLeft = true;
+    _lillianTargetX = 900.0;
+    _lillianStartX = _lillianTargetX;
+    _game.lillianArrivalX = _lillianTargetX;
+    _isLillianWalking = false;
+  }
+
+  // resumeCheckpoint로 들어온 경우 initState 끝에서 호출됨. kitchen_screen.dart의
+  // _resumeFromCheckpoint랑 동일한 패턴이지만, 이 화면은 Flame(BakeryGame) 기반이라 캐릭터
+  // 위치/카메라까지 완벽히 재현하진 않고 대사가 정상적으로 이어지는 데 필요한 최소한의
+  // 상태만 맞춤. StoryState/ChapterProgress는 이 화면 진입 전에 이미 복원되어 있는 걸 전제로 함
+  //
+  // (업데이트: 캐릭터 위치/카메라는 initState 위쪽에서 BakeryGame 생성 시 resumeChaeonX로
+  // 처리하게 바꿈 - 여기서 chaeon 위치를 옮기려고 하면 그 시점엔 아직 mount 전이라 안 먹혔음.
+  // 설정 버튼이 안 뜨던 것도 같이 발견해서 _isGuidePhaseStarted를 챕터1 케이스들에 추가함)
+  void _resumeFromCheckpoint(SaveCheckpoint checkpoint) {
+    switch (checkpoint) {
+      case SaveCheckpoint.chapter3Door:
+        // 위치는 BakeryGame 생성 시 이미 트리거 지점(kChapter3DoorTriggerX)으로 옮겨놔서,
+        // update()가 알아서 onReachChapter3Door를 자연스럽게 다시 발동시켜줌(그쪽이
+        // _isFreeWalkPhase/대사 로드까지 다 처리함) - 여기서 또 loadDialogue 부르면 중복
+        // 로드됨. dpad가 잠깐이라도 보이지 않게 미리만 꺼둠
+        _isFreeWalkPhase = false;
+        break;
+      case SaveCheckpoint.chapter5Start:
+        // 챕터5는 BakeryGame.onLoad()의 챕터5 전용 블록이 위치/카메라/대사 로드까지 전부
+        // 알아서 처리해줘서(reentryChapter==chapter5면 무조건 발동) 여기서 따로 할 게 없음
+        break;
+      case SaveCheckpoint.chapter1FirstMeet:
+        _snapLillianArrived();
+        _dialoguePhase = DialoguePhase.firstMeet;
+        // 정상 흐름에선 가이드 대사(_game.onShowDialogue)가 이 값을 켜주는데, 그 경로를
+        // 건너뛰니까 직접 켜줘야 함 - 안 그러면 설정 버튼이 안 뜸(노출 조건 참고)
+        _isGuidePhaseStarted = true;
+        _game.isMovementBlocked = false;
+        _sceneController.loadDialogue('assets/lines/chapter1/first_meet.json');
+        break;
+      case SaveCheckpoint.chapter1Table:
+        _snapLillianArrived();
+        _dialoguePhase = DialoguePhase.table;
+        _isGuidePhaseStarted = true;
+        _game.isMovementBlocked = false;
+        _sceneController.loadDialogue('assets/lines/chapter1/table.json');
+        break;
+      case SaveCheckpoint.chapter1FirstBread:
+        _snapLillianArrived();
+        // table.json 먹는 구간을 이미 지난 상태라 먹는 클로즈업이 다시 뜨면 안 됨
+        _hasEatenBread = true;
+        _dialoguePhase = DialoguePhase.firstBread;
+        _isGuidePhaseStarted = true;
+        _game.isMovementBlocked = false;
+        _sceneController.loadDialogue('assets/lines/chapter1/first_bread.json');
+        break;
+      default:
+        // 이 화면(game_play_screen.dart) 소관 아닌 체크포인트가 잘못 넘어온 경우를 대비한
+        // 방어적 분기 - 아무 것도 안 하고 기존 자연 진입 흐름(가이드 대사 등)에 맡김
+        break;
+    }
+  }
+
+  // 지금 skipChapter1Events/reentryChapter/_dialoguePhase 조합 기준으로 "가장 최근에 통과한
+  // 체크포인트"를 찾음. kitchen_screen.dart의 _detectCurrentCheckpoint랑 동일한 이유로,
+  // 저장 버튼이 떠 있다는 것 자체가 안정된 상태라는 뜻이라 이 시점 값들만으로 확정할 수 있음
+  SaveCheckpoint _detectCurrentCheckpoint() {
+    if (widget.skipChapter1Events) {
+      // 챕터3/4 재진입은 chapter3_door.json 트리거 하나뿐(챕터5는 아래 별도 분기)
+      return SaveCheckpoint.chapter3Door;
+    }
+    if (widget.reentryChapter == ReentryChapter.chapter5) {
+      return SaveCheckpoint.chapter5Start;
+    }
+    // 챕터1 프롤로그 이후 첫 플레이 흐름. 이 화면에서 로드되는 마지막 파일이 뭐였는지를
+    // _dialoguePhase로 판단함(none은 첫 만남 대사 시작 전이라 아직 아무 파일도 안 실렸지만,
+    // 이 화면이 지원하는 가장 이른 체크포인트인 firstMeet로 대체함)
+    switch (_dialoguePhase) {
+      case DialoguePhase.firstBread:
+      case DialoguePhase.kitchenApproach:
+        return SaveCheckpoint.chapter1FirstBread;
+      case DialoguePhase.memoryFlashback:
+      case DialoguePhase.table:
+        return SaveCheckpoint.chapter1Table;
+      case DialoguePhase.firstMeet:
+      case DialoguePhase.none:
+        return SaveCheckpoint.chapter1FirstMeet;
+    }
+  }
+
+  // 메뉴 "저장" 버튼(MenuOverlay.onSave)이 부름. kitchen_screen.dart의 _handleSave랑 동일한 패턴
+  void _handleSave() async {
+    final SaveCheckpoint checkpoint = _detectCurrentCheckpoint();
+    await SaveManager.save(checkpoint);
+    if (!mounted) return;
+    setState(() {
+      _isSettingOpen = false;
+      _saveConfirmationText = '저장되었습니다';
+    });
+    _saveConfirmationTimer?.cancel();
+    _saveConfirmationTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _saveConfirmationText = null);
+    });
   }
 
   void _onSceneControllerChanged() {
@@ -545,6 +721,7 @@ class _GamePlayScreenState extends State<GamePlayScreen>
     _chaeonHopController.dispose();
     _chaeonStairsDescentController.dispose();
     _memoryFadeTimer?.cancel();
+    _saveConfirmationTimer?.cancel();
     super.dispose();
   }
 
@@ -1479,15 +1656,27 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                   () => StoryState.isAutoAdvanceEnabled =
                       !StoryState.isAutoAdvanceEnabled,
                 ),
-                onGoToChapterSelect: () => Navigator.pushReplacement(
-                  context,
-                  fadeThroughBlackRoute(const ChapterSelectScreen()),
-                ),
+                onSave: _handleSave,
                 onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
                   fadeThroughBlackRoute(const ChoiceScreen()),
                   (route) => false,
                 ),
                 onExitGame: exitGame,
+              ),
+
+            // 17-1층: 저장 완료 안내 배지. kitchen_screen.dart 9-1층이랑 동일한 패턴
+            if (_saveConfirmationText != null)
+              Positioned(
+                top: rH(_saveConfirmationBadgeTopRef),
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: widgets.buildSaveConfirmationBadge(
+                    _saveConfirmationText!,
+                    rW: rW,
+                    rH: rH,
+                  ),
+                ),
               ),
 
             // 18층: 회상 컷씬(구름 드래그 미니게임 + 놀이공원 연출). 최상단에서 화면을 전부 덮음

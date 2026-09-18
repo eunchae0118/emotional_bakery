@@ -44,6 +44,10 @@ class SceneDialogueController extends ChangeNotifier {
   final VoidCallback onChaeonHop;
 
   DialogueGraph? sceneDialogue;
+  // loadDialogue()로 마지막으로 불러온 asset 경로. 저장/불러오기 체크포인트 판단용으로 씀 -
+  // sceneDialogue는 대사가 끝나면 null로 비워지는데 이 필드는 그때도 안 지우고 그대로 둬서,
+  // "마지막으로 재생된 파일이 뭐였는지"를 대사 종료 이후에도 계속 참조할 수 있게 함
+  String? currentFilePath;
   String? sceneNodeId;
   // 선택지 노드로 넘어가도 그 직전 대사 말풍선을 검은 배경 아래에 계속 띄워두기 위해 따로 보관
   DialogueNode? lastLineNode;
@@ -90,6 +94,9 @@ class SceneDialogueController extends ChangeNotifier {
 
   // 주어진 경로의 대화 그래프를 불러와서 처음부터 재생 (first_meet/table/first_bread 등 공용)
   Future<void> loadDialogue(String assetPath) async {
+    // sceneDialogue보다 먼저 기록해둠 - 아래서 await 끝나기 전에 disposed 되거나 해도
+    // 마지막으로 "로드를 시도한" 경로는 남겨두는 게 저장 시스템 입장에서 더 안전함
+    currentFilePath = assetPath;
     final graph = await DialogueLoader.loadDialogue(assetPath);
     if (_isDisposed) return;
     sceneDialogue = graph;

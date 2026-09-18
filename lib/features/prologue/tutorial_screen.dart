@@ -11,7 +11,6 @@ import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
     show ReentryChapter;
 import 'package:emotional_bakery/features/chapter1/game_play_widgets.dart'
     as widgets;
-import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
 
 // 마을 상호작용 구역 하나 (1~4번 집, 빵집 문)
@@ -435,10 +434,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     () => StoryState.isAutoAdvanceEnabled =
                         !StoryState.isAutoAdvanceEnabled,
                   ),
-                  onGoToChapterSelect: () => Navigator.pushReplacement(
-                    context,
-                    fadeThroughBlackRoute(const ChapterSelectScreen()),
-                  ),
+                  // TODO: 이 화면은 아직 체크포인트 판단 로직이 없어서 저장 기능 미연결.
+                  // kitchen_screen.dart부터 먼저 연결했고 나중에 여기도 맞춰서 붙일 예정
+                  onSave: () {},
                   onGoToMainScreen: () =>
                       Navigator.of(context).pushAndRemoveUntil(
                         fadeThroughBlackRoute(const ChoiceScreen()),

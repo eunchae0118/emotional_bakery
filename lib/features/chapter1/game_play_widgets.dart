@@ -345,6 +345,35 @@ Widget buildBlackRoundedBadge(
   );
 }
 
+// 저장 완료 안내 배지("저장되었습니다" 등). buildBlackRoundedBadge보다 딤을 더 진하게(0.7)
+// 주려고 따로 뺌 - buildBlackRoundedBadge는 다른 데서도 같이 쓰고 있어서 그쪽 opacity를
+// 그냥 올리면 거기도 다 같이 진해짐. kitchen_screen.dart/chaeon_room_screen.dart/
+// game_play_screen.dart 저장 버튼이 전부 이걸 재사용함
+Widget buildSaveConfirmationBadge(
+  String text, {
+  required double Function(double) rW,
+  required double Function(double) rH,
+}) {
+  return Container(
+    width: rW(210),
+    height: rH(30),
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: Colors.black.withOpacity(0.7),
+      borderRadius: BorderRadius.circular(rW(26)),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: rW(12),
+        fontWeight: FontWeight.w300,
+        fontFamily: 'SCDream',
+      ),
+    ),
+  );
+}
+
 // 뒤로가기 버튼
 Widget buildBackButton({
   required String key,

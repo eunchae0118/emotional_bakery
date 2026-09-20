@@ -15,6 +15,7 @@ dependencies:
   audioplayers: ^5.2.1 # BGM, 효과음용
   json_annotation: ^4.8.1 # JSON 파싱용
   shared_preferences: ^2.3.2 # 저장/불러오기용 로컬 키-값 저장소
+  web: ^1.1.0 # iOS 사파리인지 판별할 때 씀(navigator 읽는 웹 전용 API)
 
   cupertino_icons: ^1.0.8
   flame: ^1.37.0

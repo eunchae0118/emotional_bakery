@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'features/menu/main_screen.dart';
+import 'features/menu/ios_install_gate_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Flutter 엔진 초기화
@@ -32,7 +32,8 @@ class EmotionalBakery extends StatelessWidget {
       debugShowCheckedModeBanner: false, // 우측 상단 디버그 배너 제거
       scrollBehavior: MyCustomScrollBehavior(), // 커스텀 스크롤 행동
       theme: ThemeData(fontFamily: 'NanumGothic'), // 폰트
-      home: const MainScreen(), // 첫 화면 메인화면
+      // 로고 화면(MainScreen) 뜨기 전에 iOS 홈 화면 추가 안내를 먼저 거쳐가는 부팅 게이트
+      home: const IosInstallGateScreen(),
     );
   }
 }

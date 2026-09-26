@@ -204,6 +204,22 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     double rW(double px) => (px / 874) * w;
     double rH(double px) => (px / 402) * h;
 
+    // 로고/버튼 4개 전용 단일 스케일 + 중앙 정렬 오프셋. bear_arm_puzzle_scene.dart의
+    // bearZoomFit() 패턴 참고 - 디자인 캔버스(874x402)를 통째로 한 배율로 축소/확대해서
+    // 화면 안에 넣고, 남는 여백은 좌우/상하에 반씩 나눠서 중앙에 오게 함.
+    //
+    // 가로/세로 배율 중 큰 쪽(max)을 썼을 때는, 화면이 극단적으로 가로로 길어지면(가로가
+    // 세로보다 훨씬 큰 비율) 버튼 블록 전체가 화면 세로 길이보다 커져서 아래로 잘려
+    // 넘치는 문제가 있었음. 작은 쪽(min)으로 바꾸면 디자인 캔버스가 항상 화면 안에
+    // 다 들어오는 게 보장됨(874*scale <= w, 402*scale <= h) - 배경(main_bg.png,
+    // BoxFit.cover)이랑 스케일이 완전히 같지는 않지만, UI가 안 잘리는 걸 우선함.
+    // 디자인 비율(874:402)이랑 정확히 일치하는 화면에서는 offsetX/offsetY가 0이 되고
+    // scale도 지금(rW/rH)이랑 같아서 결과가 완전히 동일함
+    final double scale = (w / 874) < (h / 402) ? (w / 874) : (h / 402);
+    final double offsetX = (w - 874 * scale) / 2;
+    final double offsetY = (h - 402 * scale) / 2;
+    double s(double px) => px * scale;
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -212,20 +228,20 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
           Image.asset('assets/images/main_bg.png', fit: BoxFit.cover),
 
           Positioned(
-            left: rW(91), // X축 위치
-            top: rH(52), // Y축 위치
+            left: offsetX + s(91), // X축 위치
+            top: offsetY + s(52), // Y축 위치
             child: Image.asset(
               'assets/images/logo.png',
-              width: rW(167), // 로고 크기
+              width: s(167), // 로고 크기
               fit: BoxFit.contain,
             ),
           ),
 
           // 시작하기 버튼
           Positioned(
-            left: rW(100), // X축 위치
-            top: rH(195), // Y축 위치
-            width: rW(144), // 버튼 크기
+            left: offsetX + s(100), // X축 위치
+            top: offsetY + s(195), // Y축 위치
+            width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 1,
               normalImg: 'start.png',
@@ -247,17 +263,17 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
                   setState(() => _showResetConfirm = true);
                 }
               },
-              rW: rW,
-              rH: rH,
+              rW: s,
+              rH: s,
             ),
           ),
 
           // 이어하기 버튼. 항상 정상적으로 눌리고, 탭한 시점에 저장 데이터가 있는지 확인해서
           // 없으면 안내창만 띄움(버튼 자체를 흐리게 비활성화하지 않음)
           Positioned(
-            left: rW(100), // X축 위치
-            top: rH(239), // Y축 위치
-            width: rW(144), // 버튼 크기
+            left: offsetX + s(100), // X축 위치
+            top: offsetY + s(239), // Y축 위치
+            width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 2,
               normalImg: 'continued.png',
@@ -271,8 +287,8 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
                 }
                 await _handleContinue();
               },
-              rW: rW,
-              rH: rH,
+              rW: s,
+              rH: s,
             ),
           ),
 
@@ -280,32 +296,32 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
           // 화면 배치 순서(이어하기 다음)랑 상관없이 4로 둠 - 어차피 "지금 눌려있는 버튼"
           // 판별용 값이라 숫자 자체엔 의미 없음
           Positioned(
-            left: rW(100), // X축 위치
-            top: rH(283), // Y축 위치
-            width: rW(144), // 버튼 크기
+            left: offsetX + s(100), // X축 위치
+            top: offsetY + s(283), // Y축 위치
+            width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 4,
               normalImg: 'ending.png',
               touchImg: 'ending_touch.png',
               // TODO: 엔딩보기 화면 연결 예정
               onPressed: () {},
-              rW: rW,
-              rH: rH,
+              rW: s,
+              rH: s,
             ),
           ),
 
           // 게임 설정 버튼
           Positioned(
-            left: rW(100), // X축 위치
-            top: rH(327), // Y축 위치
-            width: rW(144), // 버튼 크기
+            left: offsetX + s(100), // X축 위치
+            top: offsetY + s(327), // Y축 위치
+            width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 3,
               normalImg: 'setting.png',
               touchImg: 'setting_touch.png',
               onPressed: () => setState(() => _isSettingOpen = true),
-              rW: rW,
-              rH: rH,
+              rW: s,
+              rH: s,
             ),
           ),
 

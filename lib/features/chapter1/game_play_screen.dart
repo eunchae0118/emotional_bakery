@@ -55,6 +55,17 @@ const double _chaeonWalkFloorBottomOffset = 50; // "bottom: rH(50)" 채온이 �
 // 동일한 값을 씀 - 화면 보면서 조정 예정
 const double _saveConfirmationBadgeTopRef = 80;
 
+// 가상 패드(dpad) 버튼 한 변 크기. 원래 DpadButton 기본값(64)이었는데, 모바일에서 누르기
+// 너무 작다는 피드백이 있어서 1.5배로 키움 - 화면 보면서 추가 조정 가능
+const double _dpadButtonSize = 96;
+// dpad 왼쪽 버튼 left 위치. 버튼이 커진 만큼 원래 값(686)대로 두면 오른쪽 버튼(원래 778)이랑
+// 겹치게 돼서, 오른쪽 버튼의 원래 오른쪽 끝(778+64=842, 화면 폭 874 기준 여백 32)과 원래
+// 버튼 사이 간격(778-750=28)을 그대로 유지한 채 왼쪽으로 다시 계산함(842-96-28-96=622)
+const double _dpadLeftButtonLeft = 622;
+// dpad 오른쪽 버튼 left 위치. 오른쪽 끝(746+96=842)이 원래 버튼의 오른쪽 끝이랑 같아서
+// 화면 오른쪽 여백(874-842=32)도 원래와 동일하게 유지됨
+const double _dpadRightButtonLeft = 746;
+
 class GamePlayScreen extends StatefulWidget {
   final bool isPrologue;
   // 챕터3 재진입 모드: true면 가이드 대사/table.json/first_bread.json 단계를 전부 건너뛰고,
@@ -1425,7 +1436,7 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                 // 디버그: dpad 재마운트 시 이전 눌림 상태가 이어지는지 테스트하려고 단계별로
                 // 완전히 다른 키를 줘서 매번 새 위젯으로 취급되게 함. 원인 아니면 나중에 되돌릴 것
                 key: ValueKey('dpad_left_$_dialoguePhase'),
-                left: rW(686),
+                left: rW(_dpadLeftButtonLeft),
                 bottom: rH(20),
                 child: DpadButton(
                   imagePath: 'assets/images/btn_left.png',
@@ -1449,6 +1460,7 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                   },
                   rW: rW,
                   rH: rH,
+                  size: _dpadButtonSize,
                 ),
               ),
 
@@ -1458,7 +1470,7 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                 // 디버그: dpad 재마운트 시 이전 눌림 상태가 이어지는지 테스트하려고 단계별로
                 // 완전히 다른 키를 줘서 매번 새 위젯으로 취급되게 함. 원인 아니면 나중에 되돌릴 것
                 key: ValueKey('dpad_right_$_dialoguePhase'),
-                left: rW(778),
+                left: rW(_dpadRightButtonLeft),
                 bottom: rH(20),
                 child: DpadButton(
                   imagePath: 'assets/images/btn_right.png',
@@ -1482,6 +1494,7 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                   },
                   rW: rW,
                   rH: rH,
+                  size: _dpadButtonSize,
                 ),
               ),
 

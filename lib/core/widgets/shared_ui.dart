@@ -61,6 +61,19 @@ PageRouteBuilder fadeThroughBlackRoute(
   );
 }
 
+// 애니메이션 없이 바로 화면을 바꾸는 라우트. 검은 배경 화면끼리 이어지는 구간(암전 ->
+// iOS 설치 안내 -> 콘텐츠 경고 -> 로고 화면)에서 기본 MaterialPageRoute의 전환
+// 애니메이션 때문에 화면이 겹쳐 보이거나 번쩍이는 것처럼 보이는 문제가 있어서 씀
+PageRouteBuilder instantRoute(Widget page) {
+  return PageRouteBuilder(
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+        child,
+  );
+}
+
 // tutorial_dialogue_box.png(1119x285)를 9-slice로 그릴 때 쓰는 테두리 영역.
 // 실측해보면 테두리 두께가 상하좌우 약 30px이라 이 값을 써야 어떤 크기로 늘려도
 // 테두리 두께가 균일하게 유지됨 (5px처럼 실제보다 얇게 잡으면 테두리 대부분이
@@ -362,6 +375,11 @@ class DpadButton extends StatelessWidget {
   final VoidCallback? onTapCancel;
   final double Function(double) rW;
   final double Function(double) rH;
+  // 버튼 한 변 크기(디자인 기준 px). 안 넘기면 기존 기본값(64) 그대로 씀 - tutorial_screen.dart
+  // 처럼 이 값을 안 넘기는 기존 호출부는 전혀 안 건드려도 원래 크기 그대로 유지됨. 모바일에서
+  // 너무 작다는 피드백을 받은 화면(game_play_screen.dart/chaeon_room_screen.dart/
+  // kitchen_screen.dart)만 더 큰 값을 넘겨서 씀
+  final double? size;
 
   const DpadButton({
     super.key,
@@ -371,17 +389,19 @@ class DpadButton extends StatelessWidget {
     this.onTapCancel,
     required this.rW,
     required this.rH,
+    this.size,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double buttonSize = size ?? 64;
     return GestureDetector(
       onTapDown: (_) => onTapDown(),
       onTapUp: (_) => onTapUp(),
       onTapCancel: onTapCancel ?? onTapUp, // 버튼 밖으로 손가락이 미끄러져 나가도 멈추도록 예외 처리
       child: Container(
-        width: rW(64),
-        height: rH(64),
+        width: rW(buttonSize),
+        height: rH(buttonSize),
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage(imagePath),

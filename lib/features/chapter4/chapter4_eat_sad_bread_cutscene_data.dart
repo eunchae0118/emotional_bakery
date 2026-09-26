@@ -15,7 +15,7 @@ const List<Map<String, String>> chapter4EatSadBreadCutsceneData = [
   {"text": "엄마는 말없이 채온을 꼭 끌어안아주었어요.", "image": "eat_sad_bread_6.png"},
   {"text": "“슬픈데... 그런데 따뜻해요.”", "image": "eat_sad_bread_7.png"},
   {"text": "채온은 엄마의 품에서 눈물을 흘리다 잠에서 깨어났어요.", "image": "eat_sad_bread_8.png"},
-  {"text": "뺨 위로 눈물이 흘러내리고 있었어요.", "image": "eat_sad_bread_9.png"},
-  {"text": "채온은 잠시 그대로 앉아 있다가, 천천히 일어났어요.", "image": "eat_sad_bread_10.png"},
-  {"text": "무언가를 다짐한 듯 다시 빵집으로 향했어요.", "image": "eat_sad_bread_11.png"},
+  {"text": "뺨 위로 눈물이 흘러내리고 있었어요.", "image": "eat_sad_bread_8.png"},
+  {"text": "채온은 잠시 그대로 앉아 있다가, 천천히 일어났어요.", "image": "eat_sad_bread_9.png"},
+  {"text": "무언가를 다짐한 듯 다시 빵집으로 향했어요.", "image": "eat_sad_bread_10.png"},
 ];

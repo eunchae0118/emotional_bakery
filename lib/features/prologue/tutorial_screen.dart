@@ -100,6 +100,18 @@ const List<_HouseZone> _houseZones = [
   _HouseZone(left: 1456, top: 0, width: 302, height: 295, isDestination: true),
 ];
 
+// 가상 패드(dpad) 버튼 한 변 크기. 원래 DpadButton 기본값(64)이었는데, 모바일에서 누르기
+// 너무 작다는 피드백이 있어서 game_play_screen.dart/chaeon_room_screen.dart/
+// kitchen_screen.dart랑 동일하게 1.5배로 키움 - 화면 보면서 추가 조정 가능
+const double _dpadButtonSize = 96;
+// dpad 왼쪽 버튼 left 위치. 버튼이 커진 만큼 원래 값(686)대로 두면 오른쪽 버튼(원래 778)이랑
+// 겹치게 돼서, 오른쪽 버튼의 원래 오른쪽 끝(778+64=842, 화면 폭 874 기준 여백 32)과 원래
+// 버튼 사이 간격(778-750=28)을 그대로 유지한 채 왼쪽으로 다시 계산함(842-96-28-96=622)
+const double _dpadLeftButtonLeft = 622;
+// dpad 오른쪽 버튼 left 위치. 오른쪽 끝(746+96=842)이 원래 버튼의 오른쪽 끝이랑 같아서
+// 화면 오른쪽 여백(874-842=32)도 원래와 동일하게 유지됨
+const double _dpadRightButtonLeft = 746;
+
 class TutorialScreen extends StatefulWidget {
   // 튜토리얼 안내 문구(0, 1단계)를 건너뛰고 바로 마을 배경만 보여주고 싶을 때 2로 전달
   final int initialStep;
@@ -271,7 +283,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
               // 2층: 가상 패드 및 유동 대사창 UI 레이어
               Positioned(
-                left: rW(686),
+                left: rW(_dpadLeftButtonLeft),
                 bottom: rH(20),
                 child: IgnorePointer(
                   ignoring: _tutorialStep < 2,
@@ -319,13 +331,14 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     },
                     rW: rW,
                     rH: rH,
+                    size: _dpadButtonSize,
                   ),
                 ),
               ),
 
               // 오른쪽 이동 버튼
               Positioned(
-                left: rW(778),
+                left: rW(_dpadRightButtonLeft),
                 bottom: rH(20),
                 child: IgnorePointer(
                   ignoring: _tutorialStep < 2,
@@ -366,6 +379,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     },
                     rW: rW,
                     rH: rH,
+                    size: _dpadButtonSize,
                   ),
                 ),
               ),

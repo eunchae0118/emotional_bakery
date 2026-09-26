@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'features/menu/ios_install_gate_screen.dart';
+import 'features/menu/orientation_gate_screen.dart';
 import 'core/services/ios_viewport_patch.dart';
 
 void main() async {
@@ -38,8 +38,10 @@ class EmotionalBakery extends StatelessWidget {
       debugShowCheckedModeBanner: false, // 우측 상단 디버그 배너 제거
       scrollBehavior: MyCustomScrollBehavior(), // 커스텀 스크롤 행동
       theme: ThemeData(fontFamily: 'NanumGothic'), // 폰트
-      // 로고 화면(MainScreen) 뜨기 전에 iOS 홈 화면 추가 안내를 먼저 거쳐가는 부팅 게이트
-      home: const IosInstallGateScreen(),
+      // 세로모드 안내(가로면 바로 통과) -> 순수 암전 -> iOS 홈 화면 추가 안내(부팅
+      // 게이트) -> 콘텐츠 경고 -> 로고 화면(MainScreen) 순으로 이어지는 최초 실행
+      // 흐름의 시작점
+      home: const OrientationGateScreen(),
     );
   }
 }

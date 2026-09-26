@@ -2,9 +2,15 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'features/menu/ios_install_gate_screen.dart';
+import 'core/services/ios_viewport_patch.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Flutter 엔진 초기화
+
+  // Flutter 엔진이 viewport meta 태그를 만드는 건 ensureInitialized() 안에서 이미 끝나
+  // 있어서, 이 타이밍이면 태그를 찾아서 patch하기에 안전함(iOS 아니거나 웹이 아니면
+  // 내부에서 바로 return되는 함수라 다른 플랫폼엔 영향 없음)
+  patchIosViewportMeta();
 
   // 가로 화면 고정
   await SystemChrome.setPreferredOrientations([

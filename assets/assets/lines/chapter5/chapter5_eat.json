@@ -1,0 +1,28 @@
+{
+  "dialogue_id": "chapter5_eat",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "다 됐어요. 먹어봐요.",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네. 그럼...",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "expression": {
+        "asset": "assets/images/chaeon_80_eat.gif",
+        "durationMs": 1800,
+        "autoAdvance": true
+      },
+      "next": "null"
+    }
+  }
+}

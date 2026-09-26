@@ -1,0 +1,24 @@
+{
+  "dialogue_id": "chapter4_after_letter",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "......",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온 씨 어머니께서 채온 씨를 많이 사랑하셨나 봐요.",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "....그러게요.",
+      "next": "null"
+    }
+  }
+}

@@ -1,0 +1,329 @@
+{
+  "dialogue_id": "chapter1_first_bread",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "....?!", "color": "#FF0509", "bold": true, "size": 18 }
+      ],
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어때요?",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "누군가의 기억이 보였어요.",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "즐거운... 기억이..",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "한 어린아이의 소중한 " },
+        { "text": "물건에 깃든, 즐거운 추억", "color": "#FF7100" },
+        { "text": "으로 만든 빵이에요." }
+      ],
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래서 빵을 먹는 순간 그때의 감정이 고스란히 느껴지는 거랍니다.",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그런 것 같아요... 신기하네요....",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "다행이에요!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "손님 마음속에 따뜻함이 조금 남아있었나 봐요.",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "따뜻함...",
+      "next": "line_010.1"
+    },
+    "line_010.1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "엄마를 꿈에서 다시 만나면" },
+        { "text": " 웃어주겠다", "color": "#FF7100" },
+        { "text": "고 다짐했거든요." }
+      ],
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그래서 되찾고 싶어요. 미소 지을 수 있는 감정이요.",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "혹시... 빵을 조금 더 주실 수 있나요?",
+      "next": "line_018"
+    },
+    "line_018": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "음... 이건 다른 사람의 추억으로 구운 빵이라서",
+      "expression": "assets/images/lillian_thinking3.png",
+      "next": "line_019"
+    },
+    "line_019": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "손님에게는 그저 찰나의 효과일 뿐이에요.",
+      "next": "line_020"
+    },
+    "line_020": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "진짜 감정을 되찾고 싶다면",
+      "next": "line_021"
+    },
+    "line_021": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자신의 추억으로 빵을 직접 구워야 해요.",
+      "next": "choice_001"
+    },
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "어렵겠죠...?",
+          "next": "line_022a"
+        },
+        {
+          "text": "빵을 굽는다고요?",
+          "next": "line_022b"
+        }
+      ]
+    },
+    "line_022a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어렵겠죠...?",
+      "next": "line_022a1"
+    },
+    "line_022a1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그래도... 할게요.",
+      "effect": { "temperature": 1 },
+      "next": "line_022a2"
+    },
+    "line_022a2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "추억이라면 얼마든지 드릴 수 있어요. 뭐든지 할게요.",
+      "next": "line_022a3"
+    },
+    "line_022a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "엄마를 위해서라면...",
+      "next": "line_022a4"
+    },
+    "line_022a4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "감정을 굽는 일은 쉽지 않아요.",
+      "next": "line_022a5"
+    },
+    "line_022a5": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자신의 상처와 마주해야 할 때도 있거든요.",
+      "next": "line_022a6"
+    },
+    "line_022a6": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그리고 다시 한번 이야기하지만, 추억으로 빵을 만들고 나면",
+      "next": "line_022a6.1"
+    },
+    "line_022a6.1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그 물건은 대가로 가져갈거에요.",
+      "next": "line_022a7"
+    },
+    "line_022a7": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래도 해볼래요?",
+      "next": "line_023"
+    },
+    "line_022b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "빵을 굽는다고요?",
+      "next": "line_022b1"
+    },
+    "line_022b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 빵을 구울 줄 모르는데...",
+      "next": "line_022b2"
+    },
+    "line_022b2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아무래도 못 할 것 같아요...",
+      "effect": { "temperature": -1 },
+      "next": "line_022b3"
+    },
+    "line_022b3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "도와줄 테니 걱정 말아요!",
+      "next": "line_022b4"
+    },
+    "line_022b4": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "제가 할 수 있을까요?",
+      "next": "line_022b5"
+    },
+    "line_022b5": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "다만, 감정을 굽는 일은 쉽지 않아요.",
+      "next": "line_022b6"
+    },
+    "line_022b6": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자신의 상처와 마주해야 할 때도 있거든요.",
+      "next": "line_022b7"
+    },
+    "line_022b7": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그리고 다시 한번 이야기하지만, 추억으로 빵을 만들고 나면",
+      "next": "line_022b8"
+    },
+    "line_022b8": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그 물건은 대가로 가져갈거에요.",
+      "next": "line_022b8.1"
+    },
+    "line_022b8.1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래도... 이 과정을 통해 분명 감정을 찾을 수 있을 거에요.",
+      "next": "line_022b9"
+    },
+    "line_022b9": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "같이 해봐요, 우리!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_023"
+    },
+    "line_023": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네, 해볼게요.",
+      "next": "line_024"
+    },
+    "line_024": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "좋아요! 이제 그럼 이름을 말해주시겠어요??",
+      "next": "line_025"
+    },
+    "line_025": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이름을 말하면 저를 끌고 가시는... 마녀...?",
+      "next": "line_026"
+    },
+    "line_026": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그런 거 아니에요!!",
+      "expression": "assets/images/lillian_grudge.png",
+      "next": "line_027"
+    },
+    "line_027": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는.... 채온이에요.",
+      "next": "line_028"
+    },
+    "line_028": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온...",
+      "next": "line_029"
+    },
+    "line_029": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "예쁜 이름이네요!",
+      "next": "line_030"
+    },
+    "line_030": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "감사해요. 엄마가 지어주신 이름이에요.",
+      "next": "line_031"
+    },
+    "line_031": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "저는 릴리안이에요.",
+      "next": "line_032"
+    },
+    "line_032": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "편하게 릴리라고 불러주세요.",
+      "next": "line_033"
+    },
+    "line_033": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자! 그러면 제가 앞치마를 드릴 테니, 갈아입으시고",
+      "next": "line_034"
+    },
+    "line_034": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "지하에 제빵실로 내려와주세요!",
+      "next": "null"
+    }
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "dialogue_id": "chapter1_table",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "짜잔~! 따뜻할 때 한 입 먹어봐요!",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "즐거운 기억의 감정을 느낄 수 있을 거예요.",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": ".....",
+      "next": "choice_001"
+    },
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "(그래... 엄마를 위해서야.)",
+          "next": "line_004a"
+        },
+        {
+          "text": "(진짜일까...)",
+          "next": "line_004b"
+        }
+      ]
+    },
+    "line_004b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": ".....",
+      "next": "line_004b1"
+    },
+    "line_004b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그럼 조금만...",
+      "next": "line_004b2"
+    },
+    "line_004b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "좋아요~" },
+        { "text": "과하게 먹으면 안 되니까 조금씩", "color": "#FF7100" },
+        { "text": "!" }
+      ],
+      "effect": { "temperature": 1 },
+      "next": "line_004b_eat"
+    },
+    "line_004b_eat": {
+      "type": "line",
+      "speaker": "chaeon",
+      "next": "line_004b3"
+    },
+    "line_004b3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어...?",
+      "next": "null"
+    },
+    "line_004a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "먹어볼게요.",
+      "next": "line_004a1_eat"
+    },
+    "line_004a1_eat": {
+      "type": "line",
+      "speaker": "chaeon",
+      "next": "line_004a2"
+    },
+    "line_004a2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text":"! 한 번에 다 먹으면 안 돼요! 무리하지 말... 아...",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_004a2_laugh"
+    },
+
+    "line_004a2_laugh": {
+      "type": "line",
+      "speaker": "chaeon",
+      "expression": {
+        "asset": "assets/images/lillian_surprise.png",
+        "durationMs": 1900,
+        "autoAdvance": true
+      },
+      "chaeonExpression": "assets/images/chaeon_laughing.gif",
+      "next": "line_004a3"
+    },
+
+    "line_004a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어, 어라... 어... 하하... 하하하!!!!! 안 멈춰요!",
+      "effect": { "temperature": -1 },
+      "expression": "assets/images/lillian_surprise.png",
+      "chaeonExpression": "assets/images/chaeon_laughing1.gif",
+      "next": "line_004a4"
+    },
+    "line_004a4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "하아... " },
+        { "text": "감정은 과하면 안 돼요", "color": "#FF7100" },
+        { "text": ". 조금씩 먹어야 해요..." }
+      ],
+      "expression": "assets/images/lillian_thinking2.png",
+      "chaeonExpression": "assets/images/chaeon_laughing1.gif",
+      "next": "line_004a5"
+    },
+    "line_004a5": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어...?",
+      "next": "null"
+    }
+  }
+}

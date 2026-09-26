@@ -1,0 +1,13 @@
+{
+  "dialogue_id": "chapter2_making_bread",
+  "start": "line_001",
+
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "마지막으로 추억을 담으면...",
+      "next": "null"
+    }
+  }
+}

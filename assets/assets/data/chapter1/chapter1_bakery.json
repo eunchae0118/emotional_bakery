@@ -1,0 +1,280 @@
+[
+  {
+    "id": "box",
+    "name": "박스",
+    "clickX": 141,
+    "clickY": 257,
+    "width": 132,
+    "height": 58,
+    "dialogue": ["박스가 가지런히 놓여 있다.\n안에는 뭐가 들어있을까?"]
+  },
+  {
+    "id": "keys",
+    "name": "열쇠",
+    "clickX": 70,
+    "clickY": 226,
+    "width": 51,
+    "height": 47,
+    "dialogue": ["문을 잠그는 열쇠인 거 같다.\n이런 곳에 놓아도 괜찮은걸까...?"]
+  },
+  {
+    "id": "jams",
+    "name": "잼",
+    "clickX": 63,
+    "clickY": 111,
+    "width": 58,
+    "height": 108,
+    "dialogue": ["병마다 색이 조금씩 다르다.\n잼의 맛도 다 다를 것 같다."]
+  },
+  {
+    "id": "window",
+    "name": "창문",
+    "clickX": 141,
+    "clickY": 100,
+    "width": 132,
+    "height": 102,
+    "dialogue": ["어두운 골목과 달리,\n이곳은 따뜻한 색으로 빛나고 있다."]
+  },
+  {
+    "id": "books",
+    "name": "책",
+    "clickX": 141,
+    "clickY": 202,
+    "width": 67,
+    "height": 32,
+    "dialogue": ["마법 연구에 대한 책이라고 쓰여있다.\n마법이라..."]
+  },
+  {
+    "id": "moss",
+    "name": "이끼",
+    "clickX": 208,
+    "clickY": 171,
+    "width": 65,
+    "height": 63,
+    "dialogue": ["동그란 초록 식물이 귀엽다.\n만지면 폭신할 것처럼 생겼다."]
+  },
+  {
+    "id": "sauce",
+    "name": "소스",
+    "clickX": 293,
+    "clickY": 80,
+    "width": 166,
+    "height": 125,
+    "dialogue": ["소금...후추...설탕....\n빵을 만들 때 쓰는 재료인 것 같다."]
+  },
+  {
+    "id": "macaroon",
+    "name": "마카롱",
+    "clickX": 293,
+    "clickY": 219,
+    "width": 172,
+    "height": 27,
+    "dialogue": ["알록달록한 마카롱이 있다\n어떤 맛일지 하나씩 궁금해진다."]
+  },
+  {
+    "id": "cake",
+    "name": "케이크",
+    "clickX": 293,
+    "clickY": 246,
+    "width": 172,
+    "height": 27,
+    "dialogue": [
+      "보기만 해도 달콤해 보인다.\n특별한 날이 아니지만 하나 먹고 싶다."
+    ]
+  },
+  {
+    "id": "memo",
+    "name": "메모지",
+    "clickX": 465,
+    "clickY": 94,
+    "width": 165,
+    "height": 107,
+    "dialogue": ["영수증인가?\n뭐라고 적혀있는 지 잘 보이지 않는다."]
+  },
+  {
+    "id": "menu",
+    "name": "메뉴",
+    "clickX": 483,
+    "clickY": 117,
+    "width": 125,
+    "height": 84,
+    "dialogue": ["아메리카노가 4만원...?\n너무 비싼 거 아닌가?"]
+  },
+  {
+    "id": "strawberry_cake",
+    "name": "딸기케이크",
+    "clickX": 550,
+    "clickY": 212,
+    "width": 54,
+    "height": 48,
+    "dialogue": ["케이크에서 달콤한 향기가 난다.\n누가 예약한 걸까?"]
+  },
+  {
+    "id": "bread",
+    "name": "큰빵진열대",
+    "clickX": 638,
+    "clickY": 92,
+    "width": 320,
+    "height": 148,
+    "dialogue": ["다양한 빵들이 있다.\n마음대로 가져가면 안되겠지?"]
+  },
+  {
+    "id": "mornig_bread",
+    "name": "모닝빵진열대",
+    "clickX": 626,
+    "clickY": 240,
+    "width": 340,
+    "height": 36,
+    "dialogue": ["이 모닝빵, 괜히 손가락으로 콕 눌러보고 싶다.\n딱 한 번만."]
+  },
+  {
+    "id": "baguette_bread",
+    "name": "바게트진열대",
+    "clickX": 626,
+    "clickY": 276,
+    "width": 340,
+    "height": 52,
+    "dialogue": ["빵마다 이름표가 붙어 있다.\n이름도 하나같이 맛있어 보인다."]
+  },
+  {
+    "id": "poster",
+    "name": "포스터",
+    "clickX": 958,
+    "clickY": 117,
+    "width": 123,
+    "height": 81,
+    "dialogue": ["새로운 빵을 출시했나보다.\n30% 할인하는 거 같다."]
+  },
+  {
+    "id": "coffee_grinder",
+    "name": "커피그라인더",
+    "clickX": 989,
+    "clickY": 165,
+    "width": 68,
+    "height": 79,
+    "dialogue": [
+      "커피 원두가 잔뜩 들어있는 기계다.\n왼쪽은 카페인, 오른쪽은 디카페인이라고 적혀있다."
+    ]
+  },
+  {
+    "id": "coffee_machine",
+    "name": "커피기계",
+    "clickX": 1064,
+    "clickY": 157,
+    "width": 91,
+    "height": 87,
+    "dialogue": [
+      "커피 향기가 난다.\n어른들은 쓰기만 한 커피를 무슨 맛으로 먹는걸까?"
+    ]
+  },
+  {
+    "id": "water_dispenser",
+    "name": "정수기",
+    "clickX": 1155,
+    "clickY": 157,
+    "width": 48,
+    "height": 87,
+    "dialogue": ["정수기인 거 같다.\n컵에는 누군가 마시다 만 물이 들어있다."]
+  },
+  {
+    "id": "ice_dispenser",
+    "name": "얼음정수기",
+    "clickX": 1203,
+    "clickY": 157,
+    "width": 57,
+    "height": 87,
+    "dialogue": ["위이잉~하는 소리가 난다.\n안에는...얼음이 들어있는 거 같다."]
+  },
+  {
+    "id": "fake_plant",
+    "name": "벽걸이식물",
+    "clickX": 971,
+    "clickY": 75,
+    "width": 180,
+    "height": 82,
+    "dialogue": ["벽걸이용 식물이다. \n...자세히 보니 조화인 거 같다."]
+  },
+  {
+    "id": "shelf",
+    "name": "선반",
+    "clickX": 1151,
+    "clickY": 75,
+    "width": 129,
+    "height": 82,
+    "dialogue": ["색연필로 그린 그림이다.\n음...내가 더 잘 그릴 거 같은데?"]
+  },
+  {
+    "id": "duck",
+    "name": "오리",
+    "clickX": 1280,
+    "clickY": 80,
+    "width": 93,
+    "height": 44,
+    "dialogue": ["귀여운 오리 두마리!\n키우고 있는 반려오리 뭐 그런건가?"]
+  },
+  {
+    "id": "calendar",
+    "name": "달력",
+    "clickX": 1290,
+    "clickY": 124,
+    "width": 59,
+    "height": 79,
+    "dialogue": [
+      "어? 오늘은 4월 2일인데...\n아직 달력 바꾸는 걸 까먹었나보다...."
+    ]
+  },
+  {
+    "id": "rack",
+    "name": "두줄선반",
+    "clickX": 1373,
+    "clickY": 80,
+    "width": 166,
+    "height": 108,
+    "dialogue": ["여러 가지 베이킹 재료가 담겨 있다.\n어떤 빵에 쓰이는 걸까?"]
+  },
+  {
+    "id": "cabinet",
+    "name": "수납장",
+    "clickX": 1572,
+    "clickY": 92,
+    "width": 173,
+    "height": 221,
+    "dialogue": ["갓 구운 빵인가 보다.\n아직도 따뜻해 보인다."]
+  },
+  {
+    "id": "light_1",
+    "name": "전등1",
+    "clickX": 107,
+    "clickY": 0,
+    "width": 68,
+    "height": 58,
+    "dialogue": ["노란 빛 전등이다.\n조금씩 흔들리는 거 같다."]
+  },
+  {
+    "id": "light_2",
+    "name": "전등2",
+    "clickX": 557,
+    "clickY": 0,
+    "width": 68,
+    "height": 58,
+    "dialogue": ["노란 빛 전등이다.\n조금씩 흔들리는 거 같다."]
+  },
+  {
+    "id": "light_3",
+    "name": "전등3",
+    "clickX": 1047,
+    "clickY": 0,
+    "width": 68,
+    "height": 58,
+    "dialogue": ["노란 빛 전등이다.\n조금씩 흔들리는 거 같다."]
+  },
+  {
+    "id": "light_4",
+    "name": "전등4",
+    "clickX": 1517,
+    "clickY": 0,
+    "width": 68,
+    "height": 58,
+    "dialogue": ["노란 빛 전등이다.\n조금씩 흔들리는 거 같다."]
+  }
+]

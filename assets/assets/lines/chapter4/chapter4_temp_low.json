@@ -1,0 +1,12 @@
+{
+  "dialogue_id": "chapter4_temp_low",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "역시... 먹지 않을래.",
+      "next": "null"
+    }
+  }
+}

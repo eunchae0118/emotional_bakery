@@ -1,0 +1,116 @@
+{
+  "dialogue_id": "chapter5_bear",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "이번에 만들 빵은 위로의 빵이에요.",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "생각나는 물건이 있어요?",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "위로의 빵이요?",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "음... 위로라면...",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "곰인형이요.",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "곰인형이요? 왠지 궁금해지는데요?",
+      "expression": "assets/images/lillian_thinking3.png",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어렸을 때부터 잠자는 걸 무서워했거든요.",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그래서 엄마가 직접 만들어주셨어요.",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "나쁜 꿈을 꾸지 않게 해주는...",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저를 지켜주는 곰인형이라고 했어요.",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "엄마가 직접 만들어 주신 거라면, 채온 씨에게 특별한 거네요.",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네... 근데 그 곰인형을 놀이터에 가져갔다가,",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "곰인형의 팔이 뜯어진 거예요.",
+      "next": "line_015"
+    },
+    "line_015": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "너무 속상해서 울고 있었는데,",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "엄마가 고쳐줬어요. 지금 생각하면 위로였겠죠.",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "가장 소중한... 물건이에요.",
+      "next": "line_018"
+    },
+    "line_018": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그 곰인형이라면, 정말 좋은 위로가 될 것 같아요.",
+      "next": "line_019"
+    },
+    "line_019": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자, 그럼 이제 빵을 만들어볼까요?",
+      "next": "null"
+    }
+  }
+}

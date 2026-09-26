@@ -1,0 +1,122 @@
+{
+  "dialogue_id": "chapter4_before_cutscene",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어서 와요! 오늘도 빵을 만들러 왔군요!!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저... 사실 저번 빵을 먹고 좀 힘들었어요.",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "오늘은 행복한 빵을 만들고 싶어요.",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온 씨, 드릴 말씀이 있어요.",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "뭔데요?",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그런 빵만 계속 먹으면 오히려 불행해질 수 있어요.",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [{ "text": "!?", "color": "#FF0509", "bold": true, "size": 18 }],
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...네?",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "왜 불행해지죠?",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "행복한 감정을 느끼게 해주잖아요.",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "오븐 온도가 너무 높으면 빵이 타버리잖아요.",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "따뜻함과 차가움이 균형을 이뤄야 빵이 잘 구워지는 것처럼,",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "감정도 마찬가지예요.",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "그럼..." },
+        { "text": " 슬픈 감정이 담긴 빵", "color": "#FF7100" },
+        { "text": "도 먹어야 한다는 거예요?" }
+      ],
+      "next": "line_015"
+    },
+    "line_015": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "네, 행복의 빵만 먹으면 안 돼요.",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "........",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...싫어요.",
+      "next": "line_018"
+    },
+    "line_018": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "슬픔은 저한테 필요한 감정이 아니에요.", "color": "#FF7100" }
+      ],
+      "next": "null"
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "dialogue_id": "chapter3_after_fitsr_game",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이렇게 직접 만드니까...",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "신기해요?",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아니면 힘들었어요?",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아니면....",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저 말 좀...",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "앗...! 죄송해요...",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "빵 만드는 건 힘들고 어려웠는데 그래도,",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "좀 뿌듯해요.",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그러면 됐어요.",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "고생했어요.",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럼 빵을 먹어볼까요?",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": ".....먹어볼게요.",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "expression": {
+        "asset": "assets/images/chaeon_20_eat.gif",
+        "durationMs": 2000,
+        "autoAdvance": true
+      },
+      "next": "null"
+    }
+  }
+}

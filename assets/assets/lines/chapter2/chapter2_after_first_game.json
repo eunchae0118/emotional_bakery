@@ -1,0 +1,96 @@
+{
+  "dialogue_id": "chapter2_after_first_game",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "완성이에요!!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "생각보다 간단하죠?",
+      "next": "choice_001"
+    },
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "네, 간단하네요.",
+          "next": "line_003a1"
+        },
+        {
+          "text": "아뇨, 어려웠어요.",
+          "next": "line_003b1"
+        }
+      ]
+    },
+    "line_003a1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네, 간단하네요.",
+      "next": "line_003a2"
+    },
+    "line_003b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아뇨, 어려웠어요.",
+      "next": "line_003b2"
+    },
+    "line_003a2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그렇죠? 저도 채온 씨가 생각보다 잘 따라와 줘서 놀랐어요.",
+      "next": "line_003a3"
+    },
+    "line_003b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "저도 처음엔 그랬어요. 간단하지만 정성이 필요하죠.",
+      "next": "line_003b3"
+    },
+    "line_003a3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어쩌면 빵 만드는 데 재능이 있을지도 모르겠네요.",
+      "effect": { "temperature": 1 },
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_003a4"
+    },
+    "line_003b3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래도... 밀가루가 손에 닿는 느낌은 꽤 포근하지 않았나요?",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_003b4"
+    },
+    "line_003a4": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...감사합니다.",
+      "next": "line_004"
+    },
+    "line_003b4": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...그러게요.",
+      "effect": { "temperature": 1 },
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럼 먹어볼까요?",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "식기 전에 먹어봐요.",
+      "next": "null"
+    }
+  }
+}

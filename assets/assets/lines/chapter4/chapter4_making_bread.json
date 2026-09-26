@@ -1,0 +1,90 @@
+{
+  "dialogue_id": "chapter4_making_bread",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "이번에도 빵에 추억을 담아야 해요.",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "생각나는 물건이 있나요?",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "슬픈 추억이 담긴 물건이어야 하는 거죠...?",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "맞아요.",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "엄마가 써준... 편지요.",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "엄마의 물건을 정리하던 중에",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "발견한 건데... 저한테 편지를 쓰셨더라고요.",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아직... 읽어보진 않았어요.",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "왜 읽지 않았어요?",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "......",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그냥요.",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...지금 읽어볼래요.",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "지금이 아니면 못 읽을 거 같아서요.",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그럼...",
+      "next": "null"
+    }
+  }
+}

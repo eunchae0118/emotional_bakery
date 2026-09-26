@@ -1,0 +1,141 @@
+{
+  "dialogue_id": "chapter4_after_past",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 슬픔을 느끼고 싶지 않아요.",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "......",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그러니까... 그런 아픈 감정은 다시 느끼기 싫어요.",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "지금 채온 씨가 느끼는 뿌듯함도, 설렘도,",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "슬픔이 없으면 얼마나 소중한 건지 알 수 없게 돼요.",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...이해가 잘 안돼요.",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "릴리가 절 도와주는 거라고 생각했는데...",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "근데, 저는... 전...",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "슬픔을 느끼려고 여기 온 게 아니에요.",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그 마음, 이해해요.",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "하지만 이대로는 " },
+        { "text": " 온전한 감정을", "color": "#FF7100" },
+        { "text": "을 찾지 못할 거예요." }
+      ],
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온 씨, 슬픔의 빵을 먹으면...",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": " 놓치고 있던 무언가", "color": "#FF7100" },
+        { "text": "를 찾게 될 수도 있어요." }
+      ],
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "......",
+      "next": "line_015"
+    },
+    "line_015": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "일단 빵을 만들어보기라도 하는 건 어때요?",
+      "next": "choice_001"
+    },
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "...알겠어요.",
+          "next": "line_015a"
+        },
+        {
+          "text": "아뇨... 싫어요.",
+          "next": "line_015b"
+        }
+      ]
+    },
+    "line_015a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "알겠어요.",
+      "next": "line_015a1"
+    },
+    "line_015a1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "만들기만...",
+      "effect": { "temperature": 1 },      
+      "next": "null"
+    },
+    "line_015b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아뇨... 싫어요.",
+      "next": "line_015b1"
+    },
+    "line_015b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "전 그냥 행복의 빵만 먹을래요.",
+      "next": "null"
+    }
+  }
+}

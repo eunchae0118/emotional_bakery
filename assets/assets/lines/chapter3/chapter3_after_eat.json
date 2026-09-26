@@ -1,0 +1,180 @@
+{
+  "dialogue_id": "chapter3_after_eat",
+  "start": "line_001",
+  "nodes": {
+      "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "expression": {
+        "asset": "assets/images/chaeon_emotion_20to50.gif",
+        "durationMs": 3000,
+        "autoAdvance": true
+      },
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이상해요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "왜요??",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "분명 행복한 기억들로 가득 차 있는데..",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "눈물이 날 것 같아요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "근데 슬프지는 않아요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래요?",
+      "expression": "assets/images/lillian_thinking3.png",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이게 뭘까요?",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아마도 그건 그리움일 거예요.",
+      "expression": "assets/images/lillian_happy.png",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그리움이요...?",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "행복한 기억인데 왜 그리운 거죠?",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그리움은 슬픈 감정이 아니에요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "소중했다는 뜻이니까요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_018"
+    },
+    "line_018": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그리움... 그것도 좋은 감정인 거죠?",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_019"
+    },
+    "line_019": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "뭐, 감정에 좋고 나쁘고를 판단할 순 없지만",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_020"
+    },
+    "line_020": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그리움도 꼭 필요한 감정이죠!",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_021"
+    },
+    "line_021": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는... 행복한 감정을 느낄 수 있는 빵이 더 필요해요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_022"
+    },
+    "line_022": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그러면 웃을 수 있겠죠?",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_023"
+    },
+    "line_023": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "엄마에게 꼭 웃어주고 싶어요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_024"
+    },
+    "line_024": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그리움은 좋은 감정이지만,",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_025"
+    },
+    "line_025": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "좀 힘든 거 같아요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_027"
+    },
+    "line_027": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래도 그건...",
+      "expression": "assets/images/lillian_thinking2.png",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_028"
+    },
+    "line_028": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "오늘은 이만 가볼게요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "line_029"
+    },
+    "line_029": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "오늘 감사했어요.",
+      "chaeonExpression": "assets/images/chaeon_50.gif",
+      "next": "null"
+    }
+  }
+}

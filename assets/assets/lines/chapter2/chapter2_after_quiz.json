@@ -1,0 +1,230 @@
+{
+  "dialogue_id": "chapter2_after_quiz",
+  "start": "choice_001",
+  "nodes": {
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "마음에 안 들어요...",
+          "next": "line_002a"
+        },
+        {
+          "text": "마음에 들어요.",
+          "next": "line_002b"
+        }
+      ]
+    },
+    "line_002a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "마음에 안 들어요...",
+      "effect": { "temperature": -1 },
+      "next": "line_002a1"
+    },
+    "line_002b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "마음에 들어요.",
+      "next": "line_002b1"
+    },
+    "line_002a1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "왜요?",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_002a2"
+    },
+    "line_002b1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럴 줄 알았어요!",
+      "effect": { "temperature": 1 },
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_004"
+    },
+    "line_002a2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그냥... 저랑 마법은 안 어울리는거 같아요...",
+      "next": "line_002b2"
+    },
+    "line_002b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "제가 볼 땐 잘 어울리는데요?",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_002a3"
+    },
+    "line_002a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...네...",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "이제 마법의 재료도 정했으니 같이 빵을 만들어봐요!",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "지금 생각나는 " },
+        { "text": " 추억이 담긴 물건", "color": "#FF7100" },
+        { "text": "이 있나요?" }
+      ],
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "음...",
+      "next": "line_005.1"
+    },
+    "line_005.1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어떤 추억을...음....",
+      "next": "line_005.2"
+    },
+    "line_005.2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "엄마에게 미소를 주고 싶다고 했으니까",
+      "next": "line_005.3"
+    },
+    "line_005.3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "엄마와 관련된 추억은 어때요?",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "추억인지는 모르겠지만... 기억에 남는 물건은 있어요.",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어떤 물건인가요?",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "..." },
+        { "text": "알람시계", "color": "#FF7100" },
+        { "text": "요." }
+      ],
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "엄마가 사준 알람시계에요.",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "알람시계라... 어떤 기억이 담겨 있어요?",
+      "expression": "assets/images/lillian_thinking3.png",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 어릴 때부터 잠이 많았어요.",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그래서 초등학교에 입학할 때, 엄마가 알람시계를 사줬어요.",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "학교 가는 날 아침마다 알람이 울리면...",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "이상하게" },
+        { "text": " 기대되고 설레었", "color": "#FF7100" },
+        { "text": "던 거 같아요." }
+      ],
+      "next": "line_015"
+    },
+    "line_015": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "별 거 아닌 물건이라 할 지도 모르겠지만...",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그냥 갑자기 생각이 났어요.",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "무척 따뜻한 기억이네요~",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_018"
+    },
+    "line_018": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그 시계가 사라져도 괜찮겠어요?",
+      "next": "line_019a1"
+    },
+    "line_019a1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "물건을 감정과 바꾼다는게",
+      "next": "line_019a2"
+    },
+    "line_019a2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "사실 감이 잘 안와요.",
+      "next": "line_019a3"
+    },
+    "line_019a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "지금으로서는 뭐... 괜찮은 거 같아요.",
+      "next": "line_019a4"
+    },
+    "line_019a4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "좋아요! 그럼 이제 빵을 만들어봐요!",
+      "next": "line_020"
+    },
+    "line_020": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "제가 미리 빚어 둔 반죽이 있어요.",
+      "next": "line_021"
+    },
+    "line_021": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "여기에 마법의 재료를 넣고....",
+      "next": "null"
+    }
+  }
+}

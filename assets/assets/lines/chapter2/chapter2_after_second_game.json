@@ -1,0 +1,107 @@
+{
+  "dialogue_id": "chapter2_after_second_game",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [{ "text": "!!", "color": "#FF0509", "bold": true, "size": 18 }],
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어때요? 감정이 느껴지나요?",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...잊고 있던 기억이 생생하게 느껴져요.",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그 설레고 따뜻한 감정이... 조금 느껴지는 거 같아요.",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "좋아요!!!!! 감정이 돌아오기 있다는 신호에요!",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "색", "color": "#FF7100" },
+        { "text": "도 조금 돌아온 것 같은데요?" }
+      ],
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네... 신기해요...",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그렇죠? 이렇게 조금씩, 빵을 만들다 보면...",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "분명 감정을 되찾을 수 있을 거예요.",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "빨리 감정을 되찾고 싶어요.",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "다음 빵을 바로 만들어도 될까요?",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "엇! 오늘은 이 정도면 충분한 거 같아요.",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "감정은 과하면 감당하기 힘들거든요.",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아... 그럼 오늘은 이만 돌아가 볼게요.",
+      "next": "line_015"
+    },
+    "line_015": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래요! 감정을 되찾을 때까지는",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "언제든 찾아와도 돼요!",
+      "next": "null"
+    }
+  }
+}

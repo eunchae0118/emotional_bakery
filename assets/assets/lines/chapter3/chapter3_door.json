@@ -1,0 +1,18 @@
+{
+  "dialogue_id": "chapter3_door",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어? 릴리가 안 보이네...",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "제빵실에 있나?",
+      "next": "null"
+    }
+  }
+}

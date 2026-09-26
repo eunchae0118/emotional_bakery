@@ -1,0 +1,492 @@
+{
+  "dialogue_id": "chapter1_first_meet",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [{ "text": "!", "color": "#FF0509", "bold": true, "size": 18 }],
+      "animation": "lillian_hop",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어서 와요! 밖은 춥죠? 기다리고 있었어요!",
+      "next": "choice_001"
+    },
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "안녕하세요.",
+          "next": "line_003a"
+        },
+        {
+          "text": "저를요...?",
+          "next": "line_003b"
+        }
+      ]
+    },
+    "line_003a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "안녕하세요...",
+      "effect": { "temperature": 1 },
+      "next": "line_004"
+    },
+    "line_003b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저를 기다렸다고요? 왜죠?",
+      "effect": { "temperature": -1 },
+      "next": "line_003b1"
+    },
+    "line_003b1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "왠지 손님이 올 것 같았거든요!!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_003b2"
+    },
+    "line_003b2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아...",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "여기가" },
+        { "text": " 감정을 굽는 빵집", "color": "#FF7100" },
+        { "text": "이... 맞나요?" }
+      ],
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "네! 맞아요 맞아요!",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "찾아오는 데 힘들진 않았나요?",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "감정을 찾아야겠다는 생각에 무작정 걸었는데...",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이 빵집을 보자마자 알 수 있었어요.",
+      "next": "line_008.1"
+    },
+    "line_008.1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "전부 색을 잃은 세상에서 이곳만 선명한 색이 보였거든요.",
+      "next": "line_008.2"
+    },
+    "line_008.2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "잘 찾아오셨어요!",
+      "next": "line_008.3"
+    },
+    "line_008.3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "이곳은 아무나 찾아올 수 없어요.",
+      "next": "line_008.4"
+    },
+    "line_008.4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "오직" },
+        { "text": " 감정을 잃은 사람만", "color": "#FF7100" },
+        { "text": "이 찾을 수 있는 곳이거든요." }
+      ],
+      "next": "line_008.5"
+    },
+    "line_008.5": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는... 여기서 감정을 찾을 수 있다는",
+      "next": "line_008.6"
+    },
+    "line_008.6": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "소문을 듣고 왔어요.",
+      "next": "line_008.7"
+    },
+    "line_008.7": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "네! 저는" },
+        { "text": " 감정을 담은 빵", "color": "#FF7100" },
+        { "text": "을 만든답니다!" }
+      ],
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_008.9"
+    },
+    "line_008.9": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "감정을 담는다는게 어떤건지...",
+      "next": "line_008.10"
+    },
+    "line_008.10": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "제가 만든 빵을 먹으면, 그에 맞는 감정이 느껴져요!",
+      "next": "choice_002"
+    },
+    "choice_002": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "소문이 사실이었구나...",
+          "next": "line_010a"
+        },
+        {
+          "text": "거짓말이죠...?",
+          "next": "line_010b"
+        }
+      ]
+    },
+    "line_010a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "소문이 사실이었구나...",
+      "effect": { "temperature": 1 },
+      "next": "line_010a1"
+    },
+    "line_010a1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "다들 안 믿더라고요, 슬프게도!",
+      "expression": "assets/images/lillian_grieve.png",
+      "next": "line_011"
+    },
+    "line_010b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "거짓말이죠...?",
+      "effect": { "temperature": -1 },
+      "next": "line_010b1"
+    },
+    "line_010b1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "진짜거든요!",
+      "expression": "assets/images/lillian_grudge.png",
+      "next": "line_010b2"
+    },
+    "line_010b2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어... 일단 믿을게요...",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "손님은 어떤 감정을 원하세요?",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "미소... 기쁜 미소요...",
+      "next": "line_015"
+    },
+    "line_015": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [{ "text": "!", "color": "#FF0509", "bold": true, "size": 18 }],
+      "animation": "chaeon_hop",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아, 그런데 제가... 돈이...",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "돈이 없다면 당장 나가세요...!!",
+      "expression": "assets/images/lillian_grudge.png",
+      "next": "choice_003"
+    },
+    "choice_003": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "아...",
+          "next": "line_018a"
+        },
+        {
+          "text": "네...",
+          "next": "line_018b"
+        }
+      ]
+    },
+    "line_018a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아... 나가면 되잖아요. 왜 화를 내세요.",
+      "effect": { "temperature": -1 },
+      "next": "line_018a1"
+    },
+    "line_018a1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자,잠깐! 장난이에요. 장난!",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_019"
+    },
+    "line_018b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네... 그럼 안녕히...",
+      "next": "line_018b1"
+    },
+    "line_018b1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "에이 농담이에요~",
+      "effect": { "temperature": 1 },
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_019"
+    },
+    "line_019": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "돈은 필요 없어요!",
+      "next": "line_020"
+    },
+    "line_020": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "대신 손님의 가장 소중한 기억이 담긴 물건을 떠올려주세요.",
+      "next": "line_021"
+    },
+    "line_021": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그 물건 속 기억을 빵에 담겠다고 결심하면...",
+      "next": "line_022"
+    },
+    "line_022": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "물건은 사라지지만", "color": "#FF7100" },
+        { "text": ", 깃든 추억은 빵 속으로 스며들고" }
+      ],
+      "next": "line_023"
+    },
+    "line_023": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "잃어버렸던 감정", "color": "#FF7100" },
+        { "text": "이 떠오른답니다!" }
+      ],
+      "next": "line_023.5"
+    },
+    "line_023.5": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "저는 그 물건을 대가로 가져가는거죠!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_024"
+    },
+    "line_024": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "물건과 추억...",
+      "next": "line_025"
+    },
+    "line_025": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [{ "text": "!", "color": "#FF0509", "bold": true, "size": 18 }],
+      "next": "line_026"
+    },
+    "line_026": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아까 올려둔 빵이 막 구워진 것 같아요!",
+      "next": "line_027"
+    },
+    "line_027": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "따끈할 때 먹어볼래요?",
+      "next": "line_027.1"
+    },
+    "line_027.1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어... 그럼 제가 어떤 물건을 드리면 될까요?",
+      "next": "line_027.2"
+    },
+    "line_027.2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "이건 다른 사람의 추억으로 만든 빵이라서",
+      "next": "line_027.3"
+    },
+    "line_027.3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "물건을 주지 않아도 괜찮아요~",
+      "next": "choice_004"
+    },
+    "choice_004": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "혹시 마녀이신가요...?",
+          "next": "line_029a"
+        },
+        {
+          "text": "정말 먹어도 돼요...?",
+          "next": "line_029b"
+        }
+      ]
+    },
+    "line_029a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "혹시 마녀이신가요...?",
+      "next": "line_029a1"
+    },
+    "line_029a1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "네...?",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_029a2"
+    },
+    "line_029a2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "먹으면 이상한 동물로 변하고 그런...",
+      "effect": { "temperature": -1 },
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_029a3"
+    },
+    "line_029a3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "에이 저를 뭘로 보시고!",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_029a4"
+    },
+    "line_029a4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "속는 셈 치고 한번 먹어봐요~",
+      "next": "line_029a5"
+    },
+    "line_029a5": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "....",
+      "next": "line_029a6"
+    },
+    "line_029a6": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아니면 제가 먹어볼게요!",
+      "next": "line_029a6_eat"
+    },
+    "line_029a6_eat": {
+      "type": "line",
+      "speaker": "lillian",
+      "expression": {
+        "asset": "assets/images/lillian_eating_bread.gif",
+        "durationMs": 1200,
+        "autoAdvance": true
+      },
+      "next": "line_029a6_cry"
+    },
+    "line_029a6_cry": {
+      "type": "line",
+      "speaker": "lillian",
+      "expression": {
+        "asset": "assets/images/lillian_crying.gif",
+        "durationMs": 3000,
+        "autoAdvance": true
+      },
+      "next": "line_029a7"
+    },
+    "line_029a7": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [{ "text": "?!", "color": "#FF0509", "bold": true, "size": 18 }],
+      "expression": "assets/images/lillian_cry.gif",
+      "next": "line_029a8"
+    },
+    "line_029a8": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저... 저기 괜찮으세요...?",
+      "expression": "assets/images/lillian_cry.gif",
+      "next": "line_029a9"
+    },
+    "line_029a9": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어때요? 이제 믿을 수 있겠죠?",
+      "next": "line_029a10"
+    },
+    "line_029a10": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그,그래요....",
+      "next": "line_030"
+    },
+    "line_029b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "정말 먹어도 돼요...?",
+      "effect": { "temperature": 1 },
+      "next": "line_029b1"
+    },
+    "line_029b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그래도 된다면 먹어보고 싶어요...",
+      "next": "line_029b2"
+    },
+    "line_029b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럼요~! 안쪽에 테이블이 있어요~!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_030"
+    },
+    "line_030": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "테이블에서 잠시 기다려주세요~",
+      "next": "null"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "dialogue_id": "chapter5_after_eat",
+  "start": "line_001",
+  "nodes": {
+      "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "expression": {
+        "asset": "assets/images/chaeon_emotion_80to100.gif",
+        "durationMs": 3000,
+        "autoAdvance": true
+      },
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이건... 안아주는 것 같아요.",
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "슬프기도 하고 따뜻하기도 한데,",
+        "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이상하게 괜찮아요.",
+       "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "알 것 같아요.",
+       "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": [
+        { "text": "앞으로 나아가려면 " },
+        { "text": "슬픔을 받아드려야 한다는 거요.", "color": "#FF7100" }
+      ],
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "null"
+    }
+  }
+}

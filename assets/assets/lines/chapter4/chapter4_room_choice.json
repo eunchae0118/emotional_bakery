@@ -1,0 +1,18 @@
+{
+  "dialogue_id": "chapter4_room_choice",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이 빵...",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "먹으면.... 분명 슬프겠지?",
+      "next": "null"
+    }
+  }
+}

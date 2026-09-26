@@ -1,0 +1,62 @@
+{
+  "dialogue_id": "chapter5_start",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저... 슬픔의 빵을 먹었어요.",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "마음껏 울었는데...",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "처음으로 편하게 숨을 쉰 것 같았어요.",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "잘했어요.",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온 씨라면 돌아올 줄 알았어요.",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "......그런가요.",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럼 이제 마지막 빵을 만들어볼까요?",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아, 네. 좋아요.",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럼 전 먼저 준비하고 있을게요. 앞치마를 입고 제빵실로 내려와요!",
+      "next": "null"
+    }
+  }
+}

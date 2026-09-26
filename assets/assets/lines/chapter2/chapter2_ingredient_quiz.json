@@ -1,0 +1,248 @@
+{
+  "dialogue_id": "chapter2_ingredient_quiz",
+  "start": "line_q1_intro",
+  "nodes": {
+    "line_q1_intro": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "...크흠! 그~러면",
+      "next": "line_q.1"
+    },
+    "line_q.1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "평소 좋아하는 건 뭐에요~?",
+      "next": "choice_q1"
+    },
+    "choice_q1": {
+      "type": "choice",
+      "options": [
+        { "text": "먹기", "next": "line_q1a", "setVars": { "q1": "eat" } },
+        { "text": "잠자기", "next": "line_q1b", "setVars": { "q1": "sleep" } },
+        { "text": "놀기", "next": "line_q1c", "setVars": { "q1": "play" } }
+      ]
+    },
+    "line_q1a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 먹는 걸 좋아해요.",
+      "next": "line_q1a1"
+    },
+    "line_q1a1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "저도요! 맛있는 걸 먹으면 괜히 기분이 좋아지잖아요.",
+      "next": "line_q1a2"
+    },
+    "line_q1a2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "제빵사도 그래서 한 거예요! 빵을 잔뜩 먹고 싶어서요~",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_q2_intro"
+    },
+    "line_q1b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 자는 걸 좋아해요...",
+      "next": "line_q1b1"
+    },
+    "line_q1b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아무런 생각 없이 푹 잘 수 있을 때가 제일 좋아요.",
+      "next": "line_q1b2"
+    },
+    "line_q1b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "푹 자면 너무 좋죠!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_q1b3"
+    },
+    "line_q1b3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "저도 쉬는 날엔 하루 종일 자기도 하거든요!",
+      "next": "line_q2_intro"
+    },
+    "line_q1c": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 노는 걸 좋아해요. 혼자 노는 거요.",
+      "next": "line_q1c1"
+    },
+    "line_q1c1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어떻게 놀아요?",
+      "next": "line_q1c2"
+    },
+    "line_q1c2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "뭐 책도 보고... 참새랑 대화도 하고...",
+      "next": "line_q1c3"
+    },
+    "line_q1c3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아~ 참새랑 대화! \"짹짹\"이라고 하시나요?",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_q1c3c"
+    },
+    "line_q1c3c": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "..................?",
+      "next": "line_q2_intro"
+    },
+    "line_q2_intro": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "좋아요! 그럼 쉴 때 주로 하는 취미는 뭐예요?",
+      "next": "choice_q2"
+    },
+    "choice_q2": {
+      "type": "choice",
+      "options": [
+        { "text": "게임하기", "next": "line_q2a", "setVars": { "q2": "game" } },
+        {
+          "text": "영화보기",
+          "next": "line_q2b",
+          "setVars": { "q2": "movie" }
+        },
+        {
+          "text": "운동하기",
+          "next": "line_q2c",
+          "setVars": { "q2": "exercise" }
+        }
+      ]
+    },
+    "line_q2a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "쉴 때는... 주로 게임을 해요.",
+      "next": "line_q2a1"
+    },
+    "line_q2a1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "시간이 빨리 지나가는 느낌이 좋아서요.",
+      "next": "line_q2a2"
+    },
+    "line_q2a2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "오 어떤 게임이요? 전 단풍잎 게임 좋아하는데!",
+      "next": "line_q2a3"
+    },
+    "line_q2a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "지뢰 찾기 같은 거...",
+      "next": "line_q2a4"
+    },
+    "line_q2a4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "...아?...",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_q3_intro"
+    },
+    "line_q2b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "쉴 때는... 보통 영화를 봐요.",
+      "next": "line_q2b1"
+    },
+    "line_q2b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "잃은 감정을 다시 찾을 수 있을지도 몰라서요.",
+      "next": "line_q2b2"
+    },
+    "line_q2b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "오! 좋은 접근! 그렇다면 저는 빵으로 도와드릴게요~!",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_q3_intro"
+    },
+    "line_q2c": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "쉴 때는... 운동을 하는 거 같아요.",
+      "next": "line_q2c1"
+    },
+    "line_q2c1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "몸이 힘들면 다른 생각을 안 할 수 있잖아요.",
+      "next": "line_q2c2"
+    },
+    "line_q2c2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "음~ 좋지만 너무 무리는 안 했으면 좋겠어요!",
+      "expression": "assets/images/lillian_thinking3.png",
+      "next": "line_q3_intro"
+    },
+    "line_q3_intro": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "마지막으로 좋아하는 색은?",
+      "next": "choice_q3"
+    },
+    "choice_q3": {
+      "type": "choice",
+      "options": [
+        { "text": "빨간색", "next": "line_q3a", "setVars": { "q3": "red" } },
+        { "text": "노란색", "next": "line_q3b", "setVars": { "q3": "yellow" } },
+        { "text": "파란색", "next": "line_q3c", "setVars": { "q3": "blue" } }
+      ]
+    },
+    "line_q3a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 빨간색을 좋아해요.",
+      "next": "line_q3a1"
+    },
+    "line_q3a1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자, 그럼 정리해보자면...",
+      "next": "line_ingredient_reveal"
+    },
+    "line_q3b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 노란색을 좋아해요.",
+      "next": "line_q3b1"
+    },
+    "line_q3b1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자, 그럼 정리해보자면...",
+      "next": "line_ingredient_reveal"
+    },
+    "line_q3c": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저는 파란색을 좋아해요.",
+      "next": "line_q3c1"
+    },
+    "line_q3c1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "자, 그럼 정리해보자면...",
+      "next": "line_ingredient_reveal"
+    },
+    "line_ingredient_reveal": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온씨에게 맞는 마법 재료는 {{ingredient}}이네요!",
+      "next": null
+    }
+  }
+}

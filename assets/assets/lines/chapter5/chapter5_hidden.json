@@ -1,0 +1,50 @@
+{
+  "dialogue_id": "chapter5_hidden",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "혹시 빵을 하나 더 만들어도 될까요?",
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럼요~",
+      "expression": "assets/images/lillian_happy.png",
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "근데 어떤 빵을 더 만들고 싶나요?",
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "제가 만든 빵을 엄마한테 선물하고싶어요.",
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "좋아요~ 따뜻한 마음이네요!",
+      "expression": "assets/images/lillian_happy.png",
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그렇다면 엣헴! 제가 도와줄게요.",
+      "chaeonExpression": "assets/images/chaeon_100.gif",
+      "next": "null"
+    }
+  }
+}

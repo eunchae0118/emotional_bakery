@@ -1,0 +1,398 @@
+{
+  "dialogue_id": "chapter2_ready",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "시작하기에 앞서서~",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온 씨는 원래 빵을 좋아해요?",
+      "next": "choice_001"
+    },
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "좋아하긴 하는데...",
+          "next": "line_003a",
+          "setVars": { "likesBread": "yes" }
+        },
+        {
+          "text": "좋아하진 않아요.",
+          "next": "line_003b",
+          "setVars": { "likesBread": "no" }
+        }
+      ]
+    },
+    "line_003a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "음... 좋아하긴 하는데...",
+      "effect": { "temperature": 1 },
+      "next": "line_003a1"
+    },
+    "line_003a1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "어렸을 때, 빵을  만들고 싶다고 생각한 적이 있어요.",
+      "next": "line_003a2"
+    },
+    "line_003a2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "지금처럼요.",
+      "next": "line_003a3"
+    },
+    "line_003a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "빵집 앞을 지나칠 때마다 멈춰서 유리창 너머를 들여다봤어요.",
+      "next": "line_003a4"
+    },
+    "line_003a4": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "노란빛이 감도는 빵들이 줄지어 있는 걸 보면...",
+      "next": "line_003a5"
+    },
+    "line_003a5": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이유도 없이 가슴이 조금 두근거렸거든요.",
+      "next": "line_003a6"
+    },
+    "line_003a6": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "나도 언젠가 저런 걸 만들어보고 싶다고... 그런 생각을 했어요.",
+      "next": "line_003a7"
+    },
+    "line_003a7": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그렇군요! 그럼 지금도 빵을 만들고 싶어요?",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_003a8"
+    },
+    "line_003a8": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "빵을 만들 기회가 생길 거라고는 상상도 못 했고...",
+      "next": "line_003a9"
+    },
+    "line_003a9": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그냥 어릴 때 잠깐 스쳐간 마음이라고 생각했으니까요.",
+      "next": "line_003a10"
+    },
+    "line_003a10": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "근데... 오늘 이렇게 만들 생각을 하니까,",
+      "next": "line_003a11"
+    },
+    "line_003a11": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그 마음이 완전히 사라진 건 아니었던 것 같기도 해요.",
+      "next": "line_003a12"
+    },
+    "line_003a12": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "몰랐던 거랑 없어진 거랑은 다르니까요.",
+      "next": "line_004"
+    },
+    "line_003b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "굳이 찾아서 먹진 않는 거 같아요.",
+      "next": "line_003b1"
+    },
+    "line_003b1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아.... 좋아하진... 않는구나......",
+      "effect": { "temperature": -1 },
+      "expression": "assets/images/lillian_grieve.png",
+      "next": "line_003b2"
+    },
+    "line_003b2": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "근데... 여기 빵은 특별하니까",
+      "next": "line_003b3"
+    },
+    "line_003b3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "조금 궁금해지기도 하고...",
+      "next": "line_003b4"
+    },
+    "line_003b4": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아까 먹었던 빵이 생각보다 맛있어서....",
+      "next": "line_003b5"
+    },
+    "line_003b5": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "하하! 제가 만든 빵이 맛있긴 하죠!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_003b6"
+    },
+    "line_003b6": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래서 어떤가요? 빵을 만들어 볼 마음이 생겼나요??",
+      "next": "line_003b7"
+    },
+    "line_003b7": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아... 네! 한번 해 볼게요.",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그럼 이제 채온 씨를 알아볼까요!",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어떤 사람인지를 알아야,",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": [
+        { "text": "마법의 재료", "color": "#FF7100" },
+        { "text": "를 고를 수 있거든요." }
+      ],
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "마법이요...?",
+      "next": "line_007.1"
+    },
+    "line_007.1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "역시 마녀였군요...!",
+      "next": "line_007.2"
+    },
+    "line_007.2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아니라니까 참~ 마음대로 생각해요~",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_007.3"
+    },
+    "line_007.3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "근데 마법의 재료는 왜 필요해요?",
+      "next": "line_007.4"
+    },
+    "line_007.4": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아무거나 쓰면 안 되는 거예요?",
+      "next": "line_007.5"
+    },
+    "line_007.5": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "사람마다 자신에게 잘 맞는 재료가 있어요.",
+      "expression": "assets/images/lillian_thinking3.png",
+      "next": "line_007.6"
+    },
+    "line_007.6": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그 재료를 빵에 넣어야 감정을 되찾을 수 있답니다~",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래도 말보다는 직접 느껴보는 게 좋을 거예요.",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네, 좋아요.",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "근데 혹시 음악 좀 틀고 해도 돼요? 신나게!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아... 저 음악 싫어해요. 엄마 닮아서...",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아... 아...쉽...네...요...",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "크흠! 그러면",
+      "next": "line_015"
+    },
+    "line_015": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "우선, 나이가 어떻게 돼요?",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "맞춰보세요.",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "20살??",
+      "expression": "assets/images/lillian_thinking3.png",
+      "next": "line_018"
+    },
+    "line_018": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네?... 12살이거든요...",
+      "next": "line_019"
+    },
+    "line_019": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "농담이에요 농담~ 그러면 제 나이는요?",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "choice_002"
+    },
+    "choice_002": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "100살?",
+          "next": "line_021a"
+        },
+        {
+          "text": "혹시 저랑 동갑...?",
+          "next": "line_021b"
+        }
+      ]
+    },
+    "line_021a": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "100살?",
+      "next": "line_021a1"
+    },
+    "line_021a1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "네??? 100살이요???",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_021a2"
+    },
+    "line_021a2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "저 그 정도는 아니거든요!!",
+      "effect": { "temperature": -1 },
+      "expression": "assets/images/lillian_grudge.png",
+      "next": "line_021a3"
+    },
+    "line_021a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "마녀라서 그 정도일 줄....",
+      "next": "null"
+    },
+    "line_021b": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "혹시 저랑 동갑...?",
+      "next": "line_021b1"
+    },
+    "line_021b1": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어머... 어머머...!",
+      "effect": { "temperature": 1 },
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_021b2"
+    },
+    "line_021b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "아이 참... 뭐 비슷하긴 한데~",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_021b3"
+    },
+    "line_021b3": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "제가 좀 관리가 잘 된 편이라~ 하핫!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_021b4"
+    },
+    "line_021b4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "채온 씨 농담이 좀 과하시다아~!",
+      "next": "line_021b5"
+    },
+    "line_021b5": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "농담이에요.",
+      "next": "line_021b6"
+    },
+    "line_021b6": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "...?",
+      "next": "line_021b7"
+    },
+    "line_021b7": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "농.담.",
+      "next": "line_021b8"
+    },
+    "line_021b8": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "...그러시구나...",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "null"
+    }
+  }
+}

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "bed",
+    "name": "침대",
+    "clickX": 24,
+    "clickY": 228,
+    "width": 238,
+    "height": 162,
+    "dialogue": ["내가 잠 자는 침대이다.\n푹신푹신하다."]
+  },
+  {
+    "id": "alram",
+    "name": "알람시계였던것",
+    "clickX": 262,
+    "clickY": 219,
+    "width": 74,
+    "height": 108,
+    "dialogue": ["사라진 알람시계가 있던 자리이다.\n빈 자리가 허전하다."]
+  },
+  {
+    "id": "plant",
+    "name": "식물",
+    "clickX": 19,
+    "clickY": 140,
+    "width": 93,
+    "height": 69,
+    "dialogue": ["이 식물은 조화이다.\n나는 식물을 키우는 데엔 소질이 없다...."]
+  },
+  {
+    "id": "window",
+    "name": "창문",
+    "clickX": 141,
+    "clickY": 100,
+    "width": 132,
+    "height": 102,
+    "dialogue": ["밖은 어둡다.\n별과 달이 잘 보이는 밤이다."]
+  },
+  {
+    "id": "books",
+    "name": "책장",
+    "clickX": 339,
+    "clickY": 154,
+    "width": 157,
+    "height": 179,
+    "dialogue": [
+      "두번째 줄, 다섯번째 책에는 비상금을 숨겨놨다.\n아무한테도 말하지 말 것!"
+    ]
+  },
+  {
+    "id": "computer",
+    "name": "컴퓨터",
+    "clickX": 499,
+    "clickY": 181,
+    "width": 197,
+    "height": 152,
+    "dialogue": [
+      "내가 지뢰찾기를 하는 컴퓨터이다.\n가끔 고장나지만, 한 대 때리면 괜찮아진다."
+    ]
+  },
+  {
+    "id": "clack",
+    "name": "시계",
+    "clickX": 558,
+    "clickY": 84,
+    "width": 57,
+    "height": 56,
+    "dialogue": [
+      "지금은 아홉시이다.\n이렇게 늦은 시간까지 빵집이 열려있으려나...."
+    ]
+  },
+  {
+    "id": "aircon",
+    "name": "에어컨",
+    "clickX": 336,
+    "clickY": 78,
+    "width": 163,
+    "height": 49,
+    "dialogue": [
+      "내 여름을 책임져 주는 에어컨이다.\n성능이 좋아서 금방 시원해진다."
+    ]
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "dialogue_id": "chapter4_temp_high",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그래도.... 먹어볼까?",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "chaeon",
+      "expression": { "asset": "assets/images/chaeon_50_eat.gif", "durationMs": 1500, "autoAdvance": true },
+      "next": "null"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "dialogue_id": "chapter4_after_making",
+  "start": "line_001",
+  "nodes": {
+    "line_001": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "빵이 완성됐네요.",
+      "next": "line_002"
+    },
+    "line_002": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "이 빵을 먹을지 말지는 채온 씨 선택에 맡길게요.",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네... 전 이만 가볼게요.",
+      "next": "null"
+    }
+  }
+}

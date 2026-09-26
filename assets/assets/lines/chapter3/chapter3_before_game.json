@@ -1,0 +1,396 @@
+{
+  "dialogue_id": "chapter3_before_game",
+  "start": "choice_001",
+  "nodes": {
+    "choice_001": {
+      "type": "choice",
+      "options": [
+        {
+          "text": "MP3 플레이어요.",
+          "next": "line_002a1"
+        },
+        {
+          "text": "연필이요.",
+          "next": "line_002b1"
+        },
+        {
+          "text": "모르겠어요...",
+          "next": "line_002c1"
+        }
+      ]
+    },
+    "line_002a1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "MP3 플레이어요.",
+      "next": "line_002a2"
+    },
+    "line_002b1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "연필이요.",
+      "next": "line_002b2"
+    },
+    "line_002c1": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "모르겠어요...",
+      "next": "line_002c2"
+    },
+    "line_002a2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "MP3요??",
+      "next": "line_002a3"
+    },
+    "line_002b2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "연필이요?",
+      "next": "line_002b3"
+    },
+    "line_002c2": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어떤 걸요?",
+      "next": "line_002c3"
+    },
+    "line_002a3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네. 엄마와 같이 듣던...",
+      "next": "line_002a4"
+    },
+    "line_002b3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네, 엄마가 선물해 준 연필이에요.",
+      "effect": { "temperature": 1 },
+      "next": "line_002b4"
+    },
+    "line_002c3": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "다 너무 소중한데...",
+      "next": "line_002c4"
+    },
+    "line_002a4": {
+      "type": "line",
+      "speaker": "chaeon", 
+      "text": "그런...",
+      "next": "line_002a5"
+    },
+    "line_002b4": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "오호~ 그렇군요!",
+      "next": "line_002b5"
+    },
+    "line_002c4": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "대체 어떤 걸 버려야 하는지...",
+      "effect": { "temperature": -1 },
+      "next": "line_002c5"
+    },
+    "line_002a5": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "...음악 싫어하신다면서요?",
+      "effect": { "temperature": -1 },
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_002a6"
+    },
+    "line_002b5": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...?!",
+      "next": "line_002b6"
+    },
+    "line_002c5": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "버려야 한다는 생각 때문에",
+      "next": "line_002c6"
+    },
+    "line_002a6": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아...",
+      "next": "line_002a7"
+    },
+    "line_002b6": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아 그런데 문제가 좀...",
+      "next": "line_002b7"
+    },
+    "line_002c6": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "힘든 거예요.",
+      "next": "line_002c7"
+    },
+    "line_002a7": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "저... 정말 못 정하겠어요...",
+      "next": "line_002a8"
+    },
+    "line_002b7": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "뭐죠?",
+      "next": "line_002b8"
+    },
+    "line_002c7": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "물건이 사라진다고 추억이 사라지지 않아요.",
+      "next": "line_002c8"
+    },
+    "line_002a8": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "거짓말해서 죄송해요...",
+      "next": "line_002a9"
+    },
+    "line_002b8": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "생각해 보니 연필이 다 닳아서 지금은...",
+      "next": "line_002b9"
+    },
+    "line_002c8": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "버린다고 생각하지 말고 마음속에 간직한다고 생각해요.",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_002c9"
+    },
+    "line_002a9": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "...힘든 건 알지만...",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_002a10"
+    },
+    "line_002b9": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "지금은 없는 물건인가요?",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_002b10"
+    },
+    "line_002c9": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그런 건가요...",
+      "next": "line_002c10"
+    },
+    "line_002a10": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "감정을 되찾기 위해서는 정말",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_002a11"
+    },
+    "line_002b10": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네... 어쩌죠... 그래도 소중한 추억이 담겨있던 물건인데...",
+      "next": "line_002b11"
+    },
+    "line_002c10": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그러면 한 번 생각해 보세요! 어떤 물건이 좋을지!",
+      "next": "line_002c11"
+    },
+    "line_002a11": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "결심을 해주셔야 해요...",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_002a12"
+    },
+    "line_002b11": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "흠~ 혹시 그 연필로 무언가 썼던 것은 없나요?",
+      "next": "line_002b12"
+    },
+    "line_002c11": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "음... 일기장이요.",
+      "next": "line_003"
+    },
+    "line_002a12": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "음... 그렇다면... 일기장이요.",
+      "next": "line_003"
+    },
+    "line_002b12": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "글씨에도 추억이 남거든요!",
+      "expression": "assets/images/lillian_happy.png",
+      "next": "line_002b13"
+    },
+    "line_002b13": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "... 일기장?",
+      "next": "line_003"
+    },
+    "line_003": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "어떤 일기장이에요?",
+      "next": "line_004"
+    },
+    "line_004": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "제가 행복했던 날들만 골라서 쓴 일기장이에요.",
+      "next": "line_005"
+    },
+    "line_005": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "슬프거나 힘든 날은 쓰지 않았어요.",
+      "next": "line_006"
+    },
+    "line_006": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "좋은 날만, 기억하고 싶었거든요.",
+      "next": "line_007"
+    },
+    "line_007": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "..소중한 거네요.",
+      "next": "line_008"
+    },
+    "line_008": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "네...",
+      "next": "line_009"
+    },
+    "line_009": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "솔직히 말하면... 이건 좀 망설여져요.",
+      "next": "line_010"
+    },
+    "line_010": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "다른 물건은 그냥 넣을 수 있을 거 같은데,",
+      "next": "line_011"
+    },
+    "line_011": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이건... 잘 모르겠어요.",
+      "next": "line_012"
+    },
+    "line_012": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "억지로 하지 않아도 돼요.",
+      "next": "line_013"
+    },
+    "line_013": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "준비가 됐을 때 해도 되고, 안 해도 되고요.",
+      "next": "line_014"
+    },
+    "line_014": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "아니요... 할게요.",
+      "next": "line_016"
+    },
+    "line_016": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "그냥.. 조금 무서운 것뿐이에요.",
+      "next": "line_017"
+    },
+    "line_017": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "이게 없어지면, 그날들을 잊어버릴 것 같아서요.",
+      "next": "line_018"
+    },
+    "line_018": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "물건이 없어진다고 해도,",
+      "next": "line_019"
+    },
+    "line_019": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그날들이 마음 안에서 없어지는 건 아니에요.",
+      "next": "line_020"
+    },
+    "line_020": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "빵에 담기는 건 기억이 아니라, 그때의 감정이니까요.",
+      "next": "line_021"
+    },
+    "line_021": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "...그래도 물건이 없어지는 건 맞잖아요...",
+      "next": "line_022"
+    },
+    "line_022": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "...!",
+      "expression": "assets/images/lillian_surprise.png",
+      "next": "line_023"
+    },
+    "line_023": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그건... 그렇긴 하지만...",
+      "expression": "assets/images/lillian_thinking1.png",
+      "next": "line_024"
+    },
+    "line_024": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "그래도 채온님 마음속에 살아있을 거예요...!",
+      "next": "line_025"
+    },
+    "line_025": {
+      "type": "line",
+      "speaker": "chaeon",
+      "text": "오글거려요...",
+      "next": "line_026"
+    },
+    "line_026": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "네...",
+      "expression": "assets/images/lillian_thinking2.png",
+      "next": "line_028"
+    },
+    "line_028": {
+      "type": "line",
+      "speaker": "lillian",
+      "text": "흠흠... 그럼 만들어볼까요?",
+      "next": "null"
+    }
+  }
+}

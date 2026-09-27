@@ -117,7 +117,7 @@ class _IosInstallGateScreenState extends State<IosInstallGateScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Safari 상단의 공유 버튼을 누르고\n"홈 화면에 추가"를 선택하면 앱처럼 사용할 수 있습니다',
+                'Safari 상단의 공유 버튼을 누르고 "홈 화면에 추가"를\n선택하여 앱으로 사용하는 것을 권장합니다.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,

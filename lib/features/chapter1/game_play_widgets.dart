@@ -1,6 +1,7 @@
 // lib/features/chapter1/game_play_widgets.dart
 
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
@@ -463,6 +464,13 @@ Widget buildCustomDialogue({
   );
 }
 
+// spriteTopY 기준으로 말풍선을 배치하는 화면(kitchen_screen.dart)에서, 캐릭터가 화면
+// 위쪽에 서 있을 때 말풍선이 온도계(buildThermometer, top: rH(15))랑 겹치지 않게 두는
+// 최소 top값. 온도계 이미지 실측(main_thermometer_*.png 1688x204, rW(422)로 렌더 시
+// 종횡비상 높이 약 rW(51)) + top(15) + 온도 변화 배지 있을 때 간격(5)+배지 높이(30)를
+// 전부 더한 값(15+51+5+30=101) - 배지가 없을 때도 이 값 그대로 써서 항상 안전하게 잡음
+const double kSceneBubbleMinTopRef = 101;
+
 // 채온-릴리안 말풍선. 대사 길이에 맞는 가장 작은 이미지 골라서 top 100, 말하는 캐릭터 중심에 표시. 채온이면 좌우 반전.
 Widget buildSceneBubble({
   required DialogueNode node,
@@ -547,7 +555,10 @@ Widget buildSceneBubble({
   // 아니면 기존 고정값(rH(100 + chaeonTopExtra))을 그대로 씀. 릴리안은 20, 채온이는 그 절반인 10
   final double headGap = isChaeon ? 10 : 20;
   final double bubbleTop = spriteTopY != null
-      ? spriteTopY - bubbleHeight - rH(headGap)
+      // 캐릭터가 화면 위쪽에 있으면 계산 결과가 온도계 영역까지 올라갈 수 있어서,
+      // kSceneBubbleMinTopRef보다 위로는 못 올라가게 최소값을 강제함(fallback 분기는
+      // 이미 화면 하단 고정값이라 이 문제 자체가 없어서 그쪽엔 안 건드림)
+      ? math.max(spriteTopY - bubbleHeight - rH(headGap), rH(kSceneBubbleMinTopRef))
       : rH(100 + chaeonTopExtra);
 
   return Positioned(

@@ -66,6 +66,16 @@ const double _dpadLeftButtonLeft = 622;
 // 화면 오른쪽 여백(874-842=32)도 원래와 동일하게 유지됨
 const double _dpadRightButtonLeft = 746;
 
+// 릴리안 계단 등장(_triggerLillianStairsEntrance)이 끝났을 때 멈추는 지점 - 채온이 위치보다
+// 이만큼 오른쪽. resumeChaeonX(1305) + 이 값으로 chapter1Table/chapter1FirstBread 이어하기
+// 시 릴리안 도착 좌표를 계산해야 정상 진행 때랑 같은 위치에 서게 됨(_snapLillianArrived 호출부 참고)
+const double _lillianStairsArrivalGap = 280;
+
+// chapter1Table/chapter1FirstBread 체크포인트 재개 시 채온이를 세워두는 x좌표. 정상 진행에서
+// 릴리안 두 번째 등장 트리거(bakery_game.dart의 onReachPostSceneEnd, x>=1305)가 막 발동한
+// 직후 상태를 그대로 재현하는 거라 그 트리거 좌표(1305)를 그대로 씀
+const double _chapter1TableResumeChaeonX = 1305;
+
 class GamePlayScreen extends StatefulWidget {
   final bool isPrologue;
   // 챕터3 재진입 모드: true면 가이드 대사/table.json/first_bread.json 단계를 전부 건너뛰고,
@@ -189,8 +199,12 @@ class _GamePlayScreenState extends State<GamePlayScreen>
         break;
       case SaveCheckpoint.chapter1Table:
       case SaveCheckpoint.chapter1FirstBread:
-        resumeChaeonX = 1305;
-        resumeLillianArrivalX = 900;
+        resumeChaeonX = _chapter1TableResumeChaeonX;
+        // 900은 첫 만남 등장(_triggerLillianWalk) 도착 좌표라 여기(두 번째 등장) 기준으로는
+        // 틀린 값이었음 - 릴리안이 채온이보다 왼쪽에 서고 카메라 초점도 잘못 잡히는 원인이었음.
+        // 실제로는 채온이 위치 + _lillianStairsArrivalGap(280)이 맞는 도착 좌표임
+        resumeLillianArrivalX =
+            _chapter1TableResumeChaeonX + _lillianStairsArrivalGap;
         resumeSkipGuideTrigger = true;
         resumeSkipPostSceneEndTrigger = true;
         break;
@@ -245,6 +259,11 @@ class _GamePlayScreenState extends State<GamePlayScreen>
               _isLillianVisible = false;
               _dialoguePhase = DialoguePhase.none;
             });
+            // chapter1FirstMeet로 이어하기한 경우, BakeryGame.onLoad()가 비동기라 initState의
+            // _resumeFromCheckpoint()가 풀어준 isMovementBlocked를 나중에 다시 true로 덮어씀 -
+            // 그래서 여기서 한 번 더 확실하게 풀어줘야 이어하기 후에도 실제로 걸어갈 수 있음
+            // (정상 진행에선 이미 false라 아무 영향 없음)
+            _game.isMovementBlocked = false;
             // 카메라가 채온이를 따라가도록 복귀
             _game.lillianArrivalX = null;
             _game.startCameraCatchUp();
@@ -497,10 +516,13 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   // setState 호출하는 셈이라 에러남). 그래서 _lillianStartX를 목표 지점(_lillianTargetX)이랑
   // 똑같이 맞춰서, 컨트롤러 값이 뭐든 Tween(begin,end).evaluate 결과가 항상 도착 위치로
   // 고정되게 하는 방식으로 우회함
-  void _snapLillianArrived() {
+  // lillianX: 체크포인트마다 릴리안이 도착해있어야 할 좌표가 다름(첫 만남 등장은 900,
+  // 계단 등장은 채온이 위치 + _lillianStairsArrivalGap) - 예전엔 900으로 고정해뒀다가
+  // table/first_bread 재개 시 릴리안이 채온이보다 왼쪽에 서는 버그가 있어서 파라미터로 뺌
+  void _snapLillianArrived(double lillianX) {
     _isLillianVisible = true;
     _isLillianFacingLeft = true;
-    _lillianTargetX = 900.0;
+    _lillianTargetX = lillianX;
     _lillianStartX = _lillianTargetX;
     _game.lillianArrivalX = _lillianTargetX;
     _isLillianWalking = false;
@@ -528,7 +550,8 @@ class _GamePlayScreenState extends State<GamePlayScreen>
         // 알아서 처리해줘서(reentryChapter==chapter5면 무조건 발동) 여기서 따로 할 게 없음
         break;
       case SaveCheckpoint.chapter1FirstMeet:
-        _snapLillianArrived();
+        // 900은 _triggerLillianWalk()의 첫 만남 등장 도착 좌표랑 동일
+        _snapLillianArrived(900.0);
         _dialoguePhase = DialoguePhase.firstMeet;
         // 정상 흐름에선 가이드 대사(_game.onShowDialogue)가 이 값을 켜주는데, 그 경로를
         // 건너뛰니까 직접 켜줘야 함 - 안 그러면 설정 버튼이 안 뜸(노출 조건 참고)
@@ -537,14 +560,20 @@ class _GamePlayScreenState extends State<GamePlayScreen>
         _sceneController.loadDialogue('assets/lines/chapter1/first_meet.json');
         break;
       case SaveCheckpoint.chapter1Table:
-        _snapLillianArrived();
+        // 계단 등장(두 번째 등장) 도착 좌표 - 채온이 위치(_chapter1TableResumeChaeonX) + 280
+        _snapLillianArrived(
+          _chapter1TableResumeChaeonX + _lillianStairsArrivalGap,
+        );
         _dialoguePhase = DialoguePhase.table;
         _isGuidePhaseStarted = true;
         _game.isMovementBlocked = false;
         _sceneController.loadDialogue('assets/lines/chapter1/table.json');
         break;
       case SaveCheckpoint.chapter1FirstBread:
-        _snapLillianArrived();
+        // chapter1Table이랑 동일한 이유로 계단 등장 도착 좌표를 그대로 씀
+        _snapLillianArrived(
+          _chapter1TableResumeChaeonX + _lillianStairsArrivalGap,
+        );
         // table.json 먹는 구간을 이미 지난 상태라 먹는 클로즈업이 다시 뜨면 안 됨
         _hasEatenBread = true;
         _dialoguePhase = DialoguePhase.firstBread;

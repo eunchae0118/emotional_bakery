@@ -592,12 +592,15 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   // 체크포인트"를 찾음. kitchen_screen.dart의 _detectCurrentCheckpoint랑 동일한 이유로,
   // 저장 버튼이 떠 있다는 것 자체가 안정된 상태라는 뜻이라 이 시점 값들만으로 확정할 수 있음
   SaveCheckpoint _detectCurrentCheckpoint() {
-    if (widget.skipChapter1Events) {
-      // 챕터3/4 재진입은 chapter3_door.json 트리거 하나뿐(챕터5는 아래 별도 분기)
-      return SaveCheckpoint.chapter3Door;
-    }
+    // 챕터5 재진입도 choice_screen.dart에서 skipChapter1Events:true로 넘어오기 때문에,
+    // 아래 chapter3Door 분기보다 먼저 확인해야 함 - 순서가 바뀌어 있으면(원래 이 체크가
+    // chapter3Door 분기 뒤에 있었음) 챕터5 저장이 chapter3Door로 잘못 분류되는 버그가 있었음
     if (widget.reentryChapter == ReentryChapter.chapter5) {
       return SaveCheckpoint.chapter5Start;
+    }
+    if (widget.skipChapter1Events) {
+      // 챕터3/4 재진입은 chapter3_door.json 트리거 하나뿐(챕터5는 위에서 먼저 걸러짐)
+      return SaveCheckpoint.chapter3Door;
     }
     // 챕터1 프롤로그 이후 첫 플레이 흐름. 이 화면에서 로드되는 마지막 파일이 뭐였는지를
     // _dialoguePhase로 판단함(none은 첫 만남 대사 시작 전이라 아직 아무 파일도 안 실렸지만,

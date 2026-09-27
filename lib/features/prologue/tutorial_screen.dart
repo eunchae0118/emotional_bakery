@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'dart:async'; // 연속 이동 (화살표 꾹 누르기)
 import '../chapter1/game_play_screen.dart';
 import 'package:emotional_bakery/core/services/app_exit.dart';
+import 'package:emotional_bakery/core/services/save_checkpoints.dart';
+import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
@@ -112,6 +114,10 @@ const double _dpadLeftButtonLeft = 622;
 // 화면 오른쪽 여백(874-842=32)도 원래와 동일하게 유지됨
 const double _dpadRightButtonLeft = 746;
 
+// "저장되었습니다" 배지가 뜨는 top 위치(874x402 기준, rH로 스케일됨). kitchen_screen.dart랑
+// 동일한 값을 씀 - 화면 보면서 조정 예정
+const double _saveConfirmationBadgeTopRef = 80;
+
 class TutorialScreen extends StatefulWidget {
   // 튜토리얼 안내 문구(0, 1단계)를 건너뛰고 바로 마을 배경만 보여주고 싶을 때 2로 전달
   final int initialStep;
@@ -159,6 +165,42 @@ class _TutorialScreenState extends State<TutorialScreen> {
   String _currentAction = 'idle';
   late bool _isLookingLeft = widget.initialFacingLeft; // 왼쪽인지 확인 여부
   bool _isSettingOpen = false;
+  // 메뉴 "저장" 버튼 누르면 잠깐 뜨는 확인 문구. kitchen_screen.dart랑 동일한 패턴. null이면 안 보임
+  String? _saveConfirmationText;
+  Timer? _saveConfirmationTimer;
+
+  @override
+  void dispose() {
+    _saveConfirmationTimer?.cancel();
+    super.dispose();
+  }
+
+  // 메뉴 "저장" 버튼(MenuOverlay.onSave)이 부름. 골목길은 항상 챕터3/4/5 재진입 상태로만
+  // 진입하니까(reentryChapter==none이면 애초에 설정 버튼 자체가 안 뜸 - 아래 온도계/설정 버튼
+  // 노출 조건 참고), reentryChapter를 보고 그 챕터의 "채온이 방 진입" 체크포인트로 바로 저장함.
+  // kitchen_screen.dart/chaeon_room_screen.dart처럼 지금 대사 진행 단계를 세세하게 추적하는
+  // 로직이 이 화면엔 없어서, 골목길에서 저장하면 항상 그 챕터의 시작 지점으로 복원됨
+  void _handleSave() async {
+    final SaveCheckpoint? checkpoint = switch (widget.reentryChapter) {
+      ReentryChapter.chapter3 => SaveCheckpoint.chapter3ChaeonRoom,
+      ReentryChapter.chapter4 => SaveCheckpoint.chapter4StartRoom,
+      ReentryChapter.chapter5 => SaveCheckpoint.chapter5Start,
+      // 방어적 분기 - 실제로는 설정 버튼 자체가 안 떠서 여기까지 못 옴
+      ReentryChapter.none => null,
+    };
+    if (checkpoint == null) return;
+    await SaveManager.save(checkpoint);
+    if (!mounted) return;
+    setState(() {
+      _isSettingOpen = false;
+      _saveConfirmationText = '저장되었습니다';
+    });
+    _saveConfirmationTimer?.cancel();
+    _saveConfirmationTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _saveConfirmationText = null);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -448,15 +490,29 @@ class _TutorialScreenState extends State<TutorialScreen> {
                     () => StoryState.isAutoAdvanceEnabled =
                         !StoryState.isAutoAdvanceEnabled,
                   ),
-                  // TODO: 이 화면은 아직 체크포인트 판단 로직이 없어서 저장 기능 미연결.
-                  // kitchen_screen.dart부터 먼저 연결했고 나중에 여기도 맞춰서 붙일 예정
-                  onSave: () {},
+                  onSave: _handleSave,
                   onGoToMainScreen: () =>
                       Navigator.of(context).pushAndRemoveUntil(
                         fadeThroughBlackRoute(const ChoiceScreen()),
                         (route) => false,
                       ),
                   onExitGame: exitGame,
+                ),
+
+              // 저장 완료 안내 배지. _handleSave가 저장 끝내고 잠깐(2초) 띄웠다가 스스로 지움.
+              // kitchen_screen.dart랑 동일한 위치/스타일
+              if (_saveConfirmationText != null)
+                Positioned(
+                  top: rH(_saveConfirmationBadgeTopRef),
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: widgets.buildSaveConfirmationBadge(
+                      _saveConfirmationText!,
+                      rW: rW,
+                      rH: rH,
+                    ),
+                  ),
                 ),
             ],
           ),

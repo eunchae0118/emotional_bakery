@@ -175,7 +175,7 @@
     "line_022a6.1": {
       "type": "line",
       "speaker": "lillian",
-      "text": "그 물건은 대가로 가져갈거에요.",
+      "text": "그 물건은 대가로 가져갈 거예요.",
       "next": "line_022a7"
     },
     "line_022a7": {
@@ -218,7 +218,7 @@
     "line_022b5": {
       "type": "line",
       "speaker": "lillian",
-      "text": "다만, 감정을 굽는 일은 쉽지 않아요.",
+      "text": "음, 확실히 감정을 굽는 일은 쉽지 않아요.",
       "next": "line_022b6"
     },
     "line_022b6": {
@@ -236,13 +236,13 @@
     "line_022b8": {
       "type": "line",
       "speaker": "lillian",
-      "text": "그 물건은 대가로 가져갈거에요.",
+      "text": "그 물건은 대가로 가져갈 거예요.",
       "next": "line_022b8.1"
     },
     "line_022b8.1": {
       "type": "line",
       "speaker": "lillian",
-      "text": "그래도... 이 과정을 통해 분명 감정을 찾을 수 있을 거에요.",
+      "text": "그래도... 이 과정을 통해 분명 감정을 찾을 수 있을 거예요.",
       "next": "line_022b9"
     },
     "line_022b9": {

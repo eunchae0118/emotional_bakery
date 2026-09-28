@@ -11,7 +11,7 @@
     "line_q.1": {
       "type": "line",
       "speaker": "lillian",
-      "text": "평소 좋아하는 건 뭐에요~?",
+      "text": "평소 좋아하는 건 뭐예요~?",
       "next": "choice_q1"
     },
     "choice_q1": {
@@ -211,7 +211,7 @@
     "line_q3a1": {
       "type": "line",
       "speaker": "lillian",
-      "text": "자, 그럼 정리해보자면...",
+      "text": "자, 그럼 정리해 보자면...",
       "next": "line_ingredient_reveal"
     },
     "line_q3b": {
@@ -223,7 +223,7 @@
     "line_q3b1": {
       "type": "line",
       "speaker": "lillian",
-      "text": "자, 그럼 정리해보자면...",
+      "text": "자, 그럼 정리해 보자면...",
       "next": "line_ingredient_reveal"
     },
     "line_q3c": {
@@ -235,7 +235,7 @@
     "line_q3c1": {
       "type": "line",
       "speaker": "lillian",
-      "text": "자, 그럼 정리해보자면...",
+      "text": "자, 그럼 정리해 보자면...",
       "next": "line_ingredient_reveal"
     },
     "line_ingredient_reveal": {

@@ -1,5 +1,8 @@
 // lib/features/menu/main_screen.dart
 
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart'; // 다음 화면
@@ -68,7 +71,14 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _precachePrologueImages() async {
     for (final String path in _prologueImagePaths) {
       try {
-        await precacheImage(AssetImage(path), context);
+        final ImageProvider provider = AssetImage(path);
+        await precacheImage(provider, context);
+        // precacheImage는 CPU 디코딩해서 ImageCache에 올려두는 것까지만 함 - 실제로
+        // 화면에 처음 그려질 때 일어나는 GPU 텍스처 업로드(CanvasKit/WebGL)는 그대로
+        // 남아있어서, 프롤로그 재생 중 이미지 바뀔 때마다 체감 버퍼링이 생겼음. 여기서
+        // 오프스크린으로 한 번 그려서 그 업로드까지 미리 끝내둠
+        if (!mounted) return;
+        await _warmUpGpuTexture(provider, context);
       } catch (_) {
         // 에러 나는 이미지는 그냥 건너뜀 - 하나 실패했다고 로딩이 무한 대기하면 안 됨
       }
@@ -78,6 +88,44 @@ class _MainScreenState extends State<MainScreen> {
     if (!mounted) return;
     setState(() => _isImageLoadingComplete = true);
     _maybeGoToChoiceScreen();
+  }
+
+  // precacheImage로 이미 캐시된 이미지를 다시 resolve해서 ui.Image를 얻고, 1x1짜리
+  // 오프스크린 캔버스에 한 번 그려서 GPU 텍스처 업로드를 강제로 미리 발생시킴.
+  // createLocalImageConfiguration(context)를 그대로 써서 precacheImage가 썼던 것과
+  // 같은 캐시 키로 resolve되게 함 - 그래야 새로 디코딩 안 하고 이미 캐시된 이미지를
+  // 그대로 받아옴. 목적지 캔버스가 1x1이어도 canvas.drawImage가 원본 이미지를 텍스처로
+  // 샘플링하는 건 똑같아서, 실제 크기로 그리는 것보다 훨씬 싸게 업로드만 미리 끝낼 수 있음
+  Future<void> _warmUpGpuTexture(
+    ImageProvider provider,
+    BuildContext context,
+  ) async {
+    final ImageStream stream = provider.resolve(
+      createLocalImageConfiguration(context),
+    );
+    final Completer<ui.Image> completer = Completer<ui.Image>();
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        stream.removeListener(listener);
+        completer.complete(info.image);
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        stream.removeListener(listener);
+        completer.completeError(error, stackTrace);
+      },
+    );
+    stream.addListener(listener);
+
+    final ui.Image image = await completer.future;
+    // 여기서 얻은 image는 ImageCache가 들고 있는 거라 dispose하면 안 됨 - 새로 그린
+    // Picture/rasterized 쪽만 다 쓰고 정리함
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    Canvas(recorder).drawImage(image, Offset.zero, Paint());
+    final ui.Picture picture = recorder.endRecording();
+    final ui.Image rasterized = await picture.toImage(1, 1);
+    rasterized.dispose();
+    picture.dispose();
   }
 
   // "로딩 완료 && 최소 노출 시간 경과" 둘 다 만족해야 다음 화면으로 넘어감

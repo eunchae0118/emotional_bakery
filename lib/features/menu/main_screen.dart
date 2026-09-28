@@ -33,6 +33,10 @@ class _MainScreenState extends State<MainScreen> {
     milliseconds: 1500,
   );
 
+  // 로고 top 기준값(디자인 캔버스 402 기준). 원래 191이었는데 로고를 위로 올리려고
+  // 155로 줄임 - 화면 보면서 조정 예정
+  static const double _logoTopRef = 155;
+
   // didChangeDependencies가 여러 번 불려도 프리캐싱이 중복으로 안 걸리게 막는 용도
   bool _hasStartedPrecache = false;
   int _loadedImageCount = 0;
@@ -88,8 +92,18 @@ class _MainScreenState extends State<MainScreen> {
     // 874x402 기준 비율 계산기
     double w = MediaQuery.of(context).size.width;
     double h = MediaQuery.of(context).size.height;
-    double rW(double px) => (px / 874) * w;
-    double rH(double px) => (px / 402) * h;
+
+    // 로고/로딩바 전용 단일 스케일 + 중앙 정렬 오프셋. choice_screen.dart의 버튼 블록이랑
+    // 똑같은 문제(width만 rW로 고정하고 top은 고정 좌표라, 화면이 디자인 비율(874:402)보다
+    // 가로로 길어지면 rW 배율이 커져서 로고가 커지는데 top은 그대로라 아래쪽이 화면 밖으로
+    // 밀려남)라서 같은 해법을 그대로 가져옴. 가로/세로 배율 중 작은 쪽(min)을 써서 디자인
+    // 캔버스(874x402)가 항상 화면 안에 다 들어오게 하고, 남는 여백은 좌우/상하에 반씩
+    // 나눠서 중앙 정렬함. 디자인 비율이랑 정확히 일치하는 화면에서는 offsetX/offsetY가
+    // 0이 되고 scale도 지금(rW/rH)이랑 같아서 결과가 완전히 동일함
+    final double scale = (w / 874) < (h / 402) ? (w / 874) : (h / 402);
+    final double offsetX = (w - 874 * scale) / 2;
+    final double offsetY = (h - 402 * scale) / 2;
+    double s(double px) => px * scale;
 
     final double loadingProgress =
         (_loadedImageCount / _prologueImagePaths.length).clamp(0.0, 1.0);
@@ -108,11 +122,11 @@ class _MainScreenState extends State<MainScreen> {
           // 2층: 로고 이미지
           // 피그마에서 로고가 왼쪽 위 기준 어디쯤 있는지 확인해서 숫자 넣어!
           Positioned(
-            left: rW(68), // X축 위치
-            top: rH(191), // Y축 위치
+            left: offsetX + s(68), // X축 위치
+            top: offsetY + s(_logoTopRef), // Y축 위치
             child: Image.asset(
               'assets/images/logo.png', // 로고
-              width: rW(232), // 로고 크기
+              width: s(232), // 로고 크기
               fit: BoxFit.contain,
             ),
           ),
@@ -120,15 +134,19 @@ class _MainScreenState extends State<MainScreen> {
           // 3층: 프롤로그 에셋 로딩바. 화면 하단에 작게 깔아둠 - 도입부 화면들 톤(검은
           // 배경 + 흰색/주황색)에 맞춰서 트랙은 반투명 흰색, 채워지는 부분은 앱 전체에서
           // 쓰는 포인트 컬러(0xFFFF7100)로 맞춤
+          //
+          // 로고랑 같은 offsetX/offsetY/s 기준으로 맞춤 - 로고는 min 스케일로 잘림 없이
+          // 작아지는데 로딩바는 rW/rH(가로세로 따로 늘어남) 기준으로 남아있으면, 화면이
+          // 디자인 비율에서 벗어났을 때 둘이 서로 다르게 움직여서 어색해 보임
           Positioned(
-            left: rW(68),
-            right: rW(68),
-            bottom: rH(30),
+            left: offsetX + s(68),
+            right: offsetX + s(68), // 디자인 캔버스 안에서 좌우 대칭이라 left랑 값이 같음
+            bottom: offsetY + s(30),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(rW(4)),
+              borderRadius: BorderRadius.circular(s(4)),
               child: LinearProgressIndicator(
                 value: loadingProgress,
-                minHeight: rH(8),
+                minHeight: s(8),
                 backgroundColor: Colors.white.withOpacity(0.25),
                 valueColor: const AlwaysStoppedAnimation<Color>(
                   Color(0xFFFF7100),

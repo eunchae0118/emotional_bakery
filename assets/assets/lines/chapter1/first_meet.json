@@ -123,7 +123,7 @@
       "text": "저는... 여기서 감정을 찾을 수 있다는",
       "next": "line_008.6"
     },
-    "line_008.6": {
+    "line_008.6": { 
       "type": "line",
       "speaker": "chaeon",
       "text": "소문을 듣고 왔어요.",
@@ -143,7 +143,7 @@
     "line_008.9": {
       "type": "line",
       "speaker": "chaeon",
-      "text": "감정을 담는다는게 어떤건지...",
+      "text": "감정을 담는다는 게 어떤 건지...",
       "next": "line_008.10"
     },
     "line_008.10": {
@@ -183,13 +183,13 @@
       "type": "line",
       "speaker": "chaeon",
       "text": "거짓말이죠...?",
-      "effect": { "temperature": -1 },
       "next": "line_010b1"
     },
     "line_010b1": {
       "type": "line",
       "speaker": "lillian",
       "text": "진짜거든요!",
+      "effect": { "temperature": -1 },
       "expression": "assets/images/lillian_grudge.png",
       "next": "line_010b2"
     },
@@ -311,7 +311,7 @@
     "line_023.5": {
       "type": "line",
       "speaker": "lillian",
-      "text": "저는 그 물건을 대가로 가져가는거죠!",
+      "text": "저는 그 물건을 대가로 가져가는 거죠!",
       "expression": "assets/images/lillian_happy.png",
       "next": "line_024"
     },

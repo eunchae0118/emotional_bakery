@@ -46,7 +46,7 @@
     "line_002a2": {
       "type": "line",
       "speaker": "chaeon",
-      "text": "그냥... 저랑 마법은 안 어울리는거 같아요...",
+      "text": "그냥... 저랑 마법은 안 어울리는 거 같아요...",
       "next": "line_002b2"
     },
     "line_002b2": {
@@ -73,7 +73,7 @@
       "speaker": "lillian",
       "text": [
         { "text": "지금 생각나는 " },
-        { "text": " 추억이 담긴 물건", "color": "#FF7100" },
+        { "text": "추억이 담긴 물건", "color": "#FF7100" },
         { "text": "이 있나요?" }
       ],
       "next": "line_005"
@@ -87,7 +87,7 @@
     "line_005.1": {
       "type": "line",
       "speaker": "chaeon",
-      "text": "어떤 추억을...음....",
+      "text": "어떤 추억을... 음....",
       "next": "line_005.2"
     },
     "line_005.2": {
@@ -146,7 +146,7 @@
     "line_012": {
       "type": "line",
       "speaker": "chaeon",
-      "text": "그래서 초등학교에 입학할 때, 엄마가 알람시계를 사줬어요.",
+      "text": "그래서 초등학교에 입학할 때, 엄마가 알람시계를 사주셨어요.",
       "next": "line_013"
     },
     "line_013": {
@@ -168,7 +168,7 @@
     "line_015": {
       "type": "line",
       "speaker": "chaeon",
-      "text": "별 거 아닌 물건이라 할 지도 모르겠지만...",
+      "text": "별거 아닌 물건이라 할지도 모르겠지만...",
       "next": "line_016"
     },
     "line_016": {
@@ -193,13 +193,13 @@
     "line_019a1": {
       "type": "line",
       "speaker": "chaeon",
-      "text": "물건을 감정과 바꾼다는게",
+      "text": "물건을 감정과 바꾼다는 게",
       "next": "line_019a2"
     },
     "line_019a2": {
       "type": "line",
       "speaker": "chaeon",
-      "text": "사실 감이 잘 안와요.",
+      "text": "사실 감이 잘 안 와요.",
       "next": "line_019a3"
     },
     "line_019a3": {

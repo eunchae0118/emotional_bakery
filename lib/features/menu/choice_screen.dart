@@ -37,6 +37,31 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
   // 없으면 이 안내창만 띄움
   bool _showNoSaveDataNotice = false;
 
+  // 로고 끝-버튼1, 버튼-버튼 사이 간격(디자인 단위). 전부 이 값 하나로 통일함 - 전에는
+  // 로고 top이랑 버튼 블록 시작 top을 따로 잡고 기기별 추가 간격까지 얹었더니 로고-버튼1
+  // 사이만 유독 크게 벌어지는 문제가 있었음. 화면 보면서 조정 예정
+  static const double _itemGapRef = 14;
+
+  // 로고 렌더 높이(디자인 단위). logo.png 원본이 928x696(세로/가로 = 696/928 = 0.75)이고
+  // 로고를 width 167로 그리니까 height는 167*0.75
+  static const double _logoHeightRef = 167 * 696 / 928;
+
+  // 버튼 렌더 높이(디자인 단위). 버튼 이미지(start.png 등)가 576x144(세로/가로=0.25)고
+  // Positioned width가 144로 고정돼서 height는 144*0.25=36
+  static const double _buttonHeightRef = 36;
+
+  // 로고+버튼 4개 블록 전체 높이(디자인 단위). 로고 높이 + 버튼 4개 높이 + 사이 간격 4개
+  // (로고-버튼1, 버튼1-2, 버튼2-3, 버튼3-4)
+  static const double _blockHRef =
+      _logoHeightRef + _buttonHeightRef * 4 + _itemGapRef * 4;
+
+  // 블록을 디자인 캔버스(402) 안에서 세로 중앙에 놓기 위한 시작 top
+  static const double _blockTopRef = (402 - _blockHRef) / 2;
+
+  // 첫 번째 버튼(시작하기) top. 로고 top(=_blockTopRef) + 로고 높이 + 간격 하나
+  static const double _firstButtonTopRef =
+      _blockTopRef + _logoHeightRef + _itemGapRef;
+
   // 새 게임 시작 처리. 진행 상황 전부 초기화하고 기존 시작 로직(챕터 선택창 이동) 그대로 탐
   void _startNewGame() {
     ChapterProgress.resetAllProgress();
@@ -182,9 +207,9 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     if (checkpoint == null) {
       // 저장 파일이 깨졌거나 옛날 포맷이라 체크포인트 이름을 못 알아본 경우 - 엉뚱한
       // 지점으로 보내는 대신 여기서 멈추고 안내만 띄움
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('저장 데이터를 불러올 수 없습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('저장 데이터를 불러올 수 없습니다.')));
       return;
     }
 
@@ -220,6 +245,18 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     final double offsetY = (h - 402 * scale) / 2;
     double s(double px) => px * scale;
 
+    // 로고/버튼의 가로 위치 전용 매핑. 배경(main_bg.png)은 BoxFit.cover라서 min이 아니라
+    // max 배율로 캔버스를 채우고 중앙 정렬함 - 그래서 위 scale/offsetX(min 기준)로 좌우
+    // 위치를 잡으면 화면이 가로로 길어질 때 배경이랑 로고/버튼이 서로 다른 기준으로
+    // 어긋나 보임(로고/버튼이 배경보다 오른쪽으로 쏠림). bgScale/bgOffsetX는 배경이랑
+    // 똑같은 cover 매핑을 써서 가로 위치만 배경 기준에 맞추고, 크기/세로 위치는 여전히
+    // 위에 있는 min 스케일(scale/offsetY/s)을 그대로 써야 버튼 블록이 화면 아래로
+    // 잘리는 문제가 다시 안 생김. 디자인 비율(874:402)에서는 bgScale도 scale이랑
+    // 같아지고 bgOffsetX도 0이라 결과가 지금이랑 동일함
+    final double bgScale = (w / 874) > (h / 402) ? (w / 874) : (h / 402);
+    final double bgOffsetX = (w - 874 * bgScale) / 2;
+    double leftOnBg(double designX) => bgOffsetX + designX * bgScale;
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -228,8 +265,8 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
           Image.asset('assets/images/main_bg.png', fit: BoxFit.cover),
 
           Positioned(
-            left: offsetX + s(91), // X축 위치
-            top: offsetY + s(52), // Y축 위치
+            left: leftOnBg(91), // X축 위치
+            top: offsetY + s(_blockTopRef), // Y축 위치
             child: Image.asset(
               'assets/images/logo.png',
               width: s(167), // 로고 크기
@@ -239,8 +276,8 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
 
           // 시작하기 버튼
           Positioned(
-            left: offsetX + s(100), // X축 위치
-            top: offsetY + s(195), // Y축 위치
+            left: leftOnBg(100), // X축 위치
+            top: offsetY + s(_firstButtonTopRef), // Y축 위치
             width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 1,
@@ -271,8 +308,12 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
           // 이어하기 버튼. 항상 정상적으로 눌리고, 탭한 시점에 저장 데이터가 있는지 확인해서
           // 없으면 안내창만 띄움(버튼 자체를 흐리게 비활성화하지 않음)
           Positioned(
-            left: offsetX + s(100), // X축 위치
-            top: offsetY + s(239), // Y축 위치
+            left: leftOnBg(100), // X축 위치
+            top:
+                offsetY +
+                s(
+                  _firstButtonTopRef + (_buttonHeightRef + _itemGapRef),
+                ), // Y축 위치
             width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 2,
@@ -296,8 +337,12 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
           // 화면 배치 순서(이어하기 다음)랑 상관없이 4로 둠 - 어차피 "지금 눌려있는 버튼"
           // 판별용 값이라 숫자 자체엔 의미 없음
           Positioned(
-            left: offsetX + s(100), // X축 위치
-            top: offsetY + s(283), // Y축 위치
+            left: leftOnBg(100), // X축 위치
+            top:
+                offsetY +
+                s(
+                  _firstButtonTopRef + (_buttonHeightRef + _itemGapRef) * 2,
+                ), // Y축 위치
             width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 4,
@@ -312,8 +357,12 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
 
           // 게임 설정 버튼
           Positioned(
-            left: offsetX + s(100), // X축 위치
-            top: offsetY + s(327), // Y축 위치
+            left: leftOnBg(100), // X축 위치
+            top:
+                offsetY +
+                s(
+                  _firstButtonTopRef + (_buttonHeightRef + _itemGapRef) * 3,
+                ), // Y축 위치
             width: s(144), // 버튼 크기
             child: _imageMenuButton(
               index: 3,

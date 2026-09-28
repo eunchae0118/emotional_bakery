@@ -93,13 +93,30 @@ class _DialogueOverlayState extends State<DialogueOverlay> {
             // 1층: 스토리 일러스트 레이어. 다른 화면들(빵만들기, 시계 미니게임 등)과 동일하게
             // BoxFit.cover로 화면을 항상 빈틈없이 채움. fitWidth를 쓰면 창을 세로로 늘렸을 때
             // 이미지 원본 비율 때문에 위아래에 빈 공간이 생겼음
+            //
+            // widget.data == null일 때만(=진짜 프롤로그 경로, main_screen.dart에서 GPU
+            // 워밍업까지 끝내놓은 그 이미지들) AnimatedSwitcher로 짧은 크로스페이드를 줌 -
+            // 탭할 때마다 컷 전환처럼 번쩍이던 걸 완화하려는 목적. 이미지는 이미 디코딩+GPU
+            // 텍스처 업로드까지 끝난 상태라 애니메이션 자체가 새로 버퍼링처럼 느껴지진 않음.
+            // widget.data가 있는 다른 컷씬(챕터4/5 엔딩 등)은 원래 동작 그대로 둬서 영향 안 줌
             Positioned.fill(
-              child: Image.asset(
-                'assets/images/${currentData["image"]}',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              ),
+              child: widget.data == null
+                  ? AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: Image.asset(
+                        'assets/images/${currentData["image"]}',
+                        key: ValueKey(currentData["image"]),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/images/${currentData["image"]}',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
             ),
 
             // 2층: 하단 대사창 영역

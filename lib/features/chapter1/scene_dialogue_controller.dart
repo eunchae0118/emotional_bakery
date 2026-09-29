@@ -58,6 +58,21 @@ class SceneDialogueController extends ChangeNotifier {
   String? choiceLockedMessage;
   Timer? _choiceLockedMessageTimer;
 
+  // "현재 체크포인트 이후로 고른 선택지들"만 담는 기록. loadDialogue()가 곧 체크포인트 진입
+  // 지점이라 loadDialogue 때마다 비워짐(아래 참고). SaveManager.save() 호출부가 이 리스트를
+  // 그대로 세이브에 실어보내서, 이어하기 시 chooseSceneOption()을 그대로 재사용해 재생함
+  final List<RecordedChoice> choiceHistory = [];
+
+  // 이어하기 자동 재생 큐. loadDialogue(autoReplay: ...)로 세팅되고, choice 노드에 들어갈 때마다
+  // 맨 앞 기록이 그 노드랑 맞으면 하나씩 소비됨(_enterSceneNode 참고). 다 소비되면 그 다음부턴
+  // 평소처럼 유저가 직접 고름
+  List<RecordedChoice> _replayQueue = [];
+  // 자동 재생 큐가 비워지는 순간(=마지막 기록된 선택지까지 재적용 완료 = 실제 플레이 가능
+  // 지점 도달) 온도/변수를 세이브값으로 강제 확정하기 위해 잠깐 들고 있는 목표값들.
+  // _finishChoiceReplay()에서 한 번 적용하고 나면 null로 비워서 재귀 재진입 시 중복 적용을 막음
+  int? _replayConfirmedTemperature;
+  Map<String, dynamic>? _replayConfirmedVars;
+
   // 온도계 레벨. KitchenScreen처럼 다른 화면에서 이어받을 때는 initialTemperature로 시작값을 맞춤
   int temperature;
   String? temperatureChangeText;
@@ -92,8 +107,25 @@ class SceneDialogueController extends ChangeNotifier {
     if (!_isDisposed) notifyListeners();
   }
 
-  // 주어진 경로의 대화 그래프를 불러와서 처음부터 재생 (first_meet/table/first_bread 등 공용)
-  Future<void> loadDialogue(String assetPath) async {
+  // 주어진 경로의 대화 그래프를 불러와서 재생 (first_meet/table/first_bread 등 공용).
+  //
+  // startNodeId: 보통은 graph.start(파일 맨 처음)부터 재생하지만, 체크포인트를 파일 중간에서
+  // 쪼갠 경우(예: chapter1FirstMeetMid가 first_meet.json의 line_011부터 시작)엔 이 노드ID부터
+  // 바로 시작함. graph.nodes에 없는 값이 들어오면(오타/파일 변경 등 방어적 상황) 안전하게
+  // graph.start로 대체함
+  //
+  // autoReplay: 이어하기로 이 체크포인트에 재진입한 경우, 세이브에 실려있던 "체크포인트 이후
+  // 고른 선택지 기록"을 넘겨받음. 비어있으면(기록이 없거나 정상 진입) 아래 로직 전부 무시되고
+  // 기존 동작 그대로임. confirmedTemperature/confirmedVars는 autoReplay가 실제로 있을 때만
+  // 의미가 있고, 그 기록을 전부 재적용하고 난 직후(=유저가 실제로 플레이할 수 있는 지점에
+  // 도달한 순간) 온도/변수를 이 값으로 강제로 덮어써서 재생 로직의 오차를 안전하게 지움
+  Future<void> loadDialogue(
+    String assetPath, {
+    String? startNodeId,
+    List<RecordedChoice>? autoReplay,
+    int? confirmedTemperature,
+    Map<String, dynamic>? confirmedVars,
+  }) async {
     // sceneDialogue보다 먼저 기록해둠 - 아래서 await 끝나기 전에 disposed 되거나 해도
     // 마지막으로 "로드를 시도한" 경로는 남겨두는 게 저장 시스템 입장에서 더 안전함
     currentFilePath = assetPath;
@@ -104,8 +136,27 @@ class SceneDialogueController extends ChangeNotifier {
     sceneHasLockedChoice = false;
     // 새 대화가 choice로 바로 시작하면 lastLineNode를 안 거쳐, 이전 대화의 마지막 대사가 선택지 버튼 뒤에 그대로 비쳐 보이는 걸 막기 위한 리셋
     lastLineNode = null;
-    _enterSceneNode(graph.start);
+    // 새 체크포인트(=새 파일 또는 파일 중간의 체크포인트 경계) 진입 시점이라 "이전 체크포인트
+    // 이후 선택 기록"을 비움 - 이 리스트는 항상 "현재 체크포인트 이후로 고른 선택지들"만 담아야 함
+    choiceHistory.clear();
+    final List<RecordedChoice> replay = autoReplay ?? const [];
+    _replayQueue = List.of(replay);
+    _replayConfirmedTemperature = replay.isNotEmpty ? confirmedTemperature : null;
+    _replayConfirmedVars = replay.isNotEmpty ? confirmedVars : null;
+    final String start =
+        (startNodeId != null && graph.nodes.containsKey(startNodeId))
+        ? startNodeId
+        : graph.start;
+    _enterSceneNode(start);
     _notify();
+  }
+
+  // 파일을 새로 로드하지 않고, 같은 파일 안에서 체크포인트 경계를 넘을 때(예: first_meet.json을
+  // 정상 진행하다가 line_011에 도달 = chapter1FirstMeetMid 시작) 호출됨. loadDialogue()의
+  // choiceHistory.clear()랑 동일한 역할을 파일 재로드 없이 수행함 - 그 시점 이후에 고른
+  // 선택지만 새 체크포인트 몫으로 기록되게 함
+  void beginNewCheckpointSegment() {
+    choiceHistory.clear();
   }
 
   void _enterSceneNode(String? nodeId) {
@@ -176,7 +227,45 @@ class SceneDialogueController extends ChangeNotifier {
       typedCharCount = 0;
       bubbleRevealed = true;
       _autoAdvancePending = false;
+      // 이어하기 자동 재생 중이고, 지금 이 choice 노드가 재생 큐 맨 앞 기록이랑 일치하면
+      // 선택지 버튼을 띄우는 대신 그 기록된 옵션으로 바로 진행시킴(유저 입력 없이)
+      if (_replayQueue.isNotEmpty && _replayQueue.first.nodeId == nodeId) {
+        final RecordedChoice record = _replayQueue.removeAt(0);
+        DialogueOption? matched;
+        for (final option in node.options) {
+          if (option.next == record.optionNext) {
+            matched = option;
+            break;
+          }
+        }
+        if (matched != null) {
+          chooseSceneOption(matched);
+          if (_replayQueue.isEmpty) _finishChoiceReplay();
+          return;
+        }
+        // 매칭 실패(대사 파일이 바뀌었거나 세이브가 오래된 경우 등 예외 상황) - 안전하게
+        // 그냥 평소처럼 선택지를 띄움. 아래에서 return 안 하고 자연스럽게 빠져나감
+      }
     }
+  }
+
+  // 이어하기 자동 재생 큐를 전부 소비한 직후(=실제 플레이 가능한 지점 도달) 호출됨. 재생
+  // 로직이 정확히 같은 값을 만들어낼 거라고 신뢰하지 않고, 세이브에 저장돼 있던 값으로
+  // 온도/변수를 명시적으로 다시 덮어써서 확정함. _replayConfirmed* 를 null로 비워두는 건
+  // 재귀 호출(선택지가 곧바로 또 다른 선택지로 이어지는 경우) 때 중복 적용을 막기 위함
+  void _finishChoiceReplay() {
+    final int? confirmedTemperature = _replayConfirmedTemperature;
+    final Map<String, dynamic>? confirmedVars = _replayConfirmedVars;
+    if (confirmedTemperature == null && confirmedVars == null) return;
+    if (confirmedTemperature != null) {
+      temperature = confirmedTemperature;
+      StoryState.currentTemperature = confirmedTemperature;
+    }
+    if (confirmedVars != null) {
+      StoryState.vars = Map<String, dynamic>.from(confirmedVars);
+    }
+    _replayConfirmedTemperature = null;
+    _replayConfirmedVars = null;
   }
 
   // {{ingredient}} 플레이스홀더를 실제 값으로 치환한 노드를 반환 (없으면 원본 그대로)
@@ -390,6 +479,15 @@ class SceneDialogueController extends ChangeNotifier {
     // 선택지를 실제로 고른 순간 그 이전 히스토리를 비워서 되돌아갈 수 없게 함
     sceneNodeHistory.clear();
     sceneHasLockedChoice = true;
+    // 세이브용 선택 기록. 자동 재생 중에 다시 고르는 경우도 포함해서 그대로 기록해두면,
+    // 재생이 끝났을 때 choiceHistory가 다시 세이브 시점 그대로 복원됨(재생 자체가
+    // chooseSceneOption을 그대로 타기 때문)
+    final String? choiceNodeId = sceneNodeId;
+    if (choiceNodeId != null) {
+      choiceHistory.add(
+        RecordedChoice(nodeId: choiceNodeId, optionNext: option.next),
+      );
+    }
     // setVars 있으면 전역 저장소에 병합 저장 (나중에 재료 매칭 등에서 참조)
     if (option.setVars != null) {
       StoryState.vars.addAll(option.setVars!);

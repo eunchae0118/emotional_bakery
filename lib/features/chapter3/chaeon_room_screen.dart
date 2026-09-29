@@ -85,6 +85,7 @@ class ChaeonRoomScreen extends StatefulWidget {
     this.mode = ChaeonRoomMode.chapter3,
     this.enterFromDoor = false,
     this.resumeCheckpoint,
+    this.resumeChoiceHistory = const [],
   });
 
   final int initialTemperature;
@@ -96,6 +97,9 @@ class ChaeonRoomScreen extends StatefulWidget {
   // 동일한 패턴 - mode/enterFromDoor는 이 체크포인트가 속한 조합이랑 맞게 호출부에서 같이
   // 넘겨줘야 함. null이면(기본값) 지금까지와 100% 동일하게 동작함
   final SaveCheckpoint? resumeCheckpoint;
+  // resumeCheckpoint 도달 이후 저장 시점까지 골랐던 선택지 기록. kitchen_screen.dart랑
+  // 동일한 패턴 - 비어있으면(기본값) 자동 재생 없이 기존과 동일하게 동작함
+  final List<RecordedChoice> resumeChoiceHistory;
 
   @override
   State<ChaeonRoomScreen> createState() => _ChaeonRoomScreenState();
@@ -207,6 +211,18 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     });
   }
 
+  // _resumeFromCheckpoint 전용 loadDialogue 래퍼. kitchen_screen.dart의
+  // _loadDialogueForResume랑 동일한 패턴
+  Future<void> _loadDialogueForResume(String assetPath) {
+    final bool hasReplay = widget.resumeChoiceHistory.isNotEmpty;
+    return _sceneController.loadDialogue(
+      assetPath,
+      autoReplay: widget.resumeChoiceHistory,
+      confirmedTemperature: hasReplay ? StoryState.currentTemperature : null,
+      confirmedVars: hasReplay ? StoryState.vars : null,
+    );
+  }
+
   // resumeCheckpoint로 들어온 경우 initState에서 호출됨. kitchen_screen.dart의
   // _resumeFromCheckpoint랑 동일한 패턴 - 체크포인트 이전에 있었어야 할 플래그들을 미리
   // 켜주고 해당 파일을 바로 로드함. StoryState/ChapterProgress는 이 화면 진입 전에
@@ -214,35 +230,25 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   void _resumeFromCheckpoint(SaveCheckpoint checkpoint) {
     switch (checkpoint) {
       case SaveCheckpoint.chapter3ChaeonRoom:
-        _sceneController.loadDialogue(
-          'assets/lines/chapter3/chapter3_chaeon_room.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter3/chapter3_chaeon_room.json');
         break;
       case SaveCheckpoint.chapter4StartRoom:
-        _sceneController.loadDialogue(
-          'assets/lines/chapter4/chapter4_start_room.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter4/chapter4_start_room.json');
         break;
       case SaveCheckpoint.chapter4RoomChoice:
         // enterFromDoor 걷기 연출을 건너뛰고 도착 위치에 바로 세워둠(_startEnterWalk 끝 상태랑 동일)
         _chaeonX = kChaeonRoomEnterStopX;
-        _sceneController.loadDialogue(
-          'assets/lines/chapter4/chapter4_room_choice.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter4/chapter4_room_choice.json');
         break;
       case SaveCheckpoint.chapter4TempLow:
         _chaeonX = kChaeonRoomEnterStopX;
         _hasLoadedChapter4RoomChoice = true;
-        _sceneController.loadDialogue(
-          'assets/lines/chapter4/chapter4_temp_low.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter4/chapter4_temp_low.json');
         break;
       case SaveCheckpoint.chapter4TempHigh:
         _chaeonX = kChaeonRoomEnterStopX;
         _hasLoadedChapter4RoomChoice = true;
-        _sceneController.loadDialogue(
-          'assets/lines/chapter4/chapter4_temp_high.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter4/chapter4_temp_high.json');
         break;
       default:
         // 이 화면(chaeon_room_screen.dart) 소관 아닌 체크포인트가 잘못 넘어온 경우를 대비한
@@ -284,7 +290,10 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   // 메뉴 "저장" 버튼(MenuOverlay.onSave)이 부름. kitchen_screen.dart의 _handleSave랑 동일한 패턴
   void _handleSave() async {
     final SaveCheckpoint checkpoint = _detectCurrentCheckpoint();
-    await SaveManager.save(checkpoint);
+    await SaveManager.save(
+      checkpoint,
+      choicesSinceCheckpoint: _sceneController.choiceHistory,
+    );
     if (!mounted) return;
     setState(() {
       _isSettingOpen = false;

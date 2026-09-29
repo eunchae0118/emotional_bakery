@@ -51,6 +51,22 @@ class DialogueOption {
   DialogueOption({required this.text, required this.next, this.setVars});
 }
 
+// 이어하기 자동 재생용 선택 기록 하나. 어느 choice 노드(nodeId)에서 어느 옵션을 골랐는지를
+// 그 옵션의 next(선택지마다 고유함)로 식별해둠 - 옵션 자체엔 별도 id가 없어서 next를 키로 씀
+class RecordedChoice {
+  final String nodeId;
+  final String optionNext;
+
+  RecordedChoice({required this.nodeId, required this.optionNext});
+
+  Map<String, dynamic> toJson() => {'nodeId': nodeId, 'optionNext': optionNext};
+
+  factory RecordedChoice.fromJson(Map<String, dynamic> json) => RecordedChoice(
+    nodeId: json['nodeId'] as String,
+    optionNext: json['optionNext'] as String,
+  );
+}
+
 // 그래프의 노드 하나 (대사 한 줄 또는 분기 선택지)
 class DialogueNode {
   final String id;

@@ -5,6 +5,9 @@ import 'dart:math' as math;
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
+import 'package:emotional_bakery/core/services/save_checkpoints.dart';
+import 'package:emotional_bakery/core/services/save_manager.dart';
+import 'package:emotional_bakery/core/services/save_resume.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
@@ -53,6 +56,30 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
       if (!mounted) return;
       setState(() => _lockedChapterNoticeText = null);
     });
+  }
+
+  // "현재 진행 중인 챕터" 카드를 탭했을 때 부름(여기 도달했다는 건 위 잠금 체크를
+  // 통과했다는 뜻이라 chapterNumber == highestUnlocked && !hasSeenEnding가 항상 성립함).
+  // 세이브 파일이 있으면 choice_screen.dart의 "이어하기"랑 완전히 동일한 방식
+  // (save_resume.dart의 screenForCheckpoint)으로 그 체크포인트로 바로 이동해서, 챕터를
+  // 처음부터 다시 시작하다가 온도/선택 변수가 실제 세이브랑 달라지는 문제를 막음.
+  // 세이브가 아예 없으면(이번 세션에 저장을 한 번도 안 하고 진행만 한 경우 등)
+  // fallbackScreen으로 기존처럼 챕터 맨 처음부터 시작함
+  Future<void> _enterCurrentChapter(Widget fallbackScreen) async {
+    final SaveData? data = await SaveManager.load();
+    if (mounted && data != null) {
+      restoreStoryStateFromSave(data);
+      final SaveCheckpoint? checkpoint = resolveSaveCheckpoint(data);
+      if (checkpoint != null) {
+        Navigator.push(
+          context,
+          fadeThroughBlackRoute(screenForCheckpoint(checkpoint, data)),
+        );
+        return;
+      }
+    }
+    if (!mounted) return;
+    Navigator.push(context, fadeThroughBlackRoute(fallbackScreen));
   }
 
   @override
@@ -474,47 +501,32 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                         print("챕터 1 잠금장치가 해제되었습니다!");
                       }
                     } else if (title == "Chapter 1") {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const TutorialScreen(),
-                        ),
-                      );
+                      // "현재 진행 중인 챕터"면 처음부터 다시 시작하는 대신 마지막 저장
+                      // 지점으로 이어감(세이브 없으면 fallback으로 원래대로 튜토리얼부터)
+                      await _enterCurrentChapter(const TutorialScreen());
                     } else if (title == "Chapter 2") {
                       // 챕터2는 빵집/튜토리얼 없이 바로 주방 화면(챕터2 시작 모드)에서 시작
-                      Navigator.push(
-                        context,
-                        fadeThroughBlackRoute(
-                          const KitchenScreen(
-                            mode: KitchenScreenMode.chapter2Start,
-                          ),
+                      await _enterCurrentChapter(
+                        const KitchenScreen(
+                          mode: KitchenScreenMode.chapter2Start,
                         ),
                       );
                     } else if (title == "Chapter 3") {
                       // 챕터3도 챕터2랑 동일하게 중간 화면 없이 바로 시작. DEV 바로가기 버튼이랑
                       // 동일한 진입점(채온이 방 화면)으로 연결함
-                      Navigator.push(
-                        context,
-                        fadeThroughBlackRoute(const ChaeonRoomScreen()),
-                      );
+                      await _enterCurrentChapter(const ChaeonRoomScreen());
                     } else if (title == "Chapter 4") {
                       // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
-                      Navigator.push(
-                        context,
-                        fadeThroughBlackRoute(
-                          const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
-                        ),
+                      await _enterCurrentChapter(
+                        const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
                       );
                     } else if (title == "Chapter 5") {
                       // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. DEV: 챕터5
                       // 바로가기 버튼이랑 동일한 진입점 + 파라미터로 연결함
-                      Navigator.push(
-                        context,
-                        fadeThroughBlackRoute(
-                          const GamePlayScreen(
-                            skipChapter1Events: true,
-                            reentryChapter: ReentryChapter.chapter5,
-                          ),
+                      await _enterCurrentChapter(
+                        const GamePlayScreen(
+                          skipChapter1Events: true,
+                          reentryChapter: ReentryChapter.chapter5,
                         ),
                       );
                     }

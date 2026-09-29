@@ -65,7 +65,7 @@ enum SaveCheckpoint {
   // chapter4_room_choice.json 끝난 뒤, 온도 4 이상 분기(chapter4_temp_high.json)
   chapter4TempHigh,
 
-  // --- game_play_screen.dart (5개) ---
+  // --- game_play_screen.dart (6개) ---
   // 릴리안 계단 등장 애니메이션 끝난 뒤(table.json)
   chapter1Table,
   // skipChapter1Events 모드, 골목 계단 트리거 도달(chapter3_door.json)
@@ -74,6 +74,11 @@ enum SaveCheckpoint {
   chapter5Start,
   // 릴리안 걷기 애니메이션 끝난 뒤, 첫 만남(first_meet.json)
   chapter1FirstMeet,
+  // first_meet.json 중간(line_011, choice_002 두 갈래가 합쳐지는 지점) 도달 후. 선택지 4개를
+  // 전부 이어하기 자동 재생해야 했던 걸 절반(2+2)으로 줄이려고 chapter1FirstMeet를 쪼갬.
+  // 파일을 새로 로드하는 게 아니라 같은 파일 안에서 SceneDialogueController.loadDialogue의
+  // startNodeId로 line_011부터 바로 시작함(game_play_screen.dart의 _hasReachedFirstMeetMid 참고)
+  chapter1FirstMeetMid,
   // 구름 드래그 미니게임(MemoryFlashbackScene) 완료 후(first_bread.json)
   chapter1FirstBread,
 }

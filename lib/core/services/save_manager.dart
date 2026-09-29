@@ -8,6 +8,7 @@
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
@@ -25,6 +26,7 @@ class SaveData {
     required this.isChapter4Unlocked,
     required this.isChapter5Unlocked,
     required this.hasSeenEnding,
+    this.choicesSinceCheckpoint = const [],
   });
 
   // save_checkpoints.dart의 SaveCheckpoint를 문자열로 저장한 값(SaveCheckpoint.name)
@@ -39,6 +41,10 @@ class SaveData {
   final bool isChapter4Unlocked;
   final bool isChapter5Unlocked;
   final bool hasSeenEnding;
+  // 이 체크포인트에 도달한 뒤부터 저장한 순간까지 고른 선택지 기록. 이어하기 시 이 순서대로
+  // 자동 재생해서, 체크포인트~저장 시점 사이 선택지를 유저가 다시 고르지 못하게 막는 데 씀
+  // (scene_dialogue_controller.dart의 choiceHistory 참고)
+  final List<RecordedChoice> choicesSinceCheckpoint;
 
   Map<String, dynamic> toJson() => {
     'checkpoint': checkpoint,
@@ -50,6 +56,9 @@ class SaveData {
     'isChapter4Unlocked': isChapter4Unlocked,
     'isChapter5Unlocked': isChapter5Unlocked,
     'hasSeenEnding': hasSeenEnding,
+    'choicesSinceCheckpoint': choicesSinceCheckpoint
+        .map((c) => c.toJson())
+        .toList(),
   };
 
   factory SaveData.fromJson(Map<String, dynamic> json) => SaveData(
@@ -62,6 +71,12 @@ class SaveData {
     isChapter4Unlocked: json['isChapter4Unlocked'] as bool,
     isChapter5Unlocked: json['isChapter5Unlocked'] as bool,
     hasSeenEnding: json['hasSeenEnding'] as bool,
+    // 이 필드 추가 전에 저장된 옛날 세이브엔 키 자체가 없을 수 있어서 없으면 빈 리스트로 처리
+    choicesSinceCheckpoint:
+        (json['choicesSinceCheckpoint'] as List<dynamic>?)
+            ?.map((e) => RecordedChoice.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        const [],
   );
 }
 
@@ -72,8 +87,13 @@ class SaveManager {
 
   // 지금 StoryState/ChapterProgress 값을 그대로 긁어서 SaveData로 묶고, 통째로
   // jsonEncode해서 하나의 문자열로 저장함. checkpoint만 호출부에서 넘겨받음 - 어느
-  // 체크포인트에서 저장하는 건지는 저장을 부르는 화면이 제일 잘 알고 있어서
-  static Future<void> save(SaveCheckpoint checkpoint) async {
+  // 체크포인트에서 저장하는 건지는 저장을 부르는 화면이 제일 잘 알고 있어서.
+  // choicesSinceCheckpoint도 마찬가지로 호출부(SceneDialogueController.choiceHistory)가
+  // 제일 잘 알고 있어서 넘겨받음 - 없는 화면(프롤로그 등)은 기본값(빈 리스트) 그대로 둠
+  static Future<void> save(
+    SaveCheckpoint checkpoint, {
+    List<RecordedChoice> choicesSinceCheckpoint = const [],
+  }) async {
     final SaveData data = SaveData(
       checkpoint: checkpoint.name,
       temperature: StoryState.currentTemperature,
@@ -84,6 +104,7 @@ class SaveManager {
       isChapter4Unlocked: ChapterProgress.isChapter4Unlocked,
       isChapter5Unlocked: ChapterProgress.isChapter5Unlocked,
       hasSeenEnding: ChapterProgress.hasSeenEnding,
+      choicesSinceCheckpoint: choicesSinceCheckpoint,
     );
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(_saveKey, jsonEncode(data.toJson()));

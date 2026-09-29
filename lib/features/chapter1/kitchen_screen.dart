@@ -129,6 +129,7 @@ class KitchenScreen extends StatefulWidget {
     this.initialTemperature = 3,
     this.mode = KitchenScreenMode.chapter1End,
     this.resumeCheckpoint,
+    this.resumeChoiceHistory = const [],
   });
 
   // GamePlayScreen에서 이어받는 온도계 값 (화면이 바뀌어도 온도계가 끊기지 않게)
@@ -139,6 +140,9 @@ class KitchenScreen extends StatefulWidget {
   // 그 이후 onDialogueEnd 체이닝이 어느 챕터 분기를 탈지는 여전히 mode가 결정하기 때문).
   // null이면(기본값) 지금까지와 100% 동일하게 동작함
   final SaveCheckpoint? resumeCheckpoint;
+  // resumeCheckpoint 도달 이후 저장 시점까지 골랐던 선택지 기록. 비어있으면(기본값) 자동
+  // 재생 없이 기존과 동일하게 동작함 - _resumeFromCheckpoint의 loadDialogue 호출부 참고
+  final List<RecordedChoice> resumeChoiceHistory;
 
   @override
   State<KitchenScreen> createState() => _KitchenScreenState();
@@ -508,6 +512,19 @@ class _KitchenScreenState extends State<KitchenScreen>
     }
   }
 
+  // _resumeFromCheckpoint 전용 loadDialogue 래퍼. widget.resumeChoiceHistory를 그대로
+  // 자동 재생 큐로 넘겨서, 세이브에 기록돼 있던 선택지를 유저 입력 없이 재적용시킴. 기록이
+  // 비어있으면(기본값) 전부 null/빈 리스트로 넘어가서 기존 동작과 100% 동일함
+  Future<void> _loadDialogueForResume(String assetPath) {
+    final bool hasReplay = widget.resumeChoiceHistory.isNotEmpty;
+    return _sceneController.loadDialogue(
+      assetPath,
+      autoReplay: widget.resumeChoiceHistory,
+      confirmedTemperature: hasReplay ? StoryState.currentTemperature : null,
+      confirmedVars: hasReplay ? StoryState.vars : null,
+    );
+  }
+
   // resumeCheckpoint로 들어온 경우 initState에서 호출됨. 원래는 dpad 트리거(_checkDialogueTrigger)나
   // onDialogueEnd 체이닝이 순서대로 _hasLoadedXxx 플래그를 하나씩 켜가면서 도달하는 지점들인데,
   // "이미 여기까지 왔다"고 치고 그 체크포인트 이전에 있었어야 할 플래그들을 한 번에 미리 켜준
@@ -526,42 +543,38 @@ class _KitchenScreenState extends State<KitchenScreen>
 
     switch (checkpoint) {
       case SaveCheckpoint.chapter2Ready:
-        _sceneController.loadDialogue(
-          'assets/lines/chapter2/chapter2_ready.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter2/chapter2_ready.json');
         break;
       case SaveCheckpoint.chapter1KitchenArrival:
         lockAtTrigger();
-        _sceneController.loadDialogue(
-          'assets/lines/chapter1/kitchen_arrival.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter1/kitchen_arrival.json');
         break;
       case SaveCheckpoint.chapter3ChaeonRoomAfter:
         lockAtTrigger();
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter3/chapter3_chaeon_room_after.json',
         );
         break;
       case SaveCheckpoint.chapter4BeforeCutscene:
         lockAtTrigger();
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter4/chapter4_before_cutscene.json',
         );
         break;
       case SaveCheckpoint.chapter5Bear:
         lockAtTrigger();
-        _sceneController.loadDialogue('assets/lines/chapter5/chapter5_bear.json');
+        _loadDialogueForResume('assets/lines/chapter5/chapter5_bear.json');
         break;
       case SaveCheckpoint.chapter2IngredientQuiz:
         _hasLoadedIngredientQuiz = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter2/chapter2_ingredient_quiz.json',
         );
         break;
       case SaveCheckpoint.chapter2AfterQuiz:
         _hasLoadedIngredientQuiz = true;
         _hasLoadedAfterQuizDialogue = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter2/chapter2_after_quiz.json',
         );
         break;
@@ -569,7 +582,7 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedIngredientQuiz = true;
         _hasLoadedAfterQuizDialogue = true;
         _hasLoadedMakingBreadDialogue = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter2/chapter2_making_bread.json',
         );
         break;
@@ -578,7 +591,7 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedAfterQuizDialogue = true;
         _hasLoadedMakingBreadDialogue = true;
         _hasLoadedAfterFirstGameDialogue = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter2/chapter2_after_first_game.json',
         );
         break;
@@ -588,14 +601,14 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedMakingBreadDialogue = true;
         _hasLoadedAfterFirstGameDialogue = true;
         _hasLoadedAfterSecondGameDialogue = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter2/chapter2_after_second_game.json',
         );
         break;
       case SaveCheckpoint.chapter3BeforeGame:
         lockAtTrigger();
         _hasLoadedBeforeGame = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter3/chapter3_before_game.json',
         );
         break;
@@ -603,7 +616,7 @@ class _KitchenScreenState extends State<KitchenScreen>
         lockAtTrigger();
         _hasLoadedBeforeGame = true;
         _hasLoadedChapter3AfterFirstGameDialogue = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter3/chapter3_after_first_game.json',
         );
         break;
@@ -612,14 +625,14 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedBeforeGame = true;
         _hasLoadedChapter3AfterFirstGameDialogue = true;
         _hasLoadedChapter3AfterEatDialogue = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter3/chapter3_after_eat.json',
         );
         break;
       case SaveCheckpoint.chapter4AfterPast:
         lockAtTrigger();
         _hasLoadedChapter4AfterPast = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter4/chapter4_after_past.json',
         );
         break;
@@ -627,7 +640,7 @@ class _KitchenScreenState extends State<KitchenScreen>
         lockAtTrigger();
         _hasLoadedChapter4AfterPast = true;
         _hasLoadedChapter4MakingBread = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter4/chapter4_making_bread.json',
         );
         break;
@@ -636,7 +649,7 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedChapter4AfterPast = true;
         _hasLoadedChapter4MakingBread = true;
         _hasLoadedChapter4AfterLetter = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter4/chapter4_after_letter.json',
         );
         break;
@@ -646,20 +659,20 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedChapter4MakingBread = true;
         _hasLoadedChapter4AfterLetter = true;
         _hasLoadedChapter4AfterMaking = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter4/chapter4_after_making.json',
         );
         break;
       case SaveCheckpoint.chapter5Eat:
         lockAtTrigger();
         _hasLoadedChapter5Eat = true;
-        _sceneController.loadDialogue('assets/lines/chapter5/chapter5_eat.json');
+        _loadDialogueForResume('assets/lines/chapter5/chapter5_eat.json');
         break;
       case SaveCheckpoint.chapter5AfterEat:
         lockAtTrigger();
         _hasLoadedChapter5Eat = true;
         _hasLoadedChapter5AfterEat = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter5/chapter5_after_eat.json',
         );
         break;
@@ -668,7 +681,7 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedChapter5Eat = true;
         _hasLoadedChapter5AfterEat = true;
         _hasLoadedChapter5Hidden = true;
-        _sceneController.loadDialogue(
+        _loadDialogueForResume(
           'assets/lines/chapter5/chapter5_hidden.json',
         );
         break;
@@ -741,7 +754,10 @@ class _KitchenScreenState extends State<KitchenScreen>
   // 메뉴를 닫은 뒤 확인 문구를 2초간 띄움
   void _handleSave() async {
     final SaveCheckpoint checkpoint = _detectCurrentCheckpoint();
-    await SaveManager.save(checkpoint);
+    await SaveManager.save(
+      checkpoint,
+      choicesSinceCheckpoint: _sceneController.choiceHistory,
+    );
     if (!mounted) return;
     setState(() {
       _isSettingOpen = false;

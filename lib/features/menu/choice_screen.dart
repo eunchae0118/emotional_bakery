@@ -5,14 +5,10 @@ import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
+import 'package:emotional_bakery/core/services/save_resume.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
-import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
-    show ReentryChapter;
-import 'package:emotional_bakery/features/chapter1/game_play_screen.dart';
-import 'package:emotional_bakery/features/chapter1/kitchen_screen.dart';
-import 'package:emotional_bakery/features/chapter3/chaeon_room_screen.dart';
 import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
 
 class ChoiceScreen extends StatefulWidget {
@@ -71,114 +67,6 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     );
   }
 
-  // 체크포인트 하나당 이어할 화면을 하나 골라서 그 화면 위젯을 만들어줌. save_checkpoints.dart의
-  // 30개 값(kitchen_screen.dart 20개 + chaeon_room_screen.dart 5개 + game_play_screen.dart 5개)
-  // 전부를 다루는 switch라 하나라도 빠지면 컴파일 에러로 바로 알 수 있음(default 없이 둠).
-  //
-  // chapter3Door 하나만 좀 특이함 - game_play_screen.dart의 _detectCurrentCheckpoint가
-  // 챕터3 재진입이랑 챕터4 재진입을 구분 안 하고 똑같이 chapter3Door로 저장하기 때문에,
-  // 체크포인트 이름만으론 어느 챕터로 가던 중이었는지 알 수가 없음. 대신 저장된 해금
-  // 상태(data.isChapter4Unlocked)로 유추함 - 챕터4가 이미 해금돼 있으면 챕터3는 이미
-  // 끝낸 상태라는 뜻이라 챕터4로 재진입하던 중이었을 거고, 아니면 챕터3 재진입 중이었을 것
-  Widget _screenForCheckpoint(SaveCheckpoint checkpoint, SaveData data) {
-    switch (checkpoint) {
-      // --- kitchen_screen.dart ---
-      case SaveCheckpoint.chapter2Ready:
-      case SaveCheckpoint.chapter2IngredientQuiz:
-      case SaveCheckpoint.chapter2AfterQuiz:
-      case SaveCheckpoint.chapter2MakingBread:
-      case SaveCheckpoint.chapter2AfterFirstGame:
-      case SaveCheckpoint.chapter2AfterSecondGame:
-        return KitchenScreen(
-          mode: KitchenScreenMode.chapter2Start,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter1KitchenArrival:
-        return KitchenScreen(
-          mode: KitchenScreenMode.chapter1End,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter3ChaeonRoomAfter:
-      case SaveCheckpoint.chapter3BeforeGame:
-      case SaveCheckpoint.chapter3AfterFirstGame:
-      case SaveCheckpoint.chapter3AfterEat:
-        return KitchenScreen(
-          mode: KitchenScreenMode.chapter3Start,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter4BeforeCutscene:
-      case SaveCheckpoint.chapter4AfterPast:
-      case SaveCheckpoint.chapter4MakingBread:
-      case SaveCheckpoint.chapter4AfterLetter:
-      case SaveCheckpoint.chapter4AfterMaking:
-        return KitchenScreen(
-          mode: KitchenScreenMode.chapter4Start,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter5Bear:
-      case SaveCheckpoint.chapter5Eat:
-      case SaveCheckpoint.chapter5AfterEat:
-      case SaveCheckpoint.chapter5Hidden:
-        return KitchenScreen(
-          mode: KitchenScreenMode.chapter5Start,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-
-      // --- chaeon_room_screen.dart ---
-      case SaveCheckpoint.chapter3ChaeonRoom:
-        return ChaeonRoomScreen(
-          mode: ChaeonRoomMode.chapter3,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter4StartRoom:
-        return ChaeonRoomScreen(
-          mode: ChaeonRoomMode.chapter4,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter4RoomChoice:
-      case SaveCheckpoint.chapter4TempLow:
-      case SaveCheckpoint.chapter4TempHigh:
-        return ChaeonRoomScreen(
-          mode: ChaeonRoomMode.chapter4,
-          enterFromDoor: true,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-
-      // --- game_play_screen.dart ---
-      case SaveCheckpoint.chapter1Table:
-      case SaveCheckpoint.chapter1FirstMeet:
-      case SaveCheckpoint.chapter1FirstBread:
-        return GamePlayScreen(
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter3Door:
-        return GamePlayScreen(
-          skipChapter1Events: true,
-          reentryChapter: data.isChapter4Unlocked
-              ? ReentryChapter.chapter4
-              : ReentryChapter.chapter3,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-      case SaveCheckpoint.chapter5Start:
-        return GamePlayScreen(
-          skipChapter1Events: true,
-          reentryChapter: ReentryChapter.chapter5,
-          initialTemperature: data.temperature,
-          resumeCheckpoint: checkpoint,
-        );
-    }
-  }
-
   // "이어하기" 버튼(MenuOverlay.onSave 연결한 kitchen_screen.dart/chaeon_room_screen.dart/
   // game_play_screen.dart 저장 버튼이랑 같은 데이터 계층을 씀). SaveManager.load()로
   // SaveData를 읽어서 StoryState/ChapterProgress를 전부 복원하고, checkpoint에 맞는
@@ -188,22 +76,9 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     if (!mounted || data == null) return;
 
     // StoryState/ChapterProgress 복원. 저장할 때 읽어갔던 값들을 그대로 되돌려놓음
-    StoryState.currentTemperature = data.temperature;
-    StoryState.vars = data.vars;
-    ChapterProgress.isChapter1Unlocked = data.isChapter1Unlocked;
-    ChapterProgress.isChapter2Unlocked = data.isChapter2Unlocked;
-    ChapterProgress.isChapter3Unlocked = data.isChapter3Unlocked;
-    ChapterProgress.isChapter4Unlocked = data.isChapter4Unlocked;
-    ChapterProgress.isChapter5Unlocked = data.isChapter5Unlocked;
-    ChapterProgress.hasSeenEnding = data.hasSeenEnding;
+    restoreStoryStateFromSave(data);
 
-    SaveCheckpoint? checkpoint;
-    for (final value in SaveCheckpoint.values) {
-      if (value.name == data.checkpoint) {
-        checkpoint = value;
-        break;
-      }
-    }
+    final SaveCheckpoint? checkpoint = resolveSaveCheckpoint(data);
     if (checkpoint == null) {
       // 저장 파일이 깨졌거나 옛날 포맷이라 체크포인트 이름을 못 알아본 경우 - 엉뚱한
       // 지점으로 보내는 대신 여기서 멈추고 안내만 띄움
@@ -216,7 +91,7 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => _screenForCheckpoint(checkpoint!, data),
+        builder: (context) => screenForCheckpoint(checkpoint, data),
       ),
     );
   }

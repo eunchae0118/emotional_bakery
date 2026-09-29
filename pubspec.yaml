@@ -27,6 +27,7 @@ dev_dependencies:
 
   build_runner: ^2.4.9
   json_serializable: ^6.8.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -65,3 +66,22 @@ flutter:
           weight: 800
         - asset: assets/fonts/SCDream9.otf
           weight: 900
+
+# 앱 아이콘(웹 + 안드로이드) 생성 설정. 원본은 assets/icon/app_icon.png(1158x1158, 여백
+# 없이 꽉 찬 빵집 그림) - 안드로이드 adaptive icon은 런처마다 원형/둥근사각형 등으로 마스킹
+# 되는데, 그 안전 영역(중앙 약 66%)을 벗어나면 지붕/화분/간판 같은 중요한 부분이 잘림.
+# 그래서 foreground 전용으로 원본을 66%로 축소해서 투명 여백을 두른
+# app_icon_foreground.png를 따로 만들어 씀(assets/icon/app_icon.png 자체는 안 건드림).
+# 배경색(#262626)은 원본 이미지 모서리 배경색을 실측해서 그대로 맞춘 값
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#262626"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#262626"
+    theme_color: "#262626"

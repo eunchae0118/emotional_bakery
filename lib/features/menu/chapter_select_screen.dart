@@ -1,5 +1,7 @@
 // lib/features/menu/chapter_select_screen.dart
 
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
@@ -8,9 +10,16 @@ import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
     show ReentryChapter;
 import 'package:emotional_bakery/features/chapter1/game_play_screen.dart';
+import 'package:emotional_bakery/features/chapter1/game_play_widgets.dart'
+    as widgets;
 import 'package:emotional_bakery/features/chapter1/kitchen_screen.dart';
 import 'package:emotional_bakery/features/chapter3/chaeon_room_screen.dart';
 import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
+
+// "챕터가 잠겨있습니다" 배지가 뜨는 top 위치(874x402 기준, rH로 스케일됨). 원래
+// kitchen_screen.dart/game_play_screen.dart랑 동일하게 80을 썼는데, 카드 썸네일
+// 바로 위에 붙어서 너무 가까워 보여서 더 위로 올림 - 화면 보면서 조정 예정
+const double _lockedChapterNoticeTopRef = 45;
 
 class ChapterSelectScreen extends StatefulWidget {
   const ChapterSelectScreen({super.key});
@@ -23,6 +32,28 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
   // 스크롤 위치 감지용 컨트롤러
   final ScrollController _scrollController = ScrollController();
   double _scrollProgress = 0.0;
+
+  // 잠긴 챕터 탭했을 때 잠깐 뜨는 안내 문구. kitchen_screen.dart의 저장 확인 배지
+  // (_saveConfirmationText/_saveConfirmationTimer)랑 동일한 패턴. null이면 안 보임
+  String? _lockedChapterNoticeText;
+  Timer? _lockedChapterNoticeTimer;
+
+  @override
+  void dispose() {
+    _lockedChapterNoticeTimer?.cancel();
+    super.dispose();
+  }
+
+  // 잠긴 챕터 썸네일 탭했을 때 부름. buildSaveConfirmationBadge를 그대로 재사용해서
+  // "저장되었습니다"랑 동일한 디자인/지속시간(2초)으로 "챕터가 잠겨있습니다"를 띄움
+  void _showLockedChapterNotice() {
+    setState(() => _lockedChapterNoticeText = '챕터가 잠겨있습니다');
+    _lockedChapterNoticeTimer?.cancel();
+    _lockedChapterNoticeTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _lockedChapterNoticeText = null);
+    });
+  }
 
   @override
   void initState() {
@@ -89,7 +120,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
               children: [
                 _buildChapterCard(
                   "Prolog",
-                  "감정을 잃은 사람들",
+                  "색을 잃은 아이",
                   "ch_prolog.png",
                   true,
                   rW,
@@ -100,7 +131,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                 ),
                 _buildChapterCard(
                   "Chapter 1",
-                  "색을 잃은 아이",
+                  "신비한 빵집",
                   "ch1.png",
                   ChapterProgress.isChapter1Unlocked, // 프롤로그 클리어하면 전역으로 해금됨
                   rW,
@@ -110,7 +141,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                 ),
                 _buildChapterCard(
                   "Chapter 2",
-                  "닫아버린 마음",
+                  "감정의 빵",
                   "ch2.png",
                   ChapterProgress.isChapter2Unlocked, // 챕터1 종료하면 전역으로 해금됨
                   rW,
@@ -120,7 +151,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                 ),
                 _buildChapterCard(
                   "Chapter 3",
-                  "멈춰선 마을",
+                  "잃는 것과 얻는 것",
                   "ch3.png",
                   ChapterProgress.isChapter3Unlocked, // 챕터2 종료하면 전역으로 해금됨
                   rW,
@@ -130,7 +161,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                 ),
                 _buildChapterCard(
                   "Chapter 4",
-                  "준비 중인 이야기",
+                  "슬픔을 마주할 용기",
                   "ch4.png",
                   ChapterProgress.isChapter4Unlocked, // 챕터3 종료하면 전역으로 해금됨
                   rW,
@@ -140,7 +171,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                 ),
                 _buildChapterCard(
                   "Chapter 5",
-                  "준비 중인 이야기",
+                  "진짜 감정을 마주할 시간",
                   "ch5.png",
                   ChapterProgress.isChapter5Unlocked, // 챕터4 챕터5행 엔딩 보면 전역으로 해금됨
                   rW,
@@ -318,11 +349,26 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
               ],
             ),
           ),
+
+          // 잠긴 챕터 안내 배지. kitchen_screen.dart의 저장 완료 배지랑 동일한 위치/스타일
+          // (buildSaveConfirmationBadge 재사용) - _showLockedChapterNotice가 2초 뒤 스스로 지움
+          if (_lockedChapterNoticeText != null)
+            Positioned(
+              top: rH(_lockedChapterNoticeTopRef),
+              left: 0,
+              right: 0,
+              child: Center(
+                child: widgets.buildSaveConfirmationBadge(
+                  _lockedChapterNoticeText!,
+                  rW: rW,
+                  rH: rH,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
-
 
   // 챕터 카드 위젯
   Widget _buildChapterCard(
@@ -338,147 +384,186 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
   ) {
     return Padding(
       padding: EdgeInsets.only(right: rW(40)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: rW(24),
-              fontWeight: FontWeight.bold,
-              fontFamily: 'NanumGothic',
-            ),
-          ),
-          Text(
-            subTitle,
-            style: TextStyle(color: Colors.white70, fontSize: rW(14)),
-          ),
-          SizedBox(height: rH(15)),
-          GestureDetector(
-            onTap: () async {
-              if (isUnlocked) {
-                // 이미 지나간 챕터(번호가 highestUnlocked보다 작음)거나, 마지막으로 도달한
-                // 챕터인데 엔딩까지 이미 봤으면 재진입 막음 - 재플레이로 온도/선택 변수
-                // 조작하는 걸 막으려는 거임. 프롤로그는 chapterNumber가 null이라 대상 아님
-                if (chapterNumber != null &&
-                    (chapterNumber < highestUnlocked ||
-                        (chapterNumber == highestUnlocked &&
-                            ChapterProgress.hasSeenEnding))) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        '이미 완료한 챕터예요. 다시 플레이하려면 처음부터 시작해주세요.',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                if (title == "Prolog") {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const GamePlayScreen(isPrologue: true),
-                    ),
-                  );
+      // 가로가 긴(세로 공간이 좁은) 화면에서는 rW(220) 정사각형이 카드 세로 공간(제목+
+      // 부제목+여백 다음에 남는 자리)보다 커져서 BOTTOM OVERFLOWED가 났었음. LayoutBuilder로
+      // 가로 스크롤 리스트가 이 카드한테 실제로 준 세로 공간을 직접 읽어서(rH로 따로
+      // 추정하지 않음 - Positioned(top/bottom) 값이 나중에 바뀌어도 이 계산은 안 틀어짐),
+      // 정사각형 한 변을 "가로 기준 크기(rW(220))"랑 "그 세로 공간에서 제목/부제목/여백을
+      // 뺀 나머지" 중 더 작은 값으로 정함
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 제목(rW(20) SCDream Heavy)/부제목(rW(16) SCDream Medium)의 실제 렌더 줄 높이는
+          // 폰트마다 달라서 정확히 재는 대신 넉넉하게(폰트 크기의 1.3배) 잡음 - 실제보다 더
+          // 확보해두는 셈이라 썸네일이 아주 살짝 작아질 수는 있어도 오버플로우가 나는
+          // 쪽으로는 절대 안 틀어짐. 기존 SizedBox(rH(15)) 여백 + 여유 마진(rH(10))도 같이 뺌
+          final double reservedHeight =
+              rW(20) * 1.3 + rW(16) * 1.3 + rH(15) + rH(10);
+          final double thumbnailSize = math.min(
+            rW(220),
+            math.max(0.0, constraints.maxHeight - reservedHeight),
+          );
 
-                  if (result == true) {
-                    // 다른 챕터들이랑 동일하게 ChapterProgress(static)에 저장해야 챕터 선택창이
-                    // 다시 생성돼도(다른 챕터 클리어 후 돌아올 때 등) 안 풀림. setState는 지금
-                    // 이 화면(같은 인스턴스)에서 바로 카드 잠금이 풀린 걸 반영하려고 여전히 필요함
-                    setState(() {
-                      ChapterProgress.isChapter1Unlocked = true;
-                    });
-                    print("챕터 1 잠금장치가 해제되었습니다!");
-                  }
-                } else if (title == "Chapter 1") {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TutorialScreen(),
-                    ),
-                  );
-                } else if (title == "Chapter 2") {
-                  // 챕터2는 빵집/튜토리얼 없이 바로 주방 화면(챕터2 시작 모드)에서 시작
-                  Navigator.push(
-                    context,
-                    fadeThroughBlackRoute(
-                      const KitchenScreen(
-                        mode: KitchenScreenMode.chapter2Start,
-                      ),
-                    ),
-                  );
-                } else if (title == "Chapter 3") {
-                  // 챕터3도 챕터2랑 동일하게 중간 화면 없이 바로 시작. DEV 바로가기 버튼이랑
-                  // 동일한 진입점(채온이 방 화면)으로 연결함
-                  Navigator.push(
-                    context,
-                    fadeThroughBlackRoute(const ChaeonRoomScreen()),
-                  );
-                } else if (title == "Chapter 4") {
-                  // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
-                  Navigator.push(
-                    context,
-                    fadeThroughBlackRoute(
-                      const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
-                    ),
-                  );
-                } else if (title == "Chapter 5") {
-                  // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. DEV: 챕터5
-                  // 바로가기 버튼이랑 동일한 진입점 + 파라미터로 연결함
-                  Navigator.push(
-                    context,
-                    fadeThroughBlackRoute(
-                      const GamePlayScreen(
-                        skipChapter1Events: true,
-                        reentryChapter: ReentryChapter.chapter5,
-                      ),
-                    ),
-                  );
-                }
-              } else {
-                print("잠겨있음!");
-              }
-            },
-            child: Container(
-              width: rW(220),
-              height: rH(220),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                image: DecorationImage(
-                  image: AssetImage('assets/images/$imgName'),
-                  fit: BoxFit.cover,
-                  // 잠겨있으면 흑백, 풀렸으면 컬러 처리
-                  colorFilter: isUnlocked
-                      ? null
-                      : const ColorFilter.matrix([
-                          0.2126,
-                          0.7152,
-                          0.0722,
-                          0,
-                          0,
-                          0.2126,
-                          0.7152,
-                          0.0722,
-                          0,
-                          0,
-                          0.2126,
-                          0.7152,
-                          0.0722,
-                          0,
-                          0,
-                          0,
-                          0,
-                          0,
-                          1,
-                          0,
-                        ]),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 제목/부제목을 썸네일 폭(thumbnailSize) 기준으로 가운데 정렬하려고
+              // SizedBox로 폭을 썸네일이랑 맞추고 textAlign.center를 줌
+              SizedBox(
+                width: thumbnailSize,
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: rW(20),
+                    // SCDream8.otf가 weight 800(Heavy) - pubspec.yaml에 등록된 숫자
+                    // 굵기 매핑 그대로(다른 화면들이 SCDream5=w500 쓰는 것과 동일한 방식)
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'SCDream',
+                  ),
                 ),
               ),
-            ),
-          ),
-        ],
+              SizedBox(
+                width: thumbnailSize,
+                child: Text(
+                  subTitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: rW(16),
+                    // SCDream5.otf가 weight 500(Medium)
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'SCDream',
+                  ),
+                ),
+              ),
+              SizedBox(height: rH(15)),
+              GestureDetector(
+                onTap: () async {
+                  if (isUnlocked) {
+                    // 이미 지나간 챕터(번호가 highestUnlocked보다 작음)거나, 마지막으로 도달한
+                    // 챕터인데 엔딩까지 이미 봤으면 재진입 막음 - 재플레이로 온도/선택 변수
+                    // 조작하는 걸 막으려는 거임. 프롤로그는 chapterNumber가 null이라 대상 아님
+                    if (chapterNumber != null &&
+                        (chapterNumber < highestUnlocked ||
+                            (chapterNumber == highestUnlocked &&
+                                ChapterProgress.hasSeenEnding))) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('이미 완료한 챕터예요. 다시 플레이하려면 처음부터 시작해주세요.'),
+                        ),
+                      );
+                      return;
+                    }
+                    if (title == "Prolog") {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const GamePlayScreen(isPrologue: true),
+                        ),
+                      );
+
+                      if (result == true) {
+                        // 다른 챕터들이랑 동일하게 ChapterProgress(static)에 저장해야 챕터 선택창이
+                        // 다시 생성돼도(다른 챕터 클리어 후 돌아올 때 등) 안 풀림. setState는 지금
+                        // 이 화면(같은 인스턴스)에서 바로 카드 잠금이 풀린 걸 반영하려고 여전히 필요함
+                        setState(() {
+                          ChapterProgress.isChapter1Unlocked = true;
+                        });
+                        print("챕터 1 잠금장치가 해제되었습니다!");
+                      }
+                    } else if (title == "Chapter 1") {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TutorialScreen(),
+                        ),
+                      );
+                    } else if (title == "Chapter 2") {
+                      // 챕터2는 빵집/튜토리얼 없이 바로 주방 화면(챕터2 시작 모드)에서 시작
+                      Navigator.push(
+                        context,
+                        fadeThroughBlackRoute(
+                          const KitchenScreen(
+                            mode: KitchenScreenMode.chapter2Start,
+                          ),
+                        ),
+                      );
+                    } else if (title == "Chapter 3") {
+                      // 챕터3도 챕터2랑 동일하게 중간 화면 없이 바로 시작. DEV 바로가기 버튼이랑
+                      // 동일한 진입점(채온이 방 화면)으로 연결함
+                      Navigator.push(
+                        context,
+                        fadeThroughBlackRoute(const ChaeonRoomScreen()),
+                      );
+                    } else if (title == "Chapter 4") {
+                      // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
+                      Navigator.push(
+                        context,
+                        fadeThroughBlackRoute(
+                          const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
+                        ),
+                      );
+                    } else if (title == "Chapter 5") {
+                      // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. DEV: 챕터5
+                      // 바로가기 버튼이랑 동일한 진입점 + 파라미터로 연결함
+                      Navigator.push(
+                        context,
+                        fadeThroughBlackRoute(
+                          const GamePlayScreen(
+                            skipChapter1Events: true,
+                            reentryChapter: ReentryChapter.chapter5,
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    _showLockedChapterNotice();
+                  }
+                },
+                child: Container(
+                  // 위 LayoutBuilder에서 구한 thumbnailSize를 가로/세로에 똑같이 써서 항상
+                  // 정사각형으로 유지함(가로 기준 rW(220)이랑 세로 여유 공간 중 더 작은 값)
+                  width: thumbnailSize,
+                  height: thumbnailSize,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    image: DecorationImage(
+                      image: AssetImage('assets/images/$imgName'),
+                      fit: BoxFit.cover,
+                      // 잠겨있으면 흑백, 풀렸으면 컬러 처리
+                      colorFilter: isUnlocked
+                          ? null
+                          : const ColorFilter.matrix([
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0.2126,
+                              0.7152,
+                              0.0722,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0,
+                              1,
+                              0,
+                            ]),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

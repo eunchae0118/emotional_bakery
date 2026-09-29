@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="emotional_bakery"
+        android:label="감정을 굽는 빵집"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

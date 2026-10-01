@@ -10,6 +10,7 @@ import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
+import 'package:emotional_bakery/features/menu/ending_gallery_screen.dart';
 
 class ChoiceScreen extends StatefulWidget {
   const ChoiceScreen({super.key});
@@ -223,8 +224,14 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
               index: 4,
               normalImg: 'ending.png',
               touchImg: 'ending_touch.png',
-              // TODO: 엔딩보기 화면 연결 예정
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EndingGalleryScreen(),
+                  ),
+                );
+              },
               rW: s,
               rH: s,
             ),

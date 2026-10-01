@@ -66,6 +66,10 @@ flutter:
           weight: 800
         - asset: assets/fonts/SCDream9.otf
           weight: 900
+    # 엔딩보기(ending_gallery_screen.dart) 요약 텍스트 전용 손글씨 느낌 폰트
+    - family: GriunGothicSarangseureoun
+      fonts:
+        - asset: assets/fonts/GriunXHangeul_SarangSeuReoUn-Rg.ttf
 
 # 앱 아이콘(웹 + 안드로이드) 생성 설정. 원본은 assets/icon/app_icon.png(1158x1158, 여백
 # 없이 꽉 찬 빵집 그림) - 안드로이드 adaptive icon은 런처마다 원형/둥근사각형 등으로 마스킹

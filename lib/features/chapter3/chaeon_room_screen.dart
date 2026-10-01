@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
+import 'package:emotional_bakery/core/services/ending_unlocks.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
@@ -691,6 +692,8 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                   onComplete: () {
                     // 배드엔딩 도달 - 재플레이로 온도/선택 변수 조작 못 하게 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
+                    // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
+                    EndingUnlocks.unlock(EndingType.bad);
                     setState(() {
                       _showChapter4BadEndingCutscene = false;
                       _isChapter4BadEnding = true;
@@ -730,6 +733,8 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                   onComplete: () {
                     // 노말엔딩 도달 - 배드엔딩이랑 동일한 이유로 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
+                    // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
+                    EndingUnlocks.unlock(EndingType.normal);
                     setState(() {
                       _showChapter4EndingNormalCutscene = false;
                       _showChapterEndPlaceholder = true;

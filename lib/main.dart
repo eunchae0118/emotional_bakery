@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'features/menu/orientation_gate_screen.dart';
 import 'core/services/ios_viewport_patch.dart';
+import 'core/services/ending_unlocks.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Flutter 엔진 초기화
@@ -11,6 +12,10 @@ void main() async {
   // 있어서, 이 타이밍이면 태그를 찾아서 patch하기에 안전함(iOS 아니거나 웹이 아니면
   // 내부에서 바로 return되는 함수라 다른 플랫폼엔 영향 없음)
   patchIosViewportMeta();
+
+  // "엔딩보기" 갤러리용 엔딩 해금 상태를 앱 켜지자마자 미리 불러둠 - save_data_v1(단일
+  // 세이브 슬롯)이랑은 별개 저장소라 "시작하기"로 새 게임을 시작해도 여기 값은 안 지워짐
+  await EndingUnlocks.load();
 
   // 가로 화면 고정
   await SystemChrome.setPreferredOrientations([

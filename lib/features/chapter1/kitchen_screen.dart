@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
+import 'package:emotional_bakery/core/services/ending_unlocks.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
@@ -1979,6 +1980,9 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: DialogueOverlay(
                   data: chapter4BadEndingData,
                   onComplete: () {
+                    // 엔딩보기 갤러리용 영구 해금 기록(ChapterProgress.hasSeenEnding이랑
+                    // 별개 저장소 - save_data_v1 세이브 슬롯 초기화와 무관하게 유지됨)
+                    EndingUnlocks.unlock(EndingType.bad);
                     setState(() {
                       _showChapter4BadEndingCutscene = false;
                       _isChapter4BadEnding = true;
@@ -2173,6 +2177,8 @@ class _KitchenScreenState extends State<KitchenScreen>
                   onComplete: () {
                     // 해피엔딩 도달 - 재플레이로 온도/선택 변수 조작 못 하게 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
+                    // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
+                    EndingUnlocks.unlock(EndingType.happy);
                     setState(() {
                       _showChapter5EndingHappyCutscene = false;
                       _showChapterEndPlaceholder = true;
@@ -2192,6 +2198,8 @@ class _KitchenScreenState extends State<KitchenScreen>
                   onComplete: () {
                     // 히든엔딩 도달 - 재플레이로 온도/선택 변수 조작 못 하게 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
+                    // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
+                    EndingUnlocks.unlock(EndingType.hidden);
                     setState(() {
                       _showChapter5EndingHiddenCutscene = false;
                       _showChapterEndPlaceholder = true;

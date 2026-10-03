@@ -30,7 +30,6 @@ import 'package:emotional_bakery/features/chapter4/chapter4_back_to_bakery_data.
 import 'package:emotional_bakery/features/chapter4/chapter4_bad_ending_data.dart';
 import 'package:emotional_bakery/features/chapter4/chapter4_eat_sad_bread_cutscene_data.dart';
 import 'package:emotional_bakery/features/chapter4/chapter4_ending_normal_data.dart';
-import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
 import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
 
 // 이 화면이 챕터3용인지 챕터4용인지 구분. 배경(room_bg.png)/좌표는 완전히 같은 걸 재사용하고,
@@ -425,12 +424,9 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   }
 
   // 챕터4 임시 종료 화면 탭하면 챕터 선택창으로 이동. kitchen_screen.dart의
-  // _handleChapterEndTap이랑 동일한 패턴(pushReplacement로 스택 정리)
+  // _handleChapterEndTap이랑 동일한 패턴(ChoiceScreen 위에 쌓인 챕터 화면들 전부 정리)
   void _handleChapterEndTap() {
-    Navigator.pushReplacement(
-      context,
-      fadeThroughBlackRoute(const ChapterSelectScreen()),
-    );
+    goToChapterSelectClearingStack(context);
   }
 
   // 현재 노드가 채온이 대사고 expression이 있으면 그 이미지를 우선 보여줌
@@ -684,7 +680,10 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 onSave: _handleSave,
                 onGoToMainScreen: () =>
                     Navigator.of(context).pushAndRemoveUntil(
-                      fadeThroughBlackRoute(const ChoiceScreen()),
+                      fadeThroughBlackRoute(
+                        const ChoiceScreen(),
+                        settings: kChoiceScreenRouteSettings,
+                      ),
                       (route) => false,
                     ),
                 onExitGame: exitGame,
@@ -783,10 +782,7 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                   data: chapter4BackToBakeryData,
                   onComplete: () {
                     ChapterProgress.isChapter5Unlocked = true;
-                    Navigator.pushReplacement(
-                      context,
-                      fadeThroughBlackRoute(const ChapterSelectScreen()),
-                    );
+                    goToChapterSelectClearingStack(context);
                   },
                 ),
               ),

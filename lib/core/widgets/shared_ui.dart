@@ -18,17 +18,19 @@ PageRouteBuilder fadeThroughBlackRoute(
   Duration? fadeOutDuration,
   Duration? holdDuration,
   Duration? fadeInDuration,
+  // 라우트 이름 등. 특정 화면(ChoiceScreen)까지만 남기고 스택을 정리할 때 그 화면을 찾는 표시로 씀
+  RouteSettings? settings,
 }) {
   final Duration fadeOut = fadeOutDuration ?? _fadeThroughBlackFadeOut;
   final Duration hold = holdDuration ?? _fadeThroughBlackHold;
   final Duration fadeIn = fadeInDuration ?? _fadeThroughBlackFadeIn;
   final Duration total = fadeOut + hold + fadeIn;
   final double fadeOutEnd = fadeOut.inMilliseconds / total.inMilliseconds;
-  final double holdEnd =
-      (fadeOut + hold).inMilliseconds / total.inMilliseconds;
+  final double holdEnd = (fadeOut + hold).inMilliseconds / total.inMilliseconds;
 
   // 페이지 전환 시, 화면이 검은색으로 페이드아웃 -> 잠시 유지 -> 페이드인 되도록 하는 커스텀 트랜지션
   return PageRouteBuilder(
+    settings: settings,
     transitionDuration: total,
     reverseTransitionDuration: total,
     pageBuilder: (context, animation, secondaryAnimation) => page,
@@ -64,8 +66,9 @@ PageRouteBuilder fadeThroughBlackRoute(
 // 애니메이션 없이 바로 화면을 바꾸는 라우트. 검은 배경 화면끼리 이어지는 구간(암전 ->
 // iOS 설치 안내 -> 콘텐츠 경고 -> 로고 화면)에서 기본 MaterialPageRoute의 전환
 // 애니메이션 때문에 화면이 겹쳐 보이거나 번쩍이는 것처럼 보이는 문제가 있어서 씀
-PageRouteBuilder instantRoute(Widget page) {
+PageRouteBuilder instantRoute(Widget page, {RouteSettings? settings}) {
   return PageRouteBuilder(
+    settings: settings,
     transitionDuration: Duration.zero,
     reverseTransitionDuration: Duration.zero,
     pageBuilder: (context, animation, secondaryAnimation) => page,

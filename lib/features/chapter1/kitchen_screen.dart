@@ -16,7 +16,6 @@ import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
-import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
@@ -34,7 +33,6 @@ import 'package:emotional_bakery/features/chapter4/letter_scene.dart';
 import 'package:emotional_bakery/features/chapter5/bear_arm_puzzle_scene.dart';
 import 'package:emotional_bakery/features/chapter5/chapter5_ending_happy_data.dart';
 import 'package:emotional_bakery/features/chapter5/chapter5_ending_hidden_data.dart';
-import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
 
 // 채온이가 계단 하강 애니메이션 끝나고 서는 시작 위치 (kitchen_main.png 실측값, 874x464 캔버스 기준)
 const double kChaeonKitchenStartX = 60;
@@ -73,7 +71,9 @@ const Duration _memoryBlackoutFadeOutDuration = Duration(milliseconds: 300);
 // 일기장 인트로 이미지(chapter3_diary_intro.png)가 뜨기까지의 대기 시간이 바뀜.
 // 챕터1 먹구름 미니게임 전환 암전(game_play_screen.dart의 _memoryFadeInDuration +
 // _memoryFadeHoldDuration + _memoryFadeOutDuration = 300+1000+300ms)과 동일한 총 시간
-const Duration _chapter3DiaryBlackoutHoldDuration = Duration(milliseconds: 1600);
+const Duration _chapter3DiaryBlackoutHoldDuration = Duration(
+  milliseconds: 1600,
+);
 const Duration _chapter3DiaryIntroHoldDuration = Duration(seconds: 2);
 const Duration _chapter3DiarySuccessAfterHoldDuration = Duration(
   milliseconds: 1800,
@@ -627,9 +627,7 @@ class _KitchenScreenState extends State<KitchenScreen>
         _hasLoadedBeforeGame = true;
         _hasLoadedChapter3AfterFirstGameDialogue = true;
         _hasLoadedChapter3AfterEatDialogue = true;
-        _loadDialogueForResume(
-          'assets/lines/chapter3/chapter3_after_eat.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter3/chapter3_after_eat.json');
         break;
       case SaveCheckpoint.chapter4AfterPast:
         lockAtTrigger();
@@ -674,18 +672,14 @@ class _KitchenScreenState extends State<KitchenScreen>
         lockAtTrigger();
         _hasLoadedChapter5Eat = true;
         _hasLoadedChapter5AfterEat = true;
-        _loadDialogueForResume(
-          'assets/lines/chapter5/chapter5_after_eat.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter5/chapter5_after_eat.json');
         break;
       case SaveCheckpoint.chapter5Hidden:
         lockAtTrigger();
         _hasLoadedChapter5Eat = true;
         _hasLoadedChapter5AfterEat = true;
         _hasLoadedChapter5Hidden = true;
-        _loadDialogueForResume(
-          'assets/lines/chapter5/chapter5_hidden.json',
-        );
+        _loadDialogueForResume('assets/lines/chapter5/chapter5_hidden.json');
         break;
       default:
         // 이 화면(kitchen_screen.dart) 소관이 아닌 체크포인트(chaeon_room_screen.dart/
@@ -716,8 +710,10 @@ class _KitchenScreenState extends State<KitchenScreen>
         if (_hasLoadedMakingBreadDialogue) {
           return SaveCheckpoint.chapter2MakingBread;
         }
-        if (_hasLoadedAfterQuizDialogue) return SaveCheckpoint.chapter2AfterQuiz;
-        if (_hasLoadedIngredientQuiz) return SaveCheckpoint.chapter2IngredientQuiz;
+        if (_hasLoadedAfterQuizDialogue)
+          return SaveCheckpoint.chapter2AfterQuiz;
+        if (_hasLoadedIngredientQuiz)
+          return SaveCheckpoint.chapter2IngredientQuiz;
         return SaveCheckpoint.chapter2Ready;
       case KitchenScreenMode.chapter3Start:
         if (_hasLoadedChapter3AfterEatDialogue) {
@@ -738,7 +734,8 @@ class _KitchenScreenState extends State<KitchenScreen>
         if (_hasLoadedChapter4MakingBread) {
           return SaveCheckpoint.chapter4MakingBread;
         }
-        if (_hasLoadedChapter4AfterPast) return SaveCheckpoint.chapter4AfterPast;
+        if (_hasLoadedChapter4AfterPast)
+          return SaveCheckpoint.chapter4AfterPast;
         return SaveCheckpoint.chapter4BeforeCutscene;
       case KitchenScreenMode.chapter5Start:
         if (_hasLoadedChapter5Hidden) return SaveCheckpoint.chapter5Hidden;
@@ -848,10 +845,13 @@ class _KitchenScreenState extends State<KitchenScreen>
             _showChapter5Playground = false;
             _showChapter5BearIntro = true;
           });
-          _chapter5BearIntroGuideTimer = Timer(_chapter5BearIntroGuideDelay, () {
-            if (!mounted) return;
-            setState(() => _showChapter5BearIntroGuide = true);
-          });
+          _chapter5BearIntroGuideTimer = Timer(
+            _chapter5BearIntroGuideDelay,
+            () {
+              if (!mounted) return;
+              setState(() => _showChapter5BearIntroGuide = true);
+            },
+          );
         });
       },
     );
@@ -953,9 +953,6 @@ class _KitchenScreenState extends State<KitchenScreen>
     super.didChangeDependencies();
     if (!_imagesPrecached) {
       _imagesPrecached = true;
-      // 챕터4에서 계단 올라가면 채온이 방(ChaeonRoomScreen)으로 넘어가니까 그 배경을 미리
-      // 디코딩 + GPU 업로드까지 데워둠
-      precacheAndWarmUpAsset(kRoomBgAsset, context);
       const List<String> assetsToPrecache = [
         'assets/images/kitchen_main.png',
         'assets/images/chaeon_apron_putting_on.gif',
@@ -1228,10 +1225,9 @@ class _KitchenScreenState extends State<KitchenScreen>
       // 챕터3 완전 종료(일기장 퍼즐 시퀀스 끝)했으니 챕터4 해금
       ChapterProgress.isChapter4Unlocked = true;
     }
-    Navigator.pushReplacement(
-      context,
-      fadeThroughBlackRoute(const ChapterSelectScreen()),
-    );
+    // ChoiceScreen 위에 쌓인 이전 챕터 화면들(빵집 GamePlayScreen/Flame 게임 등)까지 전부 정리하고
+    // 챕터 선택창으로 감
+    goToChapterSelectClearingStack(context);
   }
 
   @override
@@ -1534,10 +1530,14 @@ class _KitchenScreenState extends State<KitchenScreen>
                       !StoryState.isAutoAdvanceEnabled,
                 ),
                 onSave: _handleSave,
-                onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
-                  fadeThroughBlackRoute(const ChoiceScreen()),
-                  (route) => false,
-                ),
+                onGoToMainScreen: () =>
+                    Navigator.of(context).pushAndRemoveUntil(
+                      fadeThroughBlackRoute(
+                        const ChoiceScreen(),
+                        settings: kChoiceScreenRouteSettings,
+                      ),
+                      (route) => false,
+                    ),
                 onExitGame: exitGame,
               ),
 
@@ -1593,8 +1593,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                               // 두꺼워짐(기존 DecorationImage+centerSlice는 테두리가 항상
                               // 원본 픽셀 크기로 고정되는 문제가 있었음)
                               child: ScaledNineSliceImage(
-                                imagePath: 'assets/images/tutorial_dialogue_box.png',
-                                sourceCenterSlice: tutorialDialogueBoxCenterSlice,
+                                imagePath:
+                                    'assets/images/tutorial_dialogue_box.png',
+                                sourceCenterSlice:
+                                    tutorialDialogueBoxCenterSlice,
                                 scaleX: rW(1),
                                 scaleY: rH(1),
                               ),
@@ -1666,8 +1668,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                               // 두꺼워짐(기존 DecorationImage+centerSlice는 테두리가 항상
                               // 원본 픽셀 크기로 고정되는 문제가 있었음)
                               child: ScaledNineSliceImage(
-                                imagePath: 'assets/images/tutorial_dialogue_box.png',
-                                sourceCenterSlice: tutorialDialogueBoxCenterSlice,
+                                imagePath:
+                                    'assets/images/tutorial_dialogue_box.png',
+                                sourceCenterSlice:
+                                    tutorialDialogueBoxCenterSlice,
                                 scaleX: rW(1),
                                 scaleY: rH(1),
                               ),
@@ -1765,8 +1769,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                               // 두꺼워짐(기존 DecorationImage+centerSlice는 테두리가 항상
                               // 원본 픽셀 크기로 고정되는 문제가 있었음)
                               child: ScaledNineSliceImage(
-                                imagePath: 'assets/images/tutorial_dialogue_box.png',
-                                sourceCenterSlice: tutorialDialogueBoxCenterSlice,
+                                imagePath:
+                                    'assets/images/tutorial_dialogue_box.png',
+                                sourceCenterSlice:
+                                    tutorialDialogueBoxCenterSlice,
                                 scaleX: rW(1),
                                 scaleY: rH(1),
                               ),
@@ -1831,7 +1837,9 @@ class _KitchenScreenState extends State<KitchenScreen>
                               _showChapter5BearArmPuzzle = true;
                             });
                           },
-                          child: Container(color: Colors.black.withOpacity(0.5)),
+                          child: Container(
+                            color: Colors.black.withOpacity(0.5),
+                          ),
                         ),
                       ),
                     Positioned(
@@ -2057,8 +2065,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                               width: rW(570),
                               height: rH(300),
                               child: ScaledNineSliceImage(
-                                imagePath: 'assets/images/tutorial_dialogue_box.png',
-                                sourceCenterSlice: tutorialDialogueBoxCenterSlice,
+                                imagePath:
+                                    'assets/images/tutorial_dialogue_box.png',
+                                sourceCenterSlice:
+                                    tutorialDialogueBoxCenterSlice,
                                 scaleX: rW(1),
                                 scaleY: rH(1),
                               ),
@@ -2129,8 +2139,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                               width: rW(570),
                               height: rH(300),
                               child: ScaledNineSliceImage(
-                                imagePath: 'assets/images/tutorial_dialogue_box.png',
-                                sourceCenterSlice: tutorialDialogueBoxCenterSlice,
+                                imagePath:
+                                    'assets/images/tutorial_dialogue_box.png',
+                                sourceCenterSlice:
+                                    tutorialDialogueBoxCenterSlice,
                                 scaleX: rW(1),
                                 scaleY: rH(1),
                               ),

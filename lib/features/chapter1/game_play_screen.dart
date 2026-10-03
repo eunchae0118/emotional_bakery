@@ -1241,7 +1241,8 @@ class _GamePlayScreenState extends State<GamePlayScreen>
       // 덮어써졌었음). 그래서 컨트롤러 대신 도착 좌표(_lillianTargetX)를 바로 씀
       currentLillianX = _lillianTargetX;
       lillianTopValue = rH(172);
-    } else if (_isLillianSecondEntranceActive && _lillianStairsAnimation != null) {
+    } else if (_isLillianSecondEntranceActive &&
+        _lillianStairsAnimation != null) {
       final Offset pos = _lillianStairsAnimation!.value;
       currentLillianX = pos.dx;
       lillianTopValue = rH(pos.dy);
@@ -1763,10 +1764,14 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                       !StoryState.isAutoAdvanceEnabled,
                 ),
                 onSave: _handleSave,
-                onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
-                  fadeThroughBlackRoute(const ChoiceScreen()),
-                  (route) => false,
-                ),
+                onGoToMainScreen: () =>
+                    Navigator.of(context).pushAndRemoveUntil(
+                      fadeThroughBlackRoute(
+                        const ChoiceScreen(),
+                        settings: kChoiceScreenRouteSettings,
+                      ),
+                      (route) => false,
+                    ),
                 onExitGame: exitGame,
               ),
 

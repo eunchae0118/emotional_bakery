@@ -188,6 +188,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
   @override
   void dispose() {
     _saveConfirmationTimer?.cancel();
+    // 보통은 dpad onTapUp/onTapCancel에서 취소되지만, 멀티터치로 dpad 누른 채 빵집 문을 탭하는
+    // 경우처럼 손 떼기 전에 화면이 사라지면 그게 보장 안 돼서 여기서도 확실히 취소함
+    _moveTimer?.cancel();
     super.dispose();
   }
 
@@ -273,10 +276,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       bottom: 0,
                       width: zW(_mapWidth),
                       height: rH(661),
-                      child: Image.asset(
-                        kTutorialBgAsset,
-                        fit: BoxFit.fill,
-                      ),
+                      child: Image.asset(kTutorialBgAsset, fit: BoxFit.fill),
                     ),
 
                     // 마을 상호작용 구역들 (1~4번 집 + 빵집 문)
@@ -361,6 +361,8 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         _moveTimer = Timer.periodic(
                           const Duration(milliseconds: 40),
                           (timer) {
+                            // dispose된 뒤 한 틱이라도 남아있으면 setState가 예외를 던지니 방어
+                            if (!mounted) return;
                             if (_playerX > zW(30)) {
                               setState(() {
                                 // 225 unit/sec (챕터1 채온이 속도와 동일) * 40ms
@@ -416,6 +418,8 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         _moveTimer = Timer.periodic(
                           const Duration(milliseconds: 40),
                           (timer) {
+                            // dispose된 뒤 한 틱이라도 남아있으면 setState가 예외를 던지니 방어
+                            if (!mounted) return;
                             setState(() {
                               // 225 unit/sec (챕터1 채온이 속도와 동일) * 40ms
                               if (_playerX < zW(_mapWidth - 100)) {
@@ -509,7 +513,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   onSave: _handleSave,
                   onGoToMainScreen: () =>
                       Navigator.of(context).pushAndRemoveUntil(
-                        fadeThroughBlackRoute(const ChoiceScreen()),
+                        fadeThroughBlackRoute(
+                          const ChoiceScreen(),
+                          settings: kChoiceScreenRouteSettings,
+                        ),
                         (route) => false,
                       ),
                   onExitGame: exitGame,

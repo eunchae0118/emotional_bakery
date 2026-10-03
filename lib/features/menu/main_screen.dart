@@ -92,7 +92,10 @@ class _MainScreenState extends State<MainScreen> {
   void _maybeGoToChoiceScreen() {
     if (!_isImageLoadingComplete || !_isMinTimeElapsed) return;
     if (!mounted) return;
-    Navigator.push(context, instantRoute(const ChoiceScreen()));
+    Navigator.push(
+      context,
+      instantRoute(const ChoiceScreen(), settings: kChoiceScreenRouteSettings),
+    );
   }
 
   @override

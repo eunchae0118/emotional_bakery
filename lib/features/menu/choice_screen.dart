@@ -12,6 +12,24 @@ import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/menu/chapter_select_screen.dart';
 import 'package:emotional_bakery/features/menu/ending_gallery_screen.dart';
 
+// ChoiceScreen으로 가는 라우트에 붙이는 표시. 챕터 종료 시 스택을 이 화면까지만 남기고 정리할 때
+// (goToChapterSelectClearingStack) 이 이름으로 ChoiceScreen 라우트를 찾음. ChoiceScreen을
+// push하는 곳은 전부 settings: kChoiceScreenRouteSettings를 넘겨야 함
+const RouteSettings kChoiceScreenRouteSettings = RouteSettings(name: 'choice');
+
+// 챕터 종료 후 챕터 선택창으로 갈 때 씀. pushReplacement는 맨 위 화면 하나만 바꿔서, 그 아래
+// push로 쌓인 이전 챕터 화면들(GamePlayScreen의 Flame 게임 루프 포함)이 dispose 안 되고 계속
+// 살아있었음(전시처럼 하루 종일 켜두면 플레이할 때마다 누적됨). ChoiceScreen(메인 메뉴) 위에
+// 쌓인 건 전부 제거하고 그 위에 ChapterSelectScreen을 올림. 혹시 스택에 ChoiceScreen이 없으면
+// 맨 아래 라우트에서 멈춰서 스택이 완전히 비지는 않게 함
+void goToChapterSelectClearingStack(BuildContext context) {
+  Navigator.of(context).pushAndRemoveUntil(
+    fadeThroughBlackRoute(const ChapterSelectScreen()),
+    (route) =>
+        route.settings.name == kChoiceScreenRouteSettings.name || route.isFirst,
+  );
+}
+
 class ChoiceScreen extends StatefulWidget {
   const ChoiceScreen({super.key});
 

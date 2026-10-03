@@ -9,6 +9,7 @@ import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/save_resume.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
+import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
     show ReentryChapter;
@@ -88,7 +89,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     // BakeryGame(Flame)이 쓰는 배경/채온이 스프라이트를 미리 데워둠. Flame.images는 앱
     // 전역에서 공유되는 static 캐시라, 여기서 한 번만 로드해두면 이후 챕터1/3/4/5 중
     // 어느 경로로 GamePlayScreen에 처음 들어가든 로딩 중 검은 화면이 안 보임
-    Flame.images.load('bakery_bg_main.png');
+    // 배경은 CPU 디코딩만 하면 첫 페인트 때 GPU 업로드가 몰려서 프레임드랍이 생기니까 업로드까지 해둠
+    loadAndWarmUpFlameImage(kBakeryBgFlameImage);
     Flame.images.load('chaeon_idle_right.gif');
     // 스크롤 발생 시 하단 바 위치 계산
     _scrollController.addListener(() {
@@ -100,6 +102,21 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
         }
       });
     });
+  }
+
+  // didChangeDependencies가 여러 번 불려도 워밍업이 중복으로 안 걸리게 막는 용도
+  bool _hasStartedBgWarmUp = false;
+
+  // 챕터 카드/세이브 이어하기로 바로 들어갈 수 있는 dpad 화면들 배경(골목길, 채온이 방)을
+  // 미리 디코딩 + GPU 업로드까지 데워둠. 빵집 배경(Flame)은 위 initState에서 처리함.
+  // precacheImage가 BuildContext를 써야 해서 initState가 아니라 여기서 부름
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasStartedBgWarmUp) return;
+    _hasStartedBgWarmUp = true;
+    precacheAndWarmUpAsset(kTutorialBgAsset, context);
+    precacheAndWarmUpAsset(kRoomBgAsset, context);
   }
 
   @override

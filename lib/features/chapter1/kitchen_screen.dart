@@ -16,6 +16,7 @@ import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
+import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
@@ -952,6 +953,9 @@ class _KitchenScreenState extends State<KitchenScreen>
     super.didChangeDependencies();
     if (!_imagesPrecached) {
       _imagesPrecached = true;
+      // 챕터4에서 계단 올라가면 채온이 방(ChaeonRoomScreen)으로 넘어가니까 그 배경을 미리
+      // 디코딩 + GPU 업로드까지 데워둠
+      precacheAndWarmUpAsset(kRoomBgAsset, context);
       const List<String> assetsToPrecache = [
         'assets/images/kitchen_main.png',
         'assets/images/chaeon_apron_putting_on.gif',

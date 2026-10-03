@@ -7,6 +7,7 @@ import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
+import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
@@ -169,6 +170,21 @@ class _TutorialScreenState extends State<TutorialScreen> {
   String? _saveConfirmationText;
   Timer? _saveConfirmationTimer;
 
+  // didChangeDependencies가 여러 번 불려도 워밍업이 중복으로 안 걸리게 막는 용도
+  bool _hasStartedBgWarmUp = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasStartedBgWarmUp) return;
+    _hasStartedBgWarmUp = true;
+    // 4000x1352 골목길 배경. 이전 화면에서 미리 걸어뒀으면 캐시돼 있어서 바로 끝나고, 아니면
+    // (어느 경로로 들어왔든) fadeThroughBlackRoute 암전 구간 동안 디코딩 + GPU 업로드를 끝냄
+    precacheAndWarmUpAsset(kTutorialBgAsset, context);
+    // 빵집 문으로 들어가면 바로 GamePlayScreen(Flame 빵집 배경)이라 다음 화면 것도 미리 데워둠
+    loadAndWarmUpFlameImage(kBakeryBgFlameImage);
+  }
+
   @override
   void dispose() {
     _saveConfirmationTimer?.cancel();
@@ -258,7 +274,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       width: zW(_mapWidth),
                       height: rH(661),
                       child: Image.asset(
-                        'assets/images/tutorial_bg_full.png',
+                        kTutorialBgAsset,
                         fit: BoxFit.fill,
                       ),
                     ),

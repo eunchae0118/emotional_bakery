@@ -5,6 +5,7 @@
 // SceneDialogueController + buildSceneBubble 재사용) 그대로 따라감
 
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
@@ -14,6 +15,7 @@ import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
+import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
@@ -148,6 +150,21 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
 
   late final SceneDialogueController _sceneController;
 
+  // didChangeDependencies가 여러 번 불려도 워밍업이 중복으로 안 걸리게 막는 용도
+  bool _hasStartedBgWarmUp = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasStartedBgWarmUp) return;
+    _hasStartedBgWarmUp = true;
+    // 3496x1824 방 배경. 이전 화면에서 미리 걸어뒀으면 캐시돼 있어서 바로 끝나고, 아니면
+    // (어느 경로로 들어왔든) fadeThroughBlackRoute 암전 구간 동안 디코딩 + GPU 업로드를 끝냄
+    precacheAndWarmUpAsset(kRoomBgAsset, context);
+    // 문으로 나가면 바로 골목길(TutorialScreen)이라 다음 화면 배경도 미리 데워둠
+    precacheAndWarmUpAsset(kTutorialBgAsset, context);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -231,15 +248,21 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   void _resumeFromCheckpoint(SaveCheckpoint checkpoint) {
     switch (checkpoint) {
       case SaveCheckpoint.chapter3ChaeonRoom:
-        _loadDialogueForResume('assets/lines/chapter3/chapter3_chaeon_room.json');
+        _loadDialogueForResume(
+          'assets/lines/chapter3/chapter3_chaeon_room.json',
+        );
         break;
       case SaveCheckpoint.chapter4StartRoom:
-        _loadDialogueForResume('assets/lines/chapter4/chapter4_start_room.json');
+        _loadDialogueForResume(
+          'assets/lines/chapter4/chapter4_start_room.json',
+        );
         break;
       case SaveCheckpoint.chapter4RoomChoice:
         // enterFromDoor 걷기 연출을 건너뛰고 도착 위치에 바로 세워둠(_startEnterWalk 끝 상태랑 동일)
         _chaeonX = kChaeonRoomEnterStopX;
-        _loadDialogueForResume('assets/lines/chapter4/chapter4_room_choice.json');
+        _loadDialogueForResume(
+          'assets/lines/chapter4/chapter4_room_choice.json',
+        );
         break;
       case SaveCheckpoint.chapter4TempLow:
         _chaeonX = kChaeonRoomEnterStopX;
@@ -462,7 +485,7 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
               top: worldOffsetY,
               width: wSize(874),
               height: wSize(456),
-              child: Image.asset('assets/images/room_bg.png', fit: BoxFit.fill),
+              child: Image.asset(kRoomBgAsset, fit: BoxFit.fill),
             ),
 
             // 2층: 채온이. 챕터3 기본 상태는 chaeon_20_normal(_walk).gif(20% 상태 에셋), 챕터4는
@@ -479,7 +502,8 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                     final String? expressionSprite =
                         _resolveChaeonExpressionSprite(sceneNodeId);
                     // 챕터4는 감정 온도가 더 오른 상태라 기본 스프라이트를 50% 버전으로 씀
-                    final String defaultSprite = widget.mode == ChaeonRoomMode.chapter4
+                    final String defaultSprite =
+                        widget.mode == ChaeonRoomMode.chapter4
                         ? (_chaeonState == 'walk'
                               ? 'assets/images/chaeon_50_normal_walk.gif'
                               : 'assets/images/chaeon_50_normal.gif')
@@ -658,10 +682,11 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                       !StoryState.isAutoAdvanceEnabled,
                 ),
                 onSave: _handleSave,
-                onGoToMainScreen: () => Navigator.of(context).pushAndRemoveUntil(
-                  fadeThroughBlackRoute(const ChoiceScreen()),
-                  (route) => false,
-                ),
+                onGoToMainScreen: () =>
+                    Navigator.of(context).pushAndRemoveUntil(
+                      fadeThroughBlackRoute(const ChoiceScreen()),
+                      (route) => false,
+                    ),
                 onExitGame: exitGame,
               ),
 
@@ -709,7 +734,9 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
             // 4~7은 노말엔딩, 8~10은 챕터5행. 이 시점 온도는 이미 4 이상 확정이라 겹칠 일 없음
             if (_showChapter4EatSadBreadCutscene)
               Positioned.fill(
-                key: const ValueKey('chaeon_room_chapter4_eat_sad_bread_cutscene'),
+                key: const ValueKey(
+                  'chaeon_room_chapter4_eat_sad_bread_cutscene',
+                ),
                 child: DialogueOverlay(
                   data: chapter4EatSadBreadCutsceneData,
                   onComplete: () {
@@ -727,7 +754,9 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
             // 배드엔딩 컷씬이랑 동일한 패턴. 끝나면(onComplete) 임시 종료 화면 표시
             if (_showChapter4EndingNormalCutscene)
               Positioned.fill(
-                key: const ValueKey('chaeon_room_chapter4_ending_normal_cutscene'),
+                key: const ValueKey(
+                  'chaeon_room_chapter4_ending_normal_cutscene',
+                ),
                 child: DialogueOverlay(
                   data: chapter4EndingNormalData,
                   onComplete: () {
@@ -747,7 +776,9 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
             // 임시 종료 화면 없이 바로 챕터5 잠금 해제 + 챕터 선택창 이동까지 처리함
             if (_showChapter4BackToBakeryCutscene)
               Positioned.fill(
-                key: const ValueKey('chaeon_room_chapter4_back_to_bakery_cutscene'),
+                key: const ValueKey(
+                  'chaeon_room_chapter4_back_to_bakery_cutscene',
+                ),
                 child: DialogueOverlay(
                   data: chapter4BackToBakeryData,
                   onComplete: () {

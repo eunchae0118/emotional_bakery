@@ -5,6 +5,8 @@ import 'package:flame/game.dart';
 import 'package:emotional_bakery/features/chapter1/chaeon.dart';
 import 'package:emotional_bakery/features/chapter1/components/interactive_zone.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
+import 'package:emotional_bakery/core/utils/image_warmup.dart'
+    show kBakeryBgFlameImage;
 
 // 챕터1 빵집에서 계단 근처에 도달했을 때, 주방으로 내려가는 연출 트리거 좌표
 const double kitchenStairsTriggerX = 1680;
@@ -131,7 +133,7 @@ class BakeryGame extends FlameGame {
     super.onLoad();
 
     // 배경 레이어
-    final bgSprite = await loadSprite('bakery_bg_main.png');
+    final bgSprite = await loadSprite(kBakeryBgFlameImage);
     final background = SpriteComponent(
       sprite: bgSprite,
       size: Vector2(mapWidth, mapHeight),

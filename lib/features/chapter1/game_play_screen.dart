@@ -13,6 +13,7 @@ import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
+import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/chapter1/game_play_widgets.dart'
     as widgets;
@@ -707,6 +708,12 @@ class _GamePlayScreenState extends State<GamePlayScreen>
     super.didChangeDependencies();
     if (!_thermometerImagesPrecached) {
       _thermometerImagesPrecached = true;
+      // 4000x868 빵집 배경(Flame). BakeryGame.onLoad()의 loadSprite랑 같은 Flame.images 캐시라,
+      // 이전 화면에서 미리 걸어뒀으면 바로 끝나고, 아니면(어느 경로로 들어왔든) 암전 구간 동안
+      // 디코딩 + GPU 업로드를 끝냄
+      loadAndWarmUpFlameImage(kBakeryBgFlameImage);
+      // 빵집 왼쪽 끝을 넘어가면 골목길(TutorialScreen)로 가니까 그 배경도 미리 데워둠
+      precacheAndWarmUpAsset(kTutorialBgAsset, context);
       for (int i = 1; i <= 10; i++) {
         precacheImage(
           AssetImage('assets/images/main_thermometer_$i.png'),

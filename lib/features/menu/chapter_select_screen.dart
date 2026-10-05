@@ -18,6 +18,8 @@ import 'package:emotional_bakery/features/chapter1/game_play_widgets.dart'
     as widgets;
 import 'package:emotional_bakery/features/chapter1/kitchen_screen.dart';
 import 'package:emotional_bakery/features/chapter3/chaeon_room_screen.dart';
+import 'package:emotional_bakery/features/menu/choice_screen.dart'
+    show kChoiceScreenRouteSettings;
 import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
 
 // "챕터가 잠겨있습니다" 배지가 뜨는 top 위치(874x402 기준, rH로 스케일됨). 원래
@@ -81,6 +83,29 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     }
     if (!mounted) return;
     Navigator.push(context, fadeThroughBlackRoute(fallbackScreen));
+  }
+
+  // 뒤로가기 버튼이 부름. 이 화면으로 들어오는 경로가 두 가지라 둘 다 처리해야 함:
+  // (1) ChoiceScreen에서 일반적으로 push해 들어온 경우(아래에 'choice' 라우트가 그대로 있음)
+  // (2) 챕터 종료 후 goToChapterSelectClearingStack(pushAndRemoveUntil)으로 들어온
+  // 경우(스택이 이미 'choice' 라우트 + 이 화면만 남도록 정리돼 있음). 두 경우 다 스택 안에
+  // 'choice' 이름 라우트가 반드시 있어서(choice_screen.dart 상단 주석 참고, ChoiceScreen을
+  // push하는 곳은 전부 kChoiceScreenRouteSettings를 넘김) popUntil로 거기까지 돌아가면 됨.
+  // 혹시 못 찾는 예외 상황(방어적 안전장치)엔 그냥 한 번 pop만 함
+  void _goBackToMainMenu(BuildContext context) {
+    final NavigatorState navigator = Navigator.of(context);
+    bool foundChoiceRoute = false;
+    navigator.popUntil((route) {
+      if (route.settings.name == kChoiceScreenRouteSettings.name) {
+        foundChoiceRoute = true;
+        return true;
+      }
+      // 맨 아래 라우트까지 왔는데도 못 찾았으면 더 못 가니까 여기서 멈춤
+      return route.isFirst;
+    });
+    if (!foundChoiceRoute && navigator.canPop()) {
+      navigator.pop();
+    }
   }
 
   @override
@@ -409,6 +434,27 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                 ),
               ),
             ),
+
+          // 뒤로가기 버튼(메인 메뉴로). ending_gallery_screen.dart랑 동일한 에셋
+          // (main_back_btn.png)을 쓰되, 이 화면은 기존 rW/rH(874x402) 스케일을 그대로 써서
+          // game_play_widgets.dart의 buildBackButton(rW(54)/rH(54))이랑 같은 체감 크기로
+          // 맞춤 - 거기 함수는 자기 화면 전용 위치(rW(714), 오른쪽 위)가 박혀있어서 그대로
+          // 재사용은 못 하고, 위치만 왼쪽 위로 새로 잡음. 카드 목록(top: rH(40), 왼쪽
+          // 패딩 rW(80))이나 잠금 안내 배지(가운데 정렬, 폭 rW(210))보다 작고 위/왼쪽에
+          // 떨어져 있어서 안 겹침
+          Positioned(
+            left: rW(10),
+            top: rH(10),
+            child: GestureDetector(
+              onTap: () => _goBackToMainMenu(context),
+              child: Image.asset(
+                'assets/images/main_back_btn.png',
+                width: rW(54),
+                height: rH(54),
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
         ],
       ),
     );

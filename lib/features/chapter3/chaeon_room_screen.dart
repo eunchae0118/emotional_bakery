@@ -65,6 +65,19 @@ const double kRoomDoorHeight = 250;
 const double kRoomDoorNearMinX = 620;
 const double kRoomDoorNearMaxX = 700;
 
+// 배경을 위아래 가운데가 아니라 바닥 기준으로 고정할 때 쓰는 여백(캔버스 좌표, 456에서 이만큼
+// 뺀 지점이 화면 하단에 오도록 맞춤). kitchen_screen.dart도 똑같은 이유로 여백을 빼는데
+// 거긴 8이고 여긴 방 캔버스가 달라서 따로 둠 - 바닥이 캔버스 맨 아래(456)에 거의 붙어있어서
+// 일단 0으로 둠. 실제로 보고 바닥 쪽에 여유가 더 필요하면 이 숫자만 올리면 됨
+const double kChaeonRoomFloorMarginRef = 0;
+
+// 폰처럼 가로로 넓고 세로가 짧은 화면(worldScale이 세로가 아니라 가로 기준으로 걸리는
+// 경우)에서만 채온이 발 위치를 주방(kitchen_screen.dart)이랑 맞춰주려고 추가로 내리는 양.
+// kitchen_screen.dart의 kKitchenMobileCharacterDropRef랑 하는 역할은 똑같은데, 방 캔버스
+// 크기(456)가 주방(464)이랑 달라서 그 숫자를 그대로 쓰면 안 맞음 - 방 전용으로 20을 넣으면
+// 폰 비율 전반에서 주방 발 위치랑 거의 똑같이 맞는 걸 확인함(874x402 기준, rH로 스케일됨)
+const double kChaeonRoomMobileCharacterDropRef = 20;
+
 // "저장되었습니다" 배지가 뜨는 top 위치(874x402 기준, rH로 스케일됨). kitchen_screen.dart랑
 // 동일한 값을 씀 - 화면 보면서 조정 예정
 const double _saveConfirmationBadgeTopRef = 80;
@@ -450,13 +463,27 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     // 캔버스 세로 크기만 464 대신 456으로 바꿈)
     final double worldScale = (w / 874) > (h / 456) ? (w / 874) : (h / 456);
     final double worldOffsetX = (w - 874 * worldScale) / 2;
-    final double worldOffsetY = (h - 456 * worldScale) / 2;
+    // 가운데 크롭 대신 바닥 기준으로 고정함. kitchen_screen.dart가 이미 이 방식을 쓰고
+    // 있는데(바닥을 화면 하단에 붙여두는 식) 여긴 가운데 크롭이라 폰에서 주방보다 채온이가
+    // 더 아래로 처지는 문제가 있었음 - 똑같이 바닥 기준으로 바꿔서 맞춤
+    final double worldOffsetY =
+        h - (456 - kChaeonRoomFloorMarginRef) * worldScale;
     double wX(double px) => worldOffsetX + px * worldScale;
     double wY(double px) => worldOffsetY + px * worldScale;
     double wSize(double px) => px * worldScale;
     // 챕터3 재진입 상태면 kitchen_screen.dart에서 계단 트리거 체크를 켜서
     final double characterSize = rH(172);
     final double characterTopShift = characterSize - wSize(172);
+    // 주방(kitchen_screen.dart)의 isMobileLikeAspect/mobileCharacterDrop이랑 같은 판정 기준.
+    // worldScale이 세로(h/456)가 아니라 가로(w/874)로 걸리는 화면 - 배경 위쪽이 잘리는
+    // 와이드한 화면, 실제 폰 가로모드 대부분 여기 해당 - 에서만 발을 추가로 내려줌
+    final bool isMobileLikeAspect = (w / 874) > (h / 456);
+    final double mobileCharacterDrop = isMobileLikeAspect
+        ? rH(kChaeonRoomMobileCharacterDropRef)
+        : 0;
+    // top 계산에 쓰는 최종 보정값. mobileCharacterDrop만큼 덜 끌어올려서 그만큼 아래로 내려감
+    final double characterVerticalOffset =
+        characterTopShift - mobileCharacterDrop;
 
     // 화면 비율이 좁아서(아이패드 등) cover 크롭 때문에 문 그림이 화면 밖으로 잘려나가는지
     // 확인하는 계산. 문의 화면상 가로 범위를 구해서 실제 화면 너비(0~w) 안에 얼마나
@@ -490,7 +517,8 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
         : null;
 
     final double chaeonCenterX = wX(_chaeonX) + characterSize / 2;
-    final double chaeonSpriteTopY = wY(kChaeonRoomTopY) - characterTopShift;
+    final double chaeonSpriteTopY =
+        wY(kChaeonRoomTopY) - characterVerticalOffset;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -514,7 +542,7 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
             Positioned(
               key: const ValueKey('chaeon_room_chaeon'),
               left: wX(_chaeonX),
-              top: wY(kChaeonRoomTopY) - characterTopShift,
+              top: wY(kChaeonRoomTopY) - characterVerticalOffset,
               child: Transform.flip(
                 flipX: _isChaeonFacingLeft,
                 child: Builder(

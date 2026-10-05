@@ -458,6 +458,30 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     final double characterSize = rH(172);
     final double characterTopShift = characterSize - wSize(172);
 
+    // 화면 비율이 좁아서(아이패드 등) cover 크롭 때문에 문 그림이 화면 밖으로 잘려나가는지
+    // 확인하는 계산. 문의 화면상 가로 범위를 구해서 실제 화면 너비(0~w) 안에 얼마나
+    // 남는지 재보고, 원래 온전한 폭(wSize(kRoomDoorWidth))보다 조금이라도 작으면 잘린 거임.
+    // 0.5px 여유는 부동소수점 오차로 "딱 다 보이는" 경계에서 버튼이 깜빡거리는 거 막으려는 용도
+    final double doorScreenLeft = wX(kRoomDoorX);
+    final double doorScreenRight = doorScreenLeft + wSize(kRoomDoorWidth);
+    final double doorVisibleLeft = doorScreenLeft < 0 ? 0 : doorScreenLeft;
+    final double doorVisibleRight = doorScreenRight > w ? w : doorScreenRight;
+    final double doorVisibleWidth = doorVisibleRight > doorVisibleLeft
+        ? doorVisibleRight - doorVisibleLeft
+        : 0;
+    final bool isDoorClipped = doorVisibleWidth < wSize(kRoomDoorWidth) - 0.5;
+    // _handleDoorTap() 안에 있는 거랑 똑같은 근접 판정. 여기서도 한 번 더 확인해서, 문
+    // 그림은 잘렸는데 아직 근처에 안 왔을 때는 괜히 버튼이 안 뜨게 함
+    final bool isNearDoorForExitButton =
+        _chaeonX >= kRoomDoorNearMinX && _chaeonX <= kRoomDoorNearMaxX;
+    final bool showDoorExitButton =
+        _dialogueFinished && isNearDoorForExitButton && isDoorClipped;
+
+    // 나가기 버튼 전용 단일 스케일. 가로/세로를 rW/rH로 따로 먹이면 비율 안 맞는 화면에서
+    // 버튼이 찌그러지니까, 작은 쪽 하나로 통일해서 씀(크기만 - 위치는 그냥 화면 기준 rW/rH 그대로)
+    final double uiScale = (w / 874) < (h / 402) ? (w / 874) : (h / 402);
+    double u(double px) => px * uiScale;
+
     final DialogueGraph? sceneDialogue = _sceneController.sceneDialogue;
     final String? sceneNodeId = _sceneController.sceneNodeId;
     final DialogueNode? currentSceneNode =
@@ -615,6 +639,40 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
               rH: rH,
               onTap: () => setState(() => _isSettingOpen = true),
             ),
+
+            // 7-2층: 문이 화면 밖으로 잘려서 못 누를 때만 뜨는 고정 나가기 버튼. 문 근처에
+            // 있는데 cover 크롭 때문에 문 그림이 안 보이거나 일부만 보일 때 이걸로 대신 나갈
+            // 수 있게 해줌. 위치는 월드 좌표(wX/wY)가 아니라 화면 좌표(rW/rH)로 고정해서
+            // 화면이 아무리 잘려도 항상 같은 자리에 뜸. 온도계(~429)랑 뒤로가기 버튼(714) 사이
+            // 빈 공간에 둬서 다른 버튼이랑 안 겹침. 스타일은 buildSaveConfirmationBadge랑
+            // 똑같이 맞춤(검은 반투명 알약 모양 + 흰 글씨)
+            if (showDoorExitButton)
+              Positioned(
+                key: const ValueKey('chaeon_room_door_exit_button'),
+                left: rW(500),
+                top: rH(15),
+                child: GestureDetector(
+                  onTap: _handleDoorTap,
+                  child: Container(
+                    width: u(140),
+                    height: u(44),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(u(22)),
+                    ),
+                    child: Text(
+                      '나가기',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: u(14),
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'SCDream',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
             // 8층: 가상 패드. 대사 끝나기 전까진 숨김
             if (_dialogueFinished) ...[

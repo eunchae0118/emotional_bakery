@@ -27,6 +27,12 @@ import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
 // 바로 위에 붙어서 너무 가까워 보여서 더 위로 올림 - 화면 보면서 조정 예정
 const double _lockedChapterNoticeTopRef = 45;
 
+// 한 화면에 한 번에 보여줄 챕터 카드 수(가로 폭 기준). 아이패드처럼 세로가 긴 화면에서
+// 카드가 sh(220)까지 꽉 차게 커지면 한 번에 카드가 1장만 보여서 답답해지길래, 가로 폭
+// 상한(cardWidthCap)을 역산할 때 쓰는 목표값으로 뺐음. 숫자만 바꾸면 한 화면에 보이는
+// 카드 수가 바로 조정됨
+const double kChapterVisibleCardCount = 1.5;
+
 class ChapterSelectScreen extends StatefulWidget {
   const ChapterSelectScreen({super.key});
 
@@ -148,8 +154,14 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
   Widget build(BuildContext context) {
     double w = MediaQuery.of(context).size.width;
     double h = MediaQuery.of(context).size.height;
-    double rW(double px) => (px / 874) * w;
-    double rH(double px) => (px / 402) * h;
+    // 챕터 리스트 영역(카드/글자/간격/패딩/스크롤바) 전용 높이 기준 단일 스케일. 가로(rW)
+    // 세로(rH)를 따로 섞어 쓰면, 아이패드처럼 세로가 유독 긴 화면에서 리스트 영역이 화면
+    // 높이 대비 작아 보이는 문제가 있었음 - 이 영역 전체를 세로 하나로 통일해서 고침
+    double sh(double px) => (px / 402) * h;
+    // 뒤로가기 버튼 전용 단일 스케일. ending_gallery_screen.dart 뒤로가기 버튼이랑 완전히
+    // 같은 식을 써서, 같은 기기에서 두 화면 버튼이 항상 같은 크기로 보이게 함
+    final double uScale = math.min(w / 874, h / 402);
+    double u(double px) => px * uScale;
 
     // 가장 최근에 해금된 챕터 번호. 재플레이 잠금 판단 기준으로 씀 - 이 번호보다 작은 챕터는
     // 이미 지나간 챕터고, 이 번호랑 같아도 엔딩까지 봤으면(hasSeenEnding) 더는 재진입 못 하게 함
@@ -177,23 +189,23 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
 
           // 챕터 리스트 (가로 스크롤)
           Positioned(
-            top: rH(40),
-            bottom: rH(60),
+            top: sh(40),
+            bottom: sh(60),
             left: 0,
             right: 0,
             child: ListView(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(), // 끝에서 튕기는 스크롤 효과
-              padding: EdgeInsets.symmetric(horizontal: rW(80)), // 양옆 여백
+              padding: EdgeInsets.symmetric(horizontal: sh(80)), // 양옆 여백
               children: [
                 _buildChapterCard(
                   "Prolog",
                   "색을 잃은 아이",
                   "ch_prolog.png",
                   true,
-                  rW,
-                  rH,
+                  sh,
+                  w,
                   // 프롤로그는 재플레이 잠금 대상(챕터 1~5) 밖이라 번호 없음
                   null,
                   highestUnlocked,
@@ -203,8 +215,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   "신비한 빵집",
                   "ch1.png",
                   ChapterProgress.isChapter1Unlocked, // 프롤로그 클리어하면 전역으로 해금됨
-                  rW,
-                  rH,
+                  sh,
+                  w,
                   1,
                   highestUnlocked,
                 ),
@@ -213,8 +225,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   "감정의 빵",
                   "ch2.png",
                   ChapterProgress.isChapter2Unlocked, // 챕터1 종료하면 전역으로 해금됨
-                  rW,
-                  rH,
+                  sh,
+                  w,
                   2,
                   highestUnlocked,
                 ),
@@ -223,8 +235,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   "잃는 것과 얻는 것",
                   "ch3.png",
                   ChapterProgress.isChapter3Unlocked, // 챕터2 종료하면 전역으로 해금됨
-                  rW,
-                  rH,
+                  sh,
+                  w,
                   3,
                   highestUnlocked,
                 ),
@@ -233,8 +245,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   "슬픔을 마주할 용기",
                   "ch4.png",
                   ChapterProgress.isChapter4Unlocked, // 챕터3 종료하면 전역으로 해금됨
-                  rW,
-                  rH,
+                  sh,
+                  w,
                   4,
                   highestUnlocked,
                 ),
@@ -243,8 +255,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   "진짜 감정을 마주할 시간",
                   "ch5.png",
                   ChapterProgress.isChapter5Unlocked, // 챕터4 챕터5행 엔딩 보면 전역으로 해금됨
-                  rW,
-                  rH,
+                  sh,
+                  w,
                   5,
                   highestUnlocked,
                 ),
@@ -255,8 +267,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
           // 개발용 임시 버튼 모음. 챕터1~5 화면을 매번 순서대로 안 거치고 바로 테스트하려고
           // 세로로 쌓아둔 지름길 버튼들. 전부 임시 개발용 코드라 나중에 통째로 지울 것
           Positioned(
-            right: rW(10),
-            bottom: rH(10),
+            right: sh(10),
+            bottom: sh(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
@@ -280,11 +292,11 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     "DEV: 챕터1 바로가기",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.3),
-                      fontSize: rW(10),
+                      fontSize: sh(10),
                     ),
                   ),
                 ),
-                SizedBox(height: rH(4)),
+                SizedBox(height: sh(4)),
                 // 개발용 임시 버튼: 챕터2 테스트하려고 프롤로그부터 챕터1 전체를 매번 다시 플레이하기
                 // 번거로워서 만든 지름길. 화면 구석에 눈에 안 띄게 작게 배치. 나중에 지울 코드
                 GestureDetector(
@@ -304,11 +316,11 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     "DEV: 챕터2 바로가기",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.3),
-                      fontSize: rW(10),
+                      fontSize: sh(10),
                     ),
                   ),
                 ),
-                SizedBox(height: rH(4)),
+                SizedBox(height: sh(4)),
                 // 챕터4/5는 화면 자체가 아직 없어서 이동하면 에러남. 탭하면 화면 전환 없이
                 // 스낵바로 미구현 안내만 잠깐 띄우고 끝냄. 임시 개발용 코드
                 // 챕터3은 채온이 방 화면부터 바로 시작. 다른 DEV 버튼들이랑 동일하게 잠금 체크 없음
@@ -327,11 +339,11 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     "DEV: 챕터3 바로가기",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.3),
-                      fontSize: rW(10),
+                      fontSize: sh(10),
                     ),
                   ),
                 ),
-                SizedBox(height: rH(4)),
+                SizedBox(height: sh(4)),
                 // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
                 GestureDetector(
                   onTap: () {
@@ -350,11 +362,11 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     "DEV: 챕터4 바로가기",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.3),
-                      fontSize: rW(10),
+                      fontSize: sh(10),
                     ),
                   ),
                 ),
-                SizedBox(height: rH(4)),
+                SizedBox(height: sh(4)),
                 // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. skipChapter1Events도
                 // 같이 true로 넘겨야 챕터1 가이드 대사/릴리안 계단 등장 트리거가 안 새어나감
                 // (tutorial_screen.dart가 챕터3/4 진입할 때 derive해주는 값이랑 동일).
@@ -378,7 +390,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     "DEV: 챕터5 바로가기",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.3),
-                      fontSize: rW(10),
+                      fontSize: sh(10),
                     ),
                   ),
                 ),
@@ -388,14 +400,14 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
 
           // 하단 스크롤 진행 바
           Positioned(
-            bottom: rH(30),
-            left: rW(100),
-            right: rW(100),
+            bottom: sh(30),
+            left: sh(100),
+            right: sh(100),
             child: Stack(
               children: [
                 // 바닥 배경 줄
                 Container(
-                  height: rH(6),
+                  height: sh(6),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(3),
@@ -405,9 +417,9 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                 FractionallySizedBox(
                   widthFactor: 0.3,
                   child: Transform.translate(
-                    offset: Offset((rW(874 - 200) * 0.7) * _scrollProgress, 0),
+                    offset: Offset((sh(874 - 200) * 0.7) * _scrollProgress, 0),
                     child: Container(
-                      height: rH(6),
+                      height: sh(6),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE5C18B), // 베이지색 포인트 컬러
                         borderRadius: BorderRadius.circular(3),
@@ -423,34 +435,32 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
           // (buildSaveConfirmationBadge 재사용) - _showLockedChapterNotice가 2초 뒤 스스로 지움
           if (_lockedChapterNoticeText != null)
             Positioned(
-              top: rH(_lockedChapterNoticeTopRef),
+              top: sh(_lockedChapterNoticeTopRef),
               left: 0,
               right: 0,
               child: Center(
                 child: widgets.buildSaveConfirmationBadge(
                   _lockedChapterNoticeText!,
-                  rW: rW,
-                  rH: rH,
+                  rW: sh,
+                  rH: sh,
                 ),
               ),
             ),
 
-          // 뒤로가기 버튼(메인 메뉴로). ending_gallery_screen.dart랑 동일한 에셋
-          // (main_back_btn.png)을 쓰되, 이 화면은 기존 rW/rH(874x402) 스케일을 그대로 써서
-          // game_play_widgets.dart의 buildBackButton(rW(54)/rH(54))이랑 같은 체감 크기로
-          // 맞춤 - 거기 함수는 자기 화면 전용 위치(rW(714), 오른쪽 위)가 박혀있어서 그대로
-          // 재사용은 못 하고, 위치만 왼쪽 위로 새로 잡음. 카드 목록(top: rH(40), 왼쪽
-          // 패딩 rW(80))이나 잠금 안내 배지(가운데 정렬, 폭 rW(210))보다 작고 위/왼쪽에
-          // 떨어져 있어서 안 겹침
+          // 뒤로가기 버튼(메인 메뉴로). ending_gallery_screen.dart 뒤로가기 버튼이랑 완전히
+          // 같은 식(54*u, 위치 10*u)을 써서, 같은 기기에서 두 화면 버튼이 항상 같은 크기로
+          // 보이게 함. u는 가로세로 중 작은 쪽 기준이라 항상 정사각형 유지됨 - 예전엔
+          // rW(54)/rH(54)로 가로세로를 따로 계산해서 아이패드에서 버튼이 세로로 길쭉하게
+          // 찌그러졌었음
           Positioned(
-            left: rW(10),
-            top: rH(10),
+            left: u(10),
+            top: u(10),
             child: GestureDetector(
               onTap: () => _goBackToMainMenu(context),
               child: Image.asset(
                 'assets/images/main_back_btn.png',
-                width: rW(54),
-                height: rH(54),
+                width: u(54),
+                height: u(54),
                 fit: BoxFit.contain,
               ),
             ),
@@ -466,35 +476,68 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     String subTitle,
     String imgName,
     bool isUnlocked,
-    Function rW,
-    Function rH,
+    // 카드/글자/간격 전부 이 하나(세로 기준 sh)로 계산함 - 예전엔 rW/rH를 섞어 써서
+    // 카드 크기가 화면 "폭"에만 비례했는데, 그러면 아이패드처럼 세로가 유독 긴 화면에서
+    // 카드가 화면 높이 대비 작아 보이는 문제가 있었음(화면 꽉 안 차 보임)
+    double Function(double) sh,
+    // 가로 폭 상한(cardWidthCap) 계산용. 화면 "세로"는 sh로 다 처리되는데 "한 번에 몇 장
+    // 보이는지"는 화면 가로 폭이 기준이라 여기서 따로 받아야 함
+    double w,
     // 재플레이 잠금 판단용 챕터 번호(1~5). 프롤로그는 이 잠금 대상이 아니라 null로 넘어옴
     int? chapterNumber,
     int highestUnlocked,
   ) {
+    // 리스트 패딩/카드 간격(둘 다 sh 기준, build()의 Positioned/padding이랑 같은 값을 그대로
+    // 씀). 가로 폭(w)에서 양쪽 패딩을 뺀 공간 안에 "카드+간격"이 kChapterVisibleCardCount번
+    // 들어가게 카드 한 변의 상한(cardWidthCap)을 역산함 - 아이패드처럼 세로가 길어서
+    // sh(220)이 커져도, 가로 폭이 좁으면 이 상한이 먼저 걸려서 카드가 더 안 커짐
+    const double listPaddingRef = 80;
+    const double cardGapRef = 40;
+    final double cardWidthCap =
+        (w - sh(listPaddingRef) * 2) / kChapterVisibleCardCount -
+        sh(cardGapRef);
+
     return Padding(
-      padding: EdgeInsets.only(right: rW(40)),
-      // 가로가 긴(세로 공간이 좁은) 화면에서는 rW(220) 정사각형이 카드 세로 공간(제목+
-      // 부제목+여백 다음에 남는 자리)보다 커져서 BOTTOM OVERFLOWED가 났었음. LayoutBuilder로
-      // 가로 스크롤 리스트가 이 카드한테 실제로 준 세로 공간을 직접 읽어서(rH로 따로
+      padding: EdgeInsets.only(right: sh(cardGapRef)),
+      // 카드 한 변(thumbnailSize)이 "세로 기준 크기(sh(220))"보다 커지면 카드 세로 공간(제목+
+      // 부제목+여백 다음에 남는 자리)을 넘어서 BOTTOM OVERFLOWED가 날 수 있음. LayoutBuilder로
+      // 가로 스크롤 리스트가 이 카드한테 실제로 준 세로 공간을 직접 읽어서(sh로 따로
       // 추정하지 않음 - Positioned(top/bottom) 값이 나중에 바뀌어도 이 계산은 안 틀어짐),
-      // 정사각형 한 변을 "가로 기준 크기(rW(220))"랑 "그 세로 공간에서 제목/부제목/여백을
-      // 뺀 나머지" 중 더 작은 값으로 정함
+      // 정사각형 한 변을 "세로 기준 크기(sh(220))"랑 "그 세로 공간에서 제목/부제목/여백을
+      // 뺀 나머지" 중 더 작은 값으로 정함(실무상 둘 다 세로 기준이라 거의 항상 sh(220)이 더
+      // 작아서 이쪽이 상한선 역할을 하고, max 쪽은 정말 세로 공간이 모자랄 때만 걸리는 안전장치)
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // 제목(rW(20) SCDream Heavy)/부제목(rW(16) SCDream Medium)의 실제 렌더 줄 높이는
+          // 제목(sh(20) SCDream Heavy)/부제목(sh(16) SCDream Medium)의 실제 렌더 줄 높이는
           // 폰트마다 달라서 정확히 재는 대신 넉넉하게(폰트 크기의 1.3배) 잡음 - 실제보다 더
           // 확보해두는 셈이라 썸네일이 아주 살짝 작아질 수는 있어도 오버플로우가 나는
-          // 쪽으로는 절대 안 틀어짐. 기존 SizedBox(rH(15)) 여백 + 여유 마진(rH(10))도 같이 뺌
+          // 쪽으로는 절대 안 틀어짐. 기존 SizedBox(sh(15)) 여백 + 여유 마진(sh(10))도 같이 뺌
           final double reservedHeight =
-              rW(20) * 1.3 + rW(16) * 1.3 + rH(15) + rH(10);
+              sh(20) * 1.3 + sh(16) * 1.3 + sh(15) + sh(10);
           final double thumbnailSize = math.min(
-            rW(220),
-            math.max(0.0, constraints.maxHeight - reservedHeight),
+            math.min(
+              sh(220),
+              math.max(0.0, constraints.maxHeight - reservedHeight),
+            ),
+            cardWidthCap,
           );
+
+          // 카드가 cardWidthCap 때문에 sh(220)보다 작아지면, 글자 크기/여백도 같은 비율로
+          // 줄여야 폰에서 보던 "카드 대비 글자 크기" 느낌이 그대로 유지됨. sh(220) 기준
+          // 원래 크기 대비 지금 카드가 몇 배인지를 cardScale로 구해서 폰트/여백에 곱해줌 -
+          // 폰처럼 cardWidthCap이 안 걸리는 경우엔 thumbnailSize가 그대로 sh(220)이라
+          // cardScale이 1이 돼서 기존이랑 완전히 동일함
+          final double uncappedThumbnailSize = sh(220);
+          final double cardScale = uncappedThumbnailSize > 0
+              ? (thumbnailSize / uncappedThumbnailSize).clamp(0.0, 1.0)
+              : 1.0;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            // 카드가 작아지면 리스트 영역 세로 공간이 남는데, 기본 정렬(start)로는 그 여백이
+            // 전부 아래쪽에만 쌓여서 카드 블록이 위로 붙어보임 - center로 바꿔서 남는 여백을
+            // 위아래로 나눠 가지게 함
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // 제목/부제목을 썸네일 폭(thumbnailSize) 기준으로 가운데 정렬하려고
               // SizedBox로 폭을 썸네일이랑 맞추고 textAlign.center를 줌
@@ -505,7 +548,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: rW(20),
+                    fontSize: sh(20) * cardScale,
                     // SCDream8.otf가 weight 800(Heavy) - pubspec.yaml에 등록된 숫자
                     // 굵기 매핑 그대로(다른 화면들이 SCDream5=w500 쓰는 것과 동일한 방식)
                     fontWeight: FontWeight.w800,
@@ -520,14 +563,14 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: rW(16),
+                    fontSize: sh(16) * cardScale,
                     // SCDream5.otf가 weight 500(Medium)
                     fontWeight: FontWeight.w500,
                     fontFamily: 'SCDream',
                   ),
                 ),
               ),
-              SizedBox(height: rH(15)),
+              SizedBox(height: sh(15) * cardScale),
               GestureDetector(
                 onTap: () async {
                   if (isUnlocked) {

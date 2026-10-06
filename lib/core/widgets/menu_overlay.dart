@@ -30,6 +30,22 @@
 // 업데이트 3에서 코드로 얹던 텍스트 라벨은 이제 필요 없어져서 뺐고, 다른 버튼들이랑 동일하게
 // 투명 히트박스만 남겨둠)
 
+// (업데이트 5: 게임종료 버튼을 없애고 그 자리(469,265,123,39)를 저장 버튼이 이어받음.
+// 저장이 있던 자리(329,265,123,39)는 챕터이동이 새로 들어옴. 게임종료 콜백(onExitGame)은
+// 빼고 챕터이동용 콜백(onGoToChapterSelect)을 새로 받음. main_setting_ex.png엔 아직
+// 챕터이동 그림이 없어서(저장 자리를 그대로 쓰는 거라 "저장" 글자가 비쳐 보임) 그 위에
+// 덮어씌울 이미지를 kChapterMoveButtonImagePath 경로로 따로 얹음 - 파일이 아직 없어도
+// errorBuilder로 받아서 빈 자리로만 두고 앱은 안 죽게 해둠)
+
+// (업데이트 6: 업데이트 5에서 넣은 kChapterMoveButtonImagePath 이미지 얹기 방식을 뺌 -
+// Image.asset의 errorBuilder가 돌려주는 위젯엔 width/height가 전혀 안 먹혀서(Flutter
+// Image 위젯 소스 확인함), 파일이 없는 동안 child가 진짜로 0x0이 되고 GestureDetector도
+// child가 있으면 기본이 deferToChild라 터치 영역까지 같이 0x0이 돼버렸음 - 그래서 챕터이동
+// 버튼을 눌러도 아무 반응이 없었던 거임. 어차피 main_setting_ex.png가 글자까지 다 그려진
+// 통이미지라 이 버튼 전용 이미지 자체가 필요 없어서, 다른 버튼들처럼 child 없는 GestureDetector로
+// 되돌리고 behavior만 명시함)
+
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 class MenuOverlay extends StatelessWidget {
@@ -42,7 +58,7 @@ class MenuOverlay extends StatelessWidget {
     required this.onToggleAuto,
     required this.onSave,
     required this.onGoToMainScreen,
-    required this.onExitGame,
+    required this.onGoToChapterSelect,
   });
 
   // 호출하는 화면들은 각자 자기 화면 기준(874x402 등)으로 만든 rW/rH를 넘겨주는데, 이
@@ -56,7 +72,15 @@ class MenuOverlay extends StatelessWidget {
   final VoidCallback onToggleAuto;
   final VoidCallback onSave;
   final VoidCallback onGoToMainScreen;
-  final VoidCallback onExitGame;
+  final VoidCallback onGoToChapterSelect;
+
+  // 디버그 빌드에서만 버튼 터치 영역을 반투명 빨간색으로 보여주는 용도. 시안 글자 위치랑
+  // 실제 터치 영역(Positioned 박스)이 맞는지 눈으로 바로 확인하려고 넣음. Positioned가
+  // width/height를 주고 있어서 이 Container는 부모가 준 크기를 그대로 채움. 릴리즈
+  // 빌드에선 호출하는 쪽에서 kDebugMode 체크로 아예 안 부르니까 완전히 안 보임
+  Widget _buildDebugTouchAreaOverlay() {
+    return Container(color: Colors.red.withOpacity(0.3));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,42 +136,64 @@ class MenuOverlay extends StatelessWidget {
                 ),
               ),
 
-              // X 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음
+              // X 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음. behavior를
+              // opaque로 명시해서 child 유무랑 상관없이 Positioned가 준 영역 전체가
+              // 눌리는 걸 보장함(명시 안 하면 child 없을 때 기본값인 translucent라도
+              // 결과적으로는 똑같이 동작하긴 하지만, 나중에 누가 child를 붙여도 안전하게
+              // 명시적으로 박아둠)
               Positioned(
                 left: localX(593),
                 top: localY(15),
                 width: localW(47),
                 height: localH(43),
-                child: GestureDetector(onTap: onClose),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onClose,
+                ),
               ),
 
               // AUTO 버튼. 켜져 있으면 auto.png를 배경 위에 겹쳐서 켜짐 표시, 꺼져 있으면
-              // 배경 그림 그대로 노출. 탭 히트박스는 이미지 유무랑 상관없이 항상 이 자리에 유지됨
+              // 배경 그림 그대로 노출. 탭 히트박스는 이미지 유무랑 상관없이 항상 이 자리에 유지됨.
+              // behavior: opaque를 명시해서, auto.png 로드가 혹시 실패해도(챕터이동 버튼
+              // 때 겪은 것과 동일한 문제) 터치 영역이 줄어들지 않게 안전장치를 걸어둠
               Positioned(
                 left: localX(51),
                 top: localY(265),
                 width: localW(123),
                 height: localH(39),
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: onToggleAuto,
-                  child: isAutoAdvanceEnabled
-                      ? Image.asset(
+                  child: Stack(
+                    children: [
+                      if (isAutoAdvanceEnabled)
+                        Image.asset(
                           'assets/images/auto.png',
                           width: localW(123),
                           height: localH(39),
                           fit: BoxFit.fill,
-                        )
-                      : null,
+                        ),
+                      if (kDebugMode) _buildDebugTouchAreaOverlay(),
+                    ],
+                  ),
                 ),
               ),
 
-              // 저장 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음
+              // 챕터이동 버튼. 저장 버튼이 있던 자리(329)를 이어받음. main_setting_ex.png가
+              // 글자까지 전부 그려진 통이미지라 이 버튼은 따로 이미지가 필요 없어서, 다른
+              // 버튼들이랑 동일하게 child 없는 투명 히트박스로 둠(업데이트 6 참고 - 예전엔
+              // 여기에 별도 이미지를 Image.asset+errorBuilder로 얹었다가 그게 터치 영역을
+              // 0으로 만드는 원인이었음)
               Positioned(
                 left: localX(329),
                 top: localY(265),
                 width: localW(123),
                 height: localH(39),
-                child: GestureDetector(onTap: onSave),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onGoToChapterSelect,
+                  child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
+                ),
               ),
 
               // 메인화면으로 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음
@@ -156,16 +202,26 @@ class MenuOverlay extends StatelessWidget {
                 top: localY(265),
                 width: localW(123),
                 height: localH(39),
-                child: GestureDetector(onTap: onGoToMainScreen),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onGoToMainScreen,
+                  child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
+                ),
               ),
 
-              // 게임종료 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음
+              // 저장 버튼. 게임종료 버튼이 있던 자리(469)를 이어받음 - 게임종료 버튼 자체는
+              // 없앰. main_setting_ex.png엔 아직 "게임종료" 글자가 그대로 그려져 있을 수
+              // 있는데(시안 교체 전까지는 그대로임), 탭 동작은 저장으로 바뀜
               Positioned(
                 left: localX(469),
                 top: localY(265),
                 width: localW(123),
                 height: localH(39),
-                child: GestureDetector(onTap: onExitGame),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onSave,
+                  child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
+                ),
               ),
             ],
           ),

@@ -1772,7 +1772,8 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                       ),
                       (route) => false,
                     ),
-                onExitGame: exitGame,
+                onGoToChapterSelect: () =>
+                    goToChapterSelectClearingStack(context),
               ),
 
             // 17-1층: 저장 완료 안내 배지. kitchen_screen.dart 9-1층이랑 동일한 패턴

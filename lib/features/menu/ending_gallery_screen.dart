@@ -26,11 +26,13 @@ const double _summaryLineHeightRef = 70;
 // 텍스트가 박스랑 안 겹치게 떨어뜨리는 용도 - 더 조정 필요하면 이 숫자만 바꾸면 됨
 const double _summaryTextGapRef = -300;
 
-// 뒤로가기 버튼 크기(3508x1987 기준 좌표계 값, *scale로 환산). 예전엔 게임 전체에서 쓰는
-// rW/rH(874x402 기준) 스케일이 아니라 48(화면 절대 px) 고정값을 써서, 이 화면의 로컬
-// scale(3508 기준이라 min(w/3508, h/1987)로 훨씬 작게 나옴)과 안 맞아 다른 메뉴 화면들보다
-// 체감상 작게 보였음 - 이 화면 전용 scale로 환산하도록 고침
-const double _backButtonSizeRef = 170;
+// 뒤로가기 버튼 전용 단일 스케일. chapter_select_screen.dart 뒤로가기 버튼이랑 완전히 같은
+// 식(u = min(w/874, h/402))을 써야 같은 기기에서 두 버튼이 항상 같은 크기로 보임 - 이 화면
+// 고유의 3508 기준 scale이랑 무관하게 다른 메뉴 화면들이 쓰는 874x402 기준을 그대로 가져다 씀.
+// 가로/세로를 따로 계산하던 예전 방식(_backButtonRW/_backButtonRH)은 min 하나로 합쳐서
+// 항상 정사각형이 유지되게 함
+double _backButtonU(double px, double screenWidth, double screenHeight) =>
+    px * min(screenWidth / 874, screenHeight / 402);
 
 // 엔딩 하나당 박스 위치/크기/회전각 + 표시할 에셋/텍스트를 묶어둔 데이터.
 // 중심점(cx, cy)/폭(width)/높이(height)는 전부 3508x1987 기준 좌표계 값
@@ -197,18 +199,20 @@ class _EndingGalleryScreenState extends State<EndingGalleryScreen> {
                 scale: scale,
               ),
 
-          // 뒤로가기 버튼. 위치는 스크랩북 레이아웃(paper 좌표계)이랑 무관하게 화면 왼쪽 위
-          // 고정이지만, 크기는 이 화면의 로컬 scale(3508 기준)로 환산해서 다른 메뉴 화면들의
-          // 뒤로가기 버튼이랑 체감 크기가 비슷하게 맞춤
+          // 뒤로가기 버튼. 이 화면은 원래 3508x1987 기준 로컬 scale을 쓰는데, 뒤로가기
+          // 버튼만큼은 그 캔버스랑 무관하게 chapter_select_screen.dart 뒤로가기 버튼이랑
+          // 완전히 똑같은 식(u = min(w/874, h/402), 874x402 기준)을 그대로 씀. 기준 캔버스가
+          // 다른 채로 숫자만 맞추면 화면비 바뀔 때마다 또 어긋나서, 아예 같은 계산식을 써서
+          // 같은 기기에서 두 화면 버튼이 항상 똑같은 크기(+정사각형)로 보이게 함
           Positioned(
-            left: 20,
-            top: 20,
+            left: _backButtonU(10, screenWidth, screenHeight),
+            top: _backButtonU(10, screenWidth, screenHeight),
             child: GestureDetector(
               onTap: () => Navigator.of(context).pop(),
               child: Image.asset(
                 'assets/images/main_back_btn.png',
-                width: _backButtonSizeRef * scale,
-                height: _backButtonSizeRef * scale,
+                width: _backButtonU(54, screenWidth, screenHeight),
+                height: _backButtonU(54, screenWidth, screenHeight),
                 fit: BoxFit.contain,
               ),
             ),

@@ -17,6 +17,13 @@ import 'package:emotional_bakery/features/menu/ending_gallery_screen.dart';
 // push하는 곳은 전부 settings: kChoiceScreenRouteSettings를 넘겨야 함
 const RouteSettings kChoiceScreenRouteSettings = RouteSettings(name: 'choice');
 
+// main_bg.png 실제 픽셀 크기(3496x1968)를 디자인 단위(÷4)로 환산한 값. 이 화면 좌표 전체가
+// 쓰는 디자인 캔버스는 874x402인데, 배경 그림 자체의 실제 비율은 874x492(1.776:1)라서 서로
+// 다름 - 가로(874)는 정확히 맞아떨어지는데 세로가 492로 더 김. leftOnBg()에서 배경의
+// BoxFit.cover 크롭을 흉내 낼 때는 402가 아니라 이 값(492)을 써야 실제 크롭 위치랑 맞음
+const double kMainBgDesignWidth = 874;
+const double kMainBgDesignHeight = 492;
+
 // 챕터 종료 후 챕터 선택창으로 갈 때 씀. pushReplacement는 맨 위 화면 하나만 바꿔서, 그 아래
 // push로 쌓인 이전 챕터 화면들(GamePlayScreen의 Flame 게임 루프 포함)이 dispose 안 되고 계속
 // 살아있었음(전시처럼 하루 종일 켜두면 플레이할 때마다 누적됨). ChoiceScreen(메인 메뉴) 위에
@@ -72,6 +79,11 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
 
   // 블록을 디자인 캔버스(402) 안에서 세로 중앙에 놓기 위한 시작 top
   static const double _blockTopRef = (402 - _blockHRef) / 2;
+
+  // 로고/버튼 묶음이 화면 왼쪽 밖으로 잘리지 않게 두는 최소 여백(화면 폭 대비 비율). 아이패드처럼
+  // 세로로 긴 화면에서 leftOnBg() 계산값이 이 여백보다 왼쪽으로 나가면 묶음 전체를 오른쪽으로
+  // 밀어서 맞춤
+  static const double _groupMinLeftMarginRatio = 0.03;
 
   // 첫 번째 버튼(시작하기) top. 로고 top(=_blockTopRef) + 로고 높이 + 간격 하나
   static const double _firstButtonTopRef =
@@ -147,9 +159,27 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     // 위에 있는 min 스케일(scale/offsetY/s)을 그대로 써야 버튼 블록이 화면 아래로
     // 잘리는 문제가 다시 안 생김. 디자인 비율(874:402)에서는 bgScale도 scale이랑
     // 같아지고 bgOffsetX도 0이라 결과가 지금이랑 동일함
-    final double bgScale = (w / 874) > (h / 402) ? (w / 874) : (h / 402);
-    final double bgOffsetX = (w - 874 * bgScale) / 2;
-    double leftOnBg(double designX) => bgOffsetX + designX * bgScale;
+    //
+    // bgScale 계산에 쓰는 세로 기준은 402(이 화면 좌표계 전체의 디자인 캔버스 높이)가
+    // 아니라 kMainBgDesignHeight(492, 배경 그림 자체의 실제 비율)여야 함 - 둘이 다른
+    // 값이라서 402를 쓰면 아이패드처럼 세로가 긴 화면에서 실제 배경 크롭보다 훨씬 많이
+    // 밀려나서 로고/버튼이 화면 밖으로 잘렸었음
+    final double bgScale = (w / kMainBgDesignWidth) > (h / kMainBgDesignHeight)
+        ? (w / kMainBgDesignWidth)
+        : (h / kMainBgDesignHeight);
+    final double bgOffsetX = (w - kMainBgDesignWidth * bgScale) / 2;
+
+    // bgScale을 실제 배경 비율로 고쳐도 아이패드처럼 극단적으로 좁은 화면에서는 여전히
+    // 로고(묶음에서 가장 왼쪽, designX=91)가 화면 밖으로 나갈 수 있어서 안전장치를 하나
+    // 더 둠. 로고의 raw left가 최소 여백보다 왼쪽이면 그 차이만큼 묶음 전체를 오른쪽으로
+    // 밀어줌 - 묶음 안의 상대 위치(로고-버튼 간격 등)는 그대로 유지됨
+    final double groupMinLeftMargin = w * _groupMinLeftMarginRatio;
+    final double rawLogoLeft = bgOffsetX + 91 * bgScale;
+    final double groupShiftX = rawLogoLeft < groupMinLeftMargin
+        ? groupMinLeftMargin - rawLogoLeft
+        : 0.0;
+    double leftOnBg(double designX) =>
+        bgOffsetX + designX * bgScale + groupShiftX;
 
     return Scaffold(
       body: Stack(
@@ -295,7 +325,15 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
               // 이 화면 자체가 이미 메인 메뉴 역할이라 MainScreen/ChoiceScreen으로 다시
               // 이동시키는 건 의미 없는 왕복이 됨 - X랑 동일하게 그냥 메뉴만 닫히게 처리함
               onGoToMainScreen: () => setState(() => _isSettingOpen = false),
-              onExitGame: exitGame,
+              // 이 화면은 'choice' 라우트 자체라서 goToChapterSelectClearingStack이 이
+              // 화면 인스턴스를 안 지우고 스택에 그대로 남겨둠(다른 4개 화면은 전부 위에
+              // 쌓인 채로 사라져서 신경 안 써도 됐던 부분). 그래서 여기서만 이동 직전에
+              // 메뉴를 먼저 닫아둬야, 나중에 챕터 선택 화면에서 뒤로가기로 돌아왔을 때
+              // 메뉴가 열린 채로 남아있는 걸 막을 수 있음
+              onGoToChapterSelect: () {
+                setState(() => _isSettingOpen = false);
+                goToChapterSelectClearingStack(context);
+              },
             ),
 
           // 새 게임 시작 확인창. 버튼 2개(취소/확인)

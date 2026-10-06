@@ -519,7 +519,8 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         ),
                         (route) => false,
                       ),
-                  onExitGame: exitGame,
+                  onGoToChapterSelect: () =>
+                      goToChapterSelectClearingStack(context),
                 ),
 
               // 저장 완료 안내 배지. _handleSave가 저장 끝내고 잠깐(2초) 띄웠다가 스스로 지움.

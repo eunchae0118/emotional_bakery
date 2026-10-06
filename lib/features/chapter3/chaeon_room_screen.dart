@@ -6,6 +6,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
@@ -405,9 +406,20 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     setState(() => _chaeonState = 'idle');
   }
 
+  // 문이 잘려서 안 보일 때 나가기 터치 영역(7-2층)이랑 문 자체 히트박스(3층)가 화면상
+  // 같은 지점을 덮을 수 있어서, 한 번 탭했는데 두 GestureDetector가 따로 반응해서 이
+  // 함수가 두 번 불릴 수 있음. 한 프레임 안에서는 한 번만 실제로 처리되게 막는 가드
+  bool _isHandlingDoorTap = false;
+
   // 골목길(TutorialScreen)로 이동. 문 근처(kRoomDoorNearMinX~MaxX)에 있을 때만 실제로 이동시키고,
   // 아니면 안내 문구만 잠깐 띄움 (tutorial_screen.dart 빵집 문 isNearDoor 체크랑 동일한 패턴)
   void _handleDoorTap() {
+    if (_isHandlingDoorTap) return;
+    _isHandlingDoorTap = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isHandlingDoorTap = false;
+    });
+
     final bool isNearDoor =
         _chaeonX >= kRoomDoorNearMinX && _chaeonX <= kRoomDoorNearMaxX;
     if (!isNearDoor) {
@@ -668,37 +680,29 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
               onTap: () => setState(() => _isSettingOpen = true),
             ),
 
-            // 7-2층: 문이 화면 밖으로 잘려서 못 누를 때만 뜨는 고정 나가기 버튼. 문 근처에
-            // 있는데 cover 크롭 때문에 문 그림이 안 보이거나 일부만 보일 때 이걸로 대신 나갈
-            // 수 있게 해줌. 위치는 월드 좌표(wX/wY)가 아니라 화면 좌표(rW/rH)로 고정해서
-            // 화면이 아무리 잘려도 항상 같은 자리에 뜸. 온도계(~429)랑 뒤로가기 버튼(714) 사이
-            // 빈 공간에 둬서 다른 버튼이랑 안 겹침. 스타일은 buildSaveConfirmationBadge랑
-            // 똑같이 맞춤(검은 반투명 알약 모양 + 흰 글씨)
+            // 7-2층: 문이 화면 밖으로 잘려서 못 누를 때만 생기는 투명 나가기 터치 영역.
+            // 예전엔 여기 눈에 보이는 "나가기" 알약 버튼이 떠 있었는데, 게임 분위기랑 안
+            // 맞는다고 해서 겉모양은 다 빼고 터치만 되는 빈 영역으로 바꿈. 화면 오른쪽
+            // 가장자리에 붙여서 폭 u(80)만큼 잡아두면, 문이 일부라도 보이는 경우(doorVisibleWidth
+            // 참고)엔 그 보이는 부분이 항상 화면 오른쪽 끝에 붙어있는 거라 자연스럽게 겹침.
+            // 세로는 문이 있는 구간(wY(kRoomDoorTopY)~wSize(kRoomDoorHeight))을 그대로 덮음.
+            // 탭 처리는 문 자체 히트박스(3층)랑 똑같이 _handleDoorTap을 그대로 씀 - 그 함수
+            // 안에 재진입 가드를 넣어둬서, 둘이 겹치는 지점을 탭해도 한 번만 실제로 처리됨
             if (showDoorExitButton)
               Positioned(
-                key: const ValueKey('chaeon_room_door_exit_button'),
-                left: rW(500),
-                top: rH(15),
+                key: const ValueKey('chaeon_room_door_exit_touch_zone'),
+                left: w - u(80),
+                top: wY(kRoomDoorTopY),
+                width: u(80),
+                height: wSize(kRoomDoorHeight),
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: _handleDoorTap,
-                  child: Container(
-                    width: u(140),
-                    height: u(44),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(u(22)),
-                    ),
-                    child: Text(
-                      '나가기',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: u(14),
-                        fontWeight: FontWeight.w400,
-                        fontFamily: 'SCDream',
-                      ),
-                    ),
-                  ),
+                  // 디버그 빌드에서만 반투명 빨간색으로 영역을 보여줘서 위치 확인하기
+                  // 쉽게 해둠. 릴리즈 빌드에선 kDebugMode가 꺼져있어서 완전히 안 보임
+                  child: kDebugMode
+                      ? Container(color: Colors.red.withOpacity(0.3))
+                      : null,
                 ),
               ),
 
@@ -772,7 +776,8 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                       ),
                       (route) => false,
                     ),
-                onExitGame: exitGame,
+                onGoToChapterSelect: () =>
+                    goToChapterSelectClearingStack(context),
               ),
 
             // 9-1층: 저장 완료 안내 배지. kitchen_screen.dart 9-1층이랑 동일한 패턴

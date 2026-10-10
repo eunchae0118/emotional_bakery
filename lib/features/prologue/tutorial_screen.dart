@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async'; // 연속 이동 (화살표 꾹 누르기)
 import '../chapter1/game_play_screen.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/services/app_exit.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
@@ -172,6 +174,16 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   // didChangeDependencies가 여러 번 불려도 워밍업이 중복으로 안 걸리게 막는 용도
   bool _hasStartedBgWarmUp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 골목길 전용 곡. 챕터1 중간에 빵집 왼쪽 끝으로 나왔다가(returnToExistingGame=true)
+    // 다시 문으로 들어갈 땐 새로 push하는 게 아니라 pop이라 이 initState가 다시 안 불려서
+    // main_theme으로 안 돌아오고 street_theme이 그대로 이어짐 - 알려진 동작이고 고치는 건
+    // 이번 범위 밖임
+    AudioService.playBgm(AudioIds.streetTheme);
+  }
 
   @override
   void didChangeDependencies() {

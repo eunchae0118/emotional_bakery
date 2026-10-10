@@ -45,10 +45,19 @@
 // 통이미지라 이 버튼 전용 이미지 자체가 필요 없어서, 다른 버튼들처럼 child 없는 GestureDetector로
 // 되돌리고 behavior만 명시함)
 
+// (업데이트 7: 배경음악/효과음 볼륨 조절을 연결함. main_setting_ex.png 위쪽에 그려진 -/+
+// 버튼이랑 점 5칸짜리 단계 표시에 투명 히트박스/덮개를 얹어서 AudioService.bgmVolume/
+// sfxVolume을 직접 조절함. 다른 버튼들(AUTO 등)은 상태가 밖에서(isAutoAdvanceEnabled
+// 파라미터) 들어오는데, 볼륨은 AudioService가 전역 static 값이라 이 위젯이 직접 읽고 바로
+// 반영하면 돼서 StatelessWidget에서 StatefulWidget으로 바꿈 - 탭할 때마다 setState로
+// 점 표시만 다시 그리면 됨)
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 
-class MenuOverlay extends StatelessWidget {
+class MenuOverlay extends StatefulWidget {
   const MenuOverlay({
     super.key,
     required this.rW,
@@ -73,6 +82,107 @@ class MenuOverlay extends StatelessWidget {
   final VoidCallback onSave;
   final VoidCallback onGoToMainScreen;
   final VoidCallback onGoToChapterSelect;
+
+  @override
+  State<MenuOverlay> createState() => _MenuOverlayState();
+}
+
+class _MenuOverlayState extends State<MenuOverlay> {
+  // 아래 볼륨 UI 좌표는 main_setting_ex.png 실제 픽셀(1300x685)을 색 경계 스캔으로 직접
+  // 읽어서 구한 값임(눈대중 아님) - 650x342 디자인 캔버스 기준으로 절반(÷2)해서 옮겼음.
+  // -/+ 버튼은 배경음악/효과음 두 줄 다 가로 위치(220.5, 541.0)가 같고 세로 위치만 다름
+  static const double _volumeMinusLeftRef = 220.5;
+  static const double _volumePlusLeftRef = 541.0;
+  static const double _volumeButtonSizeRef = 29.0;
+  static const double _bgmRowTopRef = 78.5;
+  static const double _sfxRowTopRef = 143.5;
+
+  // 점 5칸의 가로 위치(간격이 균등해서 그대로 리스트로 뺌). 폭/높이는 실측값에 테두리
+  // 안티앨리어싱까지 확실히 덮도록 사방으로 살짝 여유를 더함
+  static const List<double> _volumeDotLeftRefs = [
+    289.5,
+    341.0,
+    392.5,
+    443.5,
+    495.0,
+  ];
+  static const double _volumeDotWidthRef = 12.5;
+  static const double _volumeDotHeightRef = 10.5;
+  static const double _bgmDotTopRef = 88.0;
+  static const double _sfxDotTopRef = 153.0;
+
+  // 점 칸을 가릴 때 덮어씌우는 사각형 색. main_setting_ex.png의 점 주변 패널 안쪽 배경색을
+  // 그대로 픽셀에서 읽은 값(222,141,83) - 이 색으로 덮으면 배경이랑 구분이 안 가서 점이
+  // 꺼진 것처럼 보임
+  static const Color _volumeDotMaskColor = Color(0xFFDE8D53);
+
+  void _changeBgmVolume(int delta) {
+    final int next = AudioService.bgmVolume + delta;
+    if (next < 0 || next > AudioService.maxVolumeStep) return; // 범위 밖이면 무시
+    AudioService.setBgmVolume(next);
+    setState(() {});
+  }
+
+  void _changeSfxVolume(int delta) {
+    final int next = AudioService.sfxVolume + delta;
+    if (next < 0 || next > AudioService.maxVolumeStep) return;
+    AudioService.setSfxVolume(next);
+    setState(() {});
+    // 바뀐 효과음 볼륨을 바로 들어볼 수 있게 확인용으로 한 번 재생함. volumePreview가
+    // audio_ids.dart에 아직 등록 안 된 자리라 지금은 조용히 무시됨
+    AudioService.playSfx(AudioIds.volumePreview);
+  }
+
+  // 배경음악/효과음 한 줄 분(=-버튼 + +버튼 + 점 5칸)을 통째로 만들어주는 공용 빌더.
+  // 두 줄이 가로 위치/크기는 똑같고 세로 위치(rowTopRef/dotTopRef)랑 현재 단계만 달라서
+  // 함수 하나로 묶었음
+  List<Widget> _buildVolumeRow({
+    required double Function(double) localX,
+    required double Function(double) localY,
+    required double Function(double) localW,
+    required double Function(double) localH,
+    required double rowTopRef,
+    required double dotTopRef,
+    required int currentStep,
+    required VoidCallback onDecrease,
+    required VoidCallback onIncrease,
+  }) {
+    return [
+      Positioned(
+        left: localX(_volumeMinusLeftRef),
+        top: localY(rowTopRef),
+        width: localW(_volumeButtonSizeRef),
+        height: localH(_volumeButtonSizeRef),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onDecrease,
+          child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
+        ),
+      ),
+      Positioned(
+        left: localX(_volumePlusLeftRef),
+        top: localY(rowTopRef),
+        width: localW(_volumeButtonSizeRef),
+        height: localH(_volumeButtonSizeRef),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onIncrease,
+          child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
+        ),
+      ),
+      // currentStep보다 높은 칸만 가림 - 예를 들어 currentStep=3이면 인덱스 3,4(4번째,
+      // 5번째 점)만 덮어서 앞 3칸만 켜진 것처럼 보임
+      for (int i = 0; i < _volumeDotLeftRefs.length; i++)
+        if (i >= currentStep)
+          Positioned(
+            left: localX(_volumeDotLeftRefs[i]),
+            top: localY(dotTopRef),
+            width: localW(_volumeDotWidthRef),
+            height: localH(_volumeDotHeightRef),
+            child: Container(color: _volumeDotMaskColor),
+          ),
+    ];
+  }
 
   // 디버그 빌드에서만 버튼 터치 영역을 반투명 빨간색으로 보여주는 용도. 시안 글자 위치랑
   // 실제 터치 영역(Positioned 박스)이 맞는지 눈으로 바로 확인하려고 넣음. Positioned가
@@ -136,6 +246,32 @@ class MenuOverlay extends StatelessWidget {
                 ),
               ),
 
+              // 배경음악 볼륨 줄(-버튼/+버튼/점 5칸)
+              ..._buildVolumeRow(
+                localX: localX,
+                localY: localY,
+                localW: localW,
+                localH: localH,
+                rowTopRef: _bgmRowTopRef,
+                dotTopRef: _bgmDotTopRef,
+                currentStep: AudioService.bgmVolume,
+                onDecrease: () => _changeBgmVolume(-1),
+                onIncrease: () => _changeBgmVolume(1),
+              ),
+
+              // 효과음 볼륨 줄(-버튼/+버튼/점 5칸)
+              ..._buildVolumeRow(
+                localX: localX,
+                localY: localY,
+                localW: localW,
+                localH: localH,
+                rowTopRef: _sfxRowTopRef,
+                dotTopRef: _sfxDotTopRef,
+                currentStep: AudioService.sfxVolume,
+                onDecrease: () => _changeSfxVolume(-1),
+                onIncrease: () => _changeSfxVolume(1),
+              ),
+
               // X 버튼. 이미지에 이미 그려져 있어서 투명 히트박스만 얹음. behavior를
               // opaque로 명시해서 child 유무랑 상관없이 Positioned가 준 영역 전체가
               // 눌리는 걸 보장함(명시 안 하면 child 없을 때 기본값인 translucent라도
@@ -148,7 +284,7 @@ class MenuOverlay extends StatelessWidget {
                 height: localH(43),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onClose,
+                  onTap: widget.onClose,
                 ),
               ),
 
@@ -163,10 +299,10 @@ class MenuOverlay extends StatelessWidget {
                 height: localH(39),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onToggleAuto,
+                  onTap: widget.onToggleAuto,
                   child: Stack(
                     children: [
-                      if (isAutoAdvanceEnabled)
+                      if (widget.isAutoAdvanceEnabled)
                         Image.asset(
                           'assets/images/auto.png',
                           width: localW(123),
@@ -191,7 +327,7 @@ class MenuOverlay extends StatelessWidget {
                 height: localH(39),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onGoToChapterSelect,
+                  onTap: widget.onGoToChapterSelect,
                   child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
                 ),
               ),
@@ -204,7 +340,7 @@ class MenuOverlay extends StatelessWidget {
                 height: localH(39),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onGoToMainScreen,
+                  onTap: widget.onGoToMainScreen,
                   child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
                 ),
               ),
@@ -219,7 +355,7 @@ class MenuOverlay extends StatelessWidget {
                 height: localH(39),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onSave,
+                  onTap: widget.onSave,
                   child: kDebugMode ? _buildDebugTouchAreaOverlay() : null,
                 ),
               ),

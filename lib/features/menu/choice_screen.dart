@@ -1,7 +1,9 @@
 // lib/features/menu/choice_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/services/app_exit.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
@@ -58,6 +60,15 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
   // 눌리게 두고(흐리게 비활성화 안 함), 탭한 시점에 SaveManager.hasSave()를 바로 확인해서
   // 없으면 이 안내창만 띄움
   bool _showNoSaveDataNotice = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 다른 화면에서 메인 메뉴로 돌아올 때도(뒤로가기로 기존 인스턴스에 popUntil로 돌아오는
+    // 경우 제외 - 그땐 원래 main_theme이었어서 상관없음) 여기로 새로 push되면 항상 다시 불림.
+    // 이미 main_theme이 재생 중이면 AudioService가 알아서 아무것도 안 함
+    AudioService.playBgm(AudioIds.mainTheme);
+  }
 
   // 로고 끝-버튼1, 버튼-버튼 사이 간격(디자인 단위). 전부 이 값 하나로 통일함 - 전에는
   // 로고 top이랑 버튼 블록 시작 top을 따로 잡고 기기별 추가 간격까지 얹었더니 로고-버튼1

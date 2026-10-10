@@ -1,6 +1,8 @@
 // lib/features/menu/main_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart'; // 다음 화면
@@ -47,6 +49,9 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    // 아직 첫 탭 전이라 실제로는 안 들리고 요청만 쌓임(main.dart의 _AudioUnlockGate 참고) -
+    // 로고 화면 들어오자마자 미리 걸어둬야 첫 탭(아이패드 사파리 등)에서 바로 들리기 시작함
+    AudioService.playBgm(AudioIds.mainTheme);
     Future.delayed(_minLoadingScreenDuration, () {
       if (!mounted) return;
       setState(() => _isMinTimeElapsed = true);

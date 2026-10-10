@@ -7,6 +7,8 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/ending_unlocks.dart';
 
 // 스프레드(ending_zip_1.png)/배경(ending_zip_bg.png) 원본 크기 기준 좌표계
@@ -85,6 +87,14 @@ class _EndingGalleryScreenState extends State<EndingGalleryScreen> {
   static const String _hiddenText =
       "채온이는 엄마를 위한 빵을 구웠어요.\n그리고 꿈에서 엄마에게 환하게\n"
       "웃어보였어요. 이후, 모든 감정을 되찾았어요.\n그리고 제빵사라는 꿈을 꾸게 되었어요.";
+
+  @override
+  void initState() {
+    super.initState();
+    // 메인 메뉴/챕터 선택/빵집이랑 같은 곡. ChoiceScreen에서 "엔딩보기"로 들어오면 이미
+    // main_theme이 재생 중이라 AudioService가 아무것도 안 하고 그대로 이어짐
+    AudioService.playBgm(AudioIds.mainTheme);
+  }
 
   // ★ 테스트용 임시 코드 - EndingGalleryScreen 레이아웃/회전 확인 끝나면 이 메서드와
   // build()의 DEBUG 버튼 Positioned 블록을 통째로 지울 것. kDebugMode라 release 빌드엔

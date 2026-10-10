@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
@@ -190,6 +192,13 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   @override
   void initState() {
     super.initState();
+
+    // 이 화면은 프롤로그 본편(isPrologue)이랑 챕터1/5 빵집 본편을 같은 위젯으로 같이
+    // 처리해서, 틀어주는 곡만 갈라줌. resumeCheckpoint로 재개 진입해도 isPrologue는
+    // 항상 false로 들어오니까(프롤로그는 재개 체크포인트가 없음) 그냥 분기만 보면 됨
+    AudioService.playBgm(
+      widget.isPrologue ? AudioIds.proTheme : AudioIds.mainTheme,
+    );
 
     // resumeCheckpoint로 들어온 경우, BakeryGame을 만들 때 재개 위치를 같이 넘겨줘야 함 -
     // _game이 만들어진 다음에 chaeon 위치를 옮기려고 하면 그 시점엔 chaeon이 아직 mount되기
@@ -495,6 +504,13 @@ class _GamePlayScreenState extends State<GamePlayScreen>
           ),
         );
         if (!mounted) return;
+        // 마을(TutorialScreen)이 returnToExistingGame=true로 pop만 하고 돌아와서 이 화면
+        // initState가 다시 안 불림 - street_theme에서 안 돌아오고 계속 흐르던 문제라 여기서
+        // 직접 다시 요청해줌. isPrologue는 이 콜백 진입 조건상 항상 false지만(맨 위 분기
+        // 참고), initState랑 똑같은 기준으로 맞춰둠. 이미 맞는 곡이면 AudioService가 무시함
+        AudioService.playBgm(
+          widget.isPrologue ? AudioIds.proTheme : AudioIds.mainTheme,
+        );
         // 왼쪽 벽 트리거 좌표(size.x/2)에 그대로 멈춰있으면 복귀하자마자 onReachLeftEdge가
         // 다시 발동해버리므로, 벽에서 살짝 떨어진 곳으로 옮기고 이동 입력도 정지시켜둠
         _game.movePlayer(0);

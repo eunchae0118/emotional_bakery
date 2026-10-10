@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
@@ -117,6 +119,9 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
   @override
   void initState() {
     super.initState();
+    // 메인 메뉴/엔딩보기/빵집이랑 같은 곡. 이미 main_theme이 재생 중이면(메인 메뉴에서
+    // 넘어온 평소 경로) AudioService가 알아서 아무것도 안 함
+    AudioService.playBgm(AudioIds.mainTheme);
     // BakeryGame(Flame)이 쓰는 배경/채온이 스프라이트를 미리 데워둠. Flame.images는 앱
     // 전역에서 공유되는 static 캐시라, 여기서 한 번만 로드해두면 이후 챕터1/3/4/5 중
     // 어느 경로로 GamePlayScreen에 처음 들어가든 로딩 중 검은 화면이 안 보임
@@ -596,6 +601,13 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                               const GamePlayScreen(isPrologue: true),
                         ),
                       );
+
+                      // 프롤로그 화면이 pop으로 돌아온 시점 - 새로 push해 들어온 게 아니라
+                      // 이 화면(같은 인스턴스) 그대로 돌아온 거라 initState가 다시 안 불려서,
+                      // pro_theme에서 안 돌아오고 계속 흐르던 문제가 있었음. 여기서 직접
+                      // main_theme을 다시 요청해주면 됨 - 이미 main_theme이면 AudioService가
+                      // 알아서 무시함
+                      AudioService.playBgm(AudioIds.mainTheme);
 
                       if (result == true) {
                         // 다른 챕터들이랑 동일하게 ChapterProgress(static)에 저장해야 챕터 선택창이

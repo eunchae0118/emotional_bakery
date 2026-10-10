@@ -2,7 +2,9 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/dialogue_loader.dart';
 import 'package:emotional_bakery/core/services/gif_duration.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
@@ -435,6 +437,11 @@ class SceneDialogueController extends ChangeNotifier {
     }
     // 대사 없는 연출용 노드는 최소 노출 시간이 지나기 전까지 탭으로 못 넘어가게 막음
     if (fullLength == 0 && !_emptyNodeHoldElapsed) return;
+
+    // 실제로 다음 줄로 넘어가는 시점에만 울림(위 타이핑 스킵 분기는 "다 보여주기"일 뿐
+    // 다음 줄로 넘어간 게 아니라서 여기까지 안 옴). id가 audio_ids.dart에 아직 비어있는
+    // 자리라 지금은 조용히 무시됨
+    AudioService.playSfx(AudioIds.dialogueAdvance);
 
     sceneNodeHistory.add(node.id);
     _enterSceneNode(node.next);

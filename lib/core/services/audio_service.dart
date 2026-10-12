@@ -129,21 +129,13 @@ class AudioService {
     await _backend.playSfx(path: path, sfxLevel: _volumeForStep(sfxVolume));
   }
 
-  // main.dart의 _AudioUnlockGate가 포인터 다운(사용자 제스처)마다 불러줌. 가벼워야 해서
-  // 여기선 "지금 뭐가 재생되어야 하는지"만 백엔드한테 넘기고, 끊긴 걸 되살리는 실제 작업은
-  // 전부 백엔드 안에서 처리됨(백엔드가 알아서 상태를 보고 필요 없으면 아무 일도 안 함)
-  static void onUserGesture() {
-    final String? trackId = _pendingBgmTrackId ?? _activeBgmTrackId;
-    final String? path = trackId == null ? null : AudioIds.bgmTracks[trackId];
-    final double trackGain = trackId == null
-        ? 1.0
-        : (AudioIds.trackGain[trackId] ?? 1.0);
-    _backend.onUserGesture(
-      activeTrackId: trackId,
-      activePath: path,
-      trackGain: trackGain,
-      bgmLevel: _volumeForStep(bgmVolume),
-    );
+  // main.dart의 _AudioUnlockGate가 포인터 이벤트(사용자 제스처)마다 불러줌. 가벼워야 해서
+  // 여기선 그냥 백엔드로 그대로 넘기기만 함 - "지금 뭐가 재생되어야 하는지"는 백엔드가
+  // playBgm 호출 시점에 이미 자기 내부 장부로 들고 있어서 따로 안 넘겨줘도 됨.
+  // canAttemptResume: pointerup/click처럼 iOS가 사용자 활성화로 인정하는 이벤트면 true,
+  // pointerdown처럼 인정 안 하는 이벤트면 false - 호출하는 쪽(main.dart)이 결정해서 넘김
+  static void onUserGesture({required bool canAttemptResume}) {
+    _backend.onUserGesture(canAttemptResume: canAttemptResume);
   }
 
   // bgmVolume 단계를 바꾸고 저장함. 지금 BGM이 재생 중이면 그 자리에서 바로 음량을 반영함

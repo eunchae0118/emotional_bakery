@@ -32,16 +32,15 @@ abstract class AudioBackend {
   // 효과음 1회 재생(동시에 여러 번 불려도 서로 안 끊김)
   Future<void> playSfx({required String path, required double sfxLevel});
 
-  // 포인터 다운(사용자 제스처)마다 호출됨 - 가벼워야 함. activeTrackId는 지금 재생 중이어야
-  // 하는 트랙(없으면 null), path/trackGain/bgmLevel은 그 트랙을 되살릴 때 바로 쓸 값.
-  // 백엔드가 자기 내부 상태(예: AudioContext.state)를 보고 실제로 안 들리고 있으면
-  // 알아서 되살림 - 정상 재생 중이면 아무 일도 안 해야 함(터치마다 재시작되면 안 됨)
-  void onUserGesture({
-    required String? activeTrackId,
-    required String? activePath,
-    required double trackGain,
-    required double bgmLevel,
-  });
+  // 포인터 이벤트(사용자 제스처)마다 호출됨 - 가벼워야 함. 지금 재생 "되어야 하는" 트랙이
+  // 뭔지는 백엔드가 이미 playBgm 호출 시점에 자기 내부 상태로 커밋해둬서, 여기서 따로 안
+  // 넘겨받아도 됨(웹 구현 쪽은 네이티브 DOM 리스너에서도 같은 복구 로직을 타야 해서,
+  // 외부에서 매번 값을 받는 방식 대신 백엔드가 스스로 기억한 값을 쓰게 함).
+  //
+  // canAttemptResume: 이 호출을 일으킨 이벤트가 iOS에서 "사용자 활성화"로 인정되는
+  // 종류(pointerup/touchend/click)면 true, 아니면(pointerdown처럼 iOS가 활성화로 안
+  // 쳐주는 이벤트) false - resume()은 활성화로 인정되는 이벤트에서만 시도해야 함
+  void onUserGesture({required bool canAttemptResume});
 
   // 탭/앱이 백그라운드로 갈 때·돌아올 때
   Future<void> pauseForLifecycle();

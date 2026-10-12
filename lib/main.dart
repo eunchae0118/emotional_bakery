@@ -74,29 +74,39 @@ class EmotionalBakery extends StatelessWidget {
 // 오디오를 다시 잠갔을 때 풀어줄 방법이 없어서 이렇게 바꿈 - Listener는 위젯 트리에
 // 항상 그대로 둠(떼지 않음)
 //
-// (업데이트: 포인터 다운뿐 아니라 포인터 업에서도 똑같이 불러줌 - iOS Safari는 손가락을
-// 뗄 때(click 계열 이벤트)의 사용자 활성화를 더 확실하게 쳐주는 경우가 많아서, 다운
-// 시점의 resume() 시도가 거부되더라도 업 시점에 한 번 더 기회를 줌. onPointerCancel은
-// 제외함 - 드래그가 취소된 경우라 "사용자가 의도한 탭"으로 보기 애매함)
+// (업데이트: 포인터 다운뿐 아니라 포인터 업에서도 똑같이 onUserGesture를 불러줌.
+// onPointerCancel은 제외함 - 드래그가 취소된 경우라 "사용자가 의도한 탭"으로 보기 애매함)
+//
+// (업데이트 2: iOS Safari는 pointerdown을 "사용자 활성화"로 안 쳐주는 경우가 있어서,
+// 거기서 resume()을 부르면 Promise가 영원히 안 끝나고 멈춰있을 수 있다는 게 실기기
+// 테스트로 확인됨(진단 패널에 pointerdown/pointerup 로그는 찍히는데 resume 성공 로그가
+// 전혀 안 남는 증상). 그래서 resume() 시도는 pointerup(canAttemptResume=true)에서만
+// 하고, pointerdown(canAttemptResume=false)에서는 안 함 - 실제 resume 판단은
+// WebAudioBackend 쪽에서 함. 또한 Flutter의 Listener 경로는 이벤트가 프레임 단위로
+// 지연 전달될 수 있어서 iOS가 활성화로 안 쳐줄 가능성이 있어, WebAudioBackend 생성자에서
+// document에 직접 touchend/pointerup/click 네이티브 리스너를 달아서 더 확실하게 잡음 -
+// 이 Listener 경로는 그 보조 역할)
 class _AudioUnlockGate extends StatelessWidget {
   const _AudioUnlockGate({required this.child});
 
   final Widget child;
 
   void _handlePointerEvent(PointerEvent event) {
+    // pointerup만 "사용자 활성화로 인정되는 이벤트"로 침 - pointerdown에서 resume()을
+    // 부르면 iOS에서 Promise가 안 풀릴 수 있어서(main.dart 위쪽 업데이트2 주석 참고)
+    final bool isPointerUp = event is PointerUpEvent;
+
     // 진단 모드(?audiolog=1)일 때만 터치 하나하나를 로그로 남김 - 평소 플레이 중엔 탭마다
     // 찍히면 콘솔/패널이 너무 시끄러워져서, 맥 없이 아이폰에서 직접 디버깅할 때만 켬.
     // 연속으로 같은 내용이면 audio_log.dart가 알아서 한 줄로 합쳐줌(개수만 증가)
     if (audioDiagnosticsEnabled) {
-      final String kind = event is PointerDownEvent
-          ? 'pointerdown'
-          : 'pointerup';
+      final String kind = isPointerUp ? 'pointerup' : 'pointerdown';
       logAudioError(
         '_AudioUnlockGate',
         '$kind 수신(state=${AudioService.audioStateLabel})',
       );
     }
-    AudioService.onUserGesture();
+    AudioService.onUserGesture(canAttemptResume: isPointerUp);
   }
 
   @override

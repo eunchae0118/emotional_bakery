@@ -248,12 +248,7 @@ class AudioPlayersBackend implements AudioBackend {
 
   // 네이티브 플랫폼은 요소 재잠금 문제가 없어서 할 일이 없음
   @override
-  void onUserGesture({
-    required String? activeTrackId,
-    required String? activePath,
-    required double trackGain,
-    required double bgmLevel,
-  }) {}
+  void onUserGesture({required bool canAttemptResume}) {}
 
   @override
   Future<void> pauseForLifecycle() async {

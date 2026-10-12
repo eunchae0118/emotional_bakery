@@ -69,20 +69,47 @@ class WebAudioBackend implements AudioBackend {
   // 'assets/sounds/...' 형태라서(pubspec에 'assets/sounds/'로 등록했으니까) 최종 요청
   // 경로는 'assets/'가 두 번 겹친 'assets/assets/sounds/...'가 맞음 - audioplayers_web
   // 소스(AudioCache._sanitizeURLForWeb)도 똑같이 이렇게 두 번 붙여서 처리함. 실제
-  // flutter build web 결과물(build/web/assets/assets/sounds/...)로도 확인한 경로임
-  String _assetUrl(String path) => 'assets/assets/$path';
+  // flutter build web 결과물(build/web/assets/assets/sounds/...)로도 확인한 경로임.
+  //
+  // (업데이트: 단순 상대경로 문자열 대신 document.baseURI 기준으로 명시적으로 절대경로를
+  // 만들어서 fetch에 넘기게 바꿈 - gh-pages처럼 base href가 '/'가 아닌 서브경로(예:
+  // '/emotional_bakery/')로 배포될 때, 상대경로가 혹시라도 엉뚱한 기준으로 풀릴 여지를
+  // 아예 없애려는 거임. document.baseURI는 <base href>를 그대로 반영하니까 이걸 기준으로
+  // resolve하면 배포 경로가 어디든 항상 올바른 절대 URL이 나옴)
+  String _assetUrl(String path) {
+    final Uri base = Uri.parse(web.document.baseURI);
+    return base.resolve('assets/assets/$path').toString();
+  }
 
   Future<web.AudioBuffer> _bufferFor(String path) {
     return _bufferCache.putIfAbsent(path, () => _decode(path));
   }
 
   Future<web.AudioBuffer> _decode(String path) async {
+    final String url = _assetUrl(path);
     try {
-      final web.Response response = await web.window
-          .fetch(_assetUrl(path).toJS)
-          .toDart;
+      final web.Response response = await web.window.fetch(url.toJS).toDart;
+      logAudioError(
+        'WebAudioBackend._decode',
+        'fetch $url -> status=${response.status} ok=${response.ok}',
+      );
+      if (!response.ok) {
+        // fetch는 404/500 같은 HTTP 에러 상태를 reject가 아니라 "성공적으로 받은 응답"
+        // 으로 돌려줌 - 여기서 직접 안 걸러내면 에러 페이지(HTML) 바이트를 decodeAudioData에
+        // 넘기게 돼서, 진짜 원인(경로가 틀렸다는 것)이 안 보이고 디코딩 실패로만 찍힘
+        throw Exception(
+          'HTTP ${response.status}로 에셋을 못 받아옴 - 경로가 틀렸을 가능성이 큼: $url',
+        );
+      }
       final JSArrayBuffer arrayBuffer = await response.arrayBuffer().toDart;
-      return await _audioContext.decodeAudioData(arrayBuffer).toDart;
+      final web.AudioBuffer buffer = await _audioContext
+          .decodeAudioData(arrayBuffer)
+          .toDart;
+      logAudioError(
+        'WebAudioBackend._decode',
+        '디코딩 성공: $url (길이 ${buffer.duration.toStringAsFixed(2)}초)',
+      );
+      return buffer;
     } catch (e) {
       logAudioError('WebAudioBackend._decode($path)', e);
       rethrow;
@@ -111,31 +138,48 @@ class WebAudioBackend implements AudioBackend {
     required double bgmLevel,
     required Duration fadeDuration,
   }) async {
-    if (_activeTrackId == trackId) {
-      // 이미 같은 트랙이 장부상 활성 상태 - 실제로도 노드가 있고 context가 돌고 있으면
-      // 진짜로 들리는 중인 거라 더 할 일 없음. 아니면(디코딩/시작 실패 등으로 노드가 없거나
-      // context가 still suspended) false를 돌려줘서 바깥(AudioService)이 보류 상태로
-      // 기억해뒀다가 다음 onUserGesture에서 다시 시도하게 함
-      return _activeTrack != null && _audioContext.state == 'running';
+    if (_activeTrackId == trackId && _activeTrack != null) {
+      // 이미 이 트랙이 실제로(소리 날 수 있는 노드까지) 떠 있음 - 더 할 일 없음
+      return _audioContext.state == 'running';
     }
 
-    // 동시성 버그 방지: "이 트랙이 활성이어야 한다"는 의도를 디코딩(await) 전에 먼저
-    // 동기적으로 커밋해둠 - 안 그러면 디코딩 기다리는 사이 같은 트랙이 또 요청됐을 때 위
-    // 가드가 못 걸러서 중복 재생될 수 있음(예전 audioplayers 기반 구현에서 실제로 겪었던
-    // 버그 - audio_service.dart 이전 버전 주석 참고)
+    // 같은 트랙을 다시 요청한 거면(= 전에 커밋만 해두고 context가 안 풀려서 노드를 아직
+    // 못 띄운 경우) 토큰은 새로 안 받고 그대로 씀. 완전히 새로운 트랙 요청일 때만 토큰을
+    // 올려서 "이전 요청은 이제 낡았다"고 표시함
+    final bool isSameTrackRetry = _activeTrackId == trackId;
     final String? previousTrackId = _activeTrackId;
-    final int token = ++_fadeToken;
-    _activeTrackId = trackId;
+    final int token = isSameTrackRetry ? _fadeToken : ++_fadeToken;
+    if (!isSameTrackRetry) {
+      // 동시성 버그 방지: "이 트랙이 활성이어야 한다"는 의도를 디코딩(await) 전에 먼저
+      // 동기적으로 커밋해둠 - 안 그러면 디코딩 기다리는 사이 같은 트랙이 또 요청됐을 때 위
+      // 가드가 못 걸러서 중복 재생될 수 있음(예전 audioplayers 기반 구현에서 실제로 겪었던
+      // 버그 - audio_service.dart 이전 버전 주석 참고)
+      _activeTrackId = trackId;
+    }
 
     web.AudioBuffer buffer;
     try {
       buffer = await _bufferFor(path);
     } catch (e) {
-      if (token == _fadeToken) _activeTrackId = previousTrackId;
+      if (!isSameTrackRetry && token == _fadeToken) _activeTrackId = previousTrackId;
       return false;
     }
     // 디코딩을 기다리는 사이 더 최신 요청이 들어와서 이미 추월당했으면 조용히 포기
     if (token != _fadeToken) return false;
+
+    // context가 아직 안 풀려있으면 여기서 노드를 만들어 바로 start()하지 않고 그냥 포기함
+    // (_activeTrackId는 커밋된 채로 남아서, 다음 onUserGesture가 resume 성공 뒤에 이
+    // 함수를 다시 불러줌). suspended 상태에서 미리 만들어 start()해둔 소스가 resume 이후에
+    // 확실히 들리기 시작한다는 보장이 브라우저마다 다를 수 있어서, 안전하게 진짜 running일
+    // 때만 실제로 노드를 만들고 재생을 시작함 - 디코딩은 이미 끝내놨으니(버퍼 캐시됨) 다음
+    // 시도에서 다시 fetch/decode를 안 기다려도 됨
+    if (_audioContext.state != 'running') {
+      logAudioError(
+        'WebAudioBackend.playBgm($trackId)',
+        'AudioContext가 아직 running이 아님(${_audioContext.state}) - 재생 보류',
+      );
+      return false;
+    }
 
     final _ActiveTrack? outgoing = _activeTrack;
     final bool isFirstPlay = outgoing == null;
@@ -165,6 +209,7 @@ class WebAudioBackend implements AudioBackend {
       } catch (_) {}
       return false;
     }
+    logAudioError('WebAudioBackend.playBgm($trackId)', 'source.start 성공');
 
     _activeTrack = _ActiveTrack(trackId, source, trackGainNode, trackGain);
 
@@ -273,12 +318,14 @@ class WebAudioBackend implements AudioBackend {
       _audioContext.resume().toDart.then(
         (_) {
           _resumeInFlight = false;
-          // resume이 실제로 끝난 시점에 한 번 더 확인함 - 보통은 아래에서 바로 건
-          // playBgm이 이미 노드를 만들어서 큐에 걸어둔 상태라 resume되는 순간 자동으로
-          // 들리기 시작하지만, 혹시 그 사이 노드 자체가 안 만들어진 채로 남아있으면
-          // (예: 그때는 activeTrack이 없었는데 지금은 생겼어야 하는 경우) 여기서 한 번 더
-          // 되살림. 다운/업 호출 시점 기준 값을 그대로 들고 있어서, 그 사이 다른 트랙으로
-          // 바뀌었으면 _maybeRevivePending 안에서 걸러짐
+          logAudioError(
+            'WebAudioBackend.resume',
+            '성공(state=${_audioContext.state})',
+          );
+          // playBgm은 context가 running이 아니면 노드를 아예 안 만들고 보류만 해뒀으니까,
+          // resume이 진짜로 끝난 지금 시점에 실제로 노드를 만들어서 재생을 시작함. 다운/업
+          // 호출 시점 기준 값을 그대로 들고 있어서, 그 사이 다른 트랙으로 바뀌었으면
+          // _maybeRevivePending 안에서 걸러짐
           _maybeRevivePending(
             activeTrackId: activeTrackId,
             activePath: activePath,
@@ -306,12 +353,11 @@ class WebAudioBackend implements AudioBackend {
     );
   }
 
-  // activeTrackId에 맞는 노드가 이미 있으면(=정상 재생 중이거나, context가 suspended라도
-  // 노드 자체는 만들어져서 재생 대기 중이면) 더 할 일 없음 - context가 resume되는 순간
-  // 이미 만들어둔 노드가 알아서 소리를 내기 시작하니까, 새로 재생을 걸 필요가 없음. 노드
-  // 자체가 없는 경우(디코딩/시작이 실패했던 경우)에만 다시 playBgm을 시도함. playBgm 쪽도
-  // "같은 trackId면 바로 return"하는 가드가 있어서, 여기서 두 번 불려도 소스가 중복으로
-  // 생기진 않음(멱등)
+  // activeTrackId에 맞는 노드가 이미 떠 있으면(=정상 재생 중) 더 할 일 없음. 노드가 아직
+  // 없는 경우(디코딩 중이거나, context가 아직 running이 아니라서 playBgm이 노드 생성 자체를
+  // 보류해둔 경우, 혹은 start가 실패했던 경우) playBgm을 다시 불러서 시도함 - playBgm 쪽도
+  // "같은 trackId면서 이미 노드가 있으면 바로 return"하는 가드가 있어서, 여기서 여러 번
+  // 불려도 소스가 중복으로 생기진 않음(멱등)
   void _maybeRevivePending({
     required String? activeTrackId,
     required String? activePath,

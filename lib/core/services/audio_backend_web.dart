@@ -65,74 +65,6 @@ class WebAudioBackend implements AudioBackend {
   int _fadeToken = 0;
   bool _hasPrefetched = false;
 
-  // 백그라운드에서 돌아왔을 수도 있어서(visibilitychange/pageshow/focus) 다음 터치에서
-  // "기존 노드를 그냥 믿지 말고 한 번 더 확실하게 확인"해야 하는 상태. iOS Safari는
-  // 백그라운드로 가면 AudioContext.state를 'suspended'가 아니라 'interrupted'로 바꾸는
-  // 경우가 있고, resume()이 성공해서 state가 'running'으로 돌아와도 실제로는 오디오 세션이
-  // 완전히 복구 안 돼서 소리가 안 나는 알려진 버그가 있음 - 그래서 "resume 성공 = 소리도
-  // 정상"이라고 믿지 않고, 이 플래그가 서있으면 기존 소스를 버리고 새로 만듦
-  bool _needsRecoveryCheck = false;
-
-  // resume() Promise가 reject도 resolve도 안 하고 영원히 pending으로 남는 경우(iOS
-  // interrupted 상태에서 드물게 발생할 수 있음)에 대비한 안전장치. 이 시간 안에 결론이
-  // 안 나면 _resumeInFlight를 강제로 풀어서, 다음 터치에서 resume()을 다시 시도할 수 있게 함
-  static const Duration _resumeTimeout = Duration(seconds: 5);
-  Timer? _resumeTimeoutTimer;
-
-  // 백그라운드 복귀 신호(visibilitychange/pageshow/focus)를 여기서 한 번만 등록해둠 -
-  // pagehide/blur는 "나간다"는 신호라 복구 플래그는 안 세우고 로그만 남김(나중에 콘솔에서
-  // 전체 흐름을 추적하기 쉽게)
-  WebAudioBackend() {
-    web.document.onvisibilitychange = ((web.Event _) {
-      final String visibility = web.document.visibilityState;
-      logAudioError(
-        'WebAudioBackend.visibilitychange',
-        'visibilityState=$visibility audioContextState=${_audioContext.state}',
-      );
-      if (visibility == 'visible') {
-        _markRecoveryNeeded('visibilitychange(visible)');
-      }
-    }).toJS;
-
-    web.window.onpageshow = ((web.Event _) {
-      logAudioError(
-        'WebAudioBackend.pageshow',
-        'audioContextState=${_audioContext.state}',
-      );
-      _markRecoveryNeeded('pageshow');
-    }).toJS;
-
-    web.window.onfocus = ((web.Event _) {
-      logAudioError(
-        'WebAudioBackend.focus',
-        'audioContextState=${_audioContext.state}',
-      );
-      _markRecoveryNeeded('focus');
-    }).toJS;
-
-    web.window.onpagehide = ((web.Event _) {
-      logAudioError(
-        'WebAudioBackend.pagehide',
-        'audioContextState=${_audioContext.state}',
-      );
-    }).toJS;
-
-    web.window.onblur = ((web.Event _) {
-      logAudioError(
-        'WebAudioBackend.blur',
-        'audioContextState=${_audioContext.state}',
-      );
-    }).toJS;
-  }
-
-  void _markRecoveryNeeded(String reason) {
-    _needsRecoveryCheck = true;
-    logAudioError(
-      'WebAudioBackend._markRecoveryNeeded',
-      '$reason -> 다음 터치에서 복구 확인 예약(state=${_audioContext.state})',
-    );
-  }
-
   // Flutter 웹 빌드는 pubspec assets를 '/assets/<에셋키>'로 서빙하는데, 에셋키 자체가 이미
   // 'assets/sounds/...' 형태라서(pubspec에 'assets/sounds/'로 등록했으니까) 최종 요청
   // 경로는 'assets/'가 두 번 겹친 'assets/assets/sounds/...'가 맞음 - audioplayers_web
@@ -378,54 +310,18 @@ class WebAudioBackend implements AudioBackend {
     required double trackGain,
     required double bgmLevel,
   }) {
-    logAudioError(
-      'WebAudioBackend.onUserGesture',
-      'state=${_audioContext.state} needsRecoveryCheck=$_needsRecoveryCheck',
-    );
-
-    // 백그라운드에서 돌아온 뒤 첫 터치면, 기존 소스 노드를 믿지 말고 버림 - 아래에서
-    // _maybeRevivePending이 "노드가 없다"고 보고 처음부터 새로 만들게 됨. resume() 자체는
-    // 성공할 수 있어도 iOS가 오디오 세션을 완전히 복구 안 해서 소리만 안 나는 경우가 있어서,
-    // 이 경우엔 재생 중이던 노드를 그냥 믿고 넘어가면 안 됨
-    if (_needsRecoveryCheck) {
-      _needsRecoveryCheck = false;
-      _discardActiveTrackForRecovery('onUserGesture');
-    }
-
     // iOS는 resume()이 제스처 처리 콜스택 안에서 "동기적으로 호출"돼야 인정해줌 - await로
     // 한 틱이라도 미루면 거부될 수 있어서, 상태 확인 직후 바로(다른 await 없이) 호출함.
-    // 포인터 다운에서 거부돼도 포인터 업에서 한 번 더 기회가 옴(main.dart 참고).
-    // state는 'suspended'뿐 아니라 iOS 전용 'interrupted'도 포함해서 'running'이 아니면
-    // 전부 resume 대상으로 봄(아래 조건이 문자열을 정확히 비교하지 않고 "!= 'running'"
-    // 전체를 보기 때문에 따로 분기 안 둬도 됨)
+    // 포인터 다운에서 거부돼도 포인터 업에서 한 번 더 기회가 옴(main.dart 참고)
     if (_audioContext.state != 'running' && !_resumeInFlight) {
       _resumeInFlight = true;
-      logAudioError(
-        'WebAudioBackend.resume',
-        '호출(state=${_audioContext.state})',
-      );
-      _resumeTimeoutTimer?.cancel();
-      _resumeTimeoutTimer = Timer(_resumeTimeout, () {
-        if (!_resumeInFlight) return;
-        logAudioError(
-          'WebAudioBackend.resume',
-          'timeout(${_resumeTimeout.inSeconds}초) - Promise가 안 끝나서 _resumeInFlight를 '
-          '강제로 풀어줌(state=${_audioContext.state})',
-        );
-        _resumeInFlight = false;
-      });
       _audioContext.resume().toDart.then(
         (_) {
-          _resumeTimeoutTimer?.cancel();
           _resumeInFlight = false;
           logAudioError(
             'WebAudioBackend.resume',
             '성공(state=${_audioContext.state})',
           );
-          // resume()이 성공해도 iOS가 오디오 세션을 완전히 못 되살려서 실제로는 무음인
-          // 경우가 있음 - currentTime이 진짜로 흐르는지 한 번 더 확인하고, 안 흐르면
-          // 다음 터치에서 강제로 다시 틀게 예약함
-          unawaited(_verifyAudioAliveAfterResume());
           // playBgm은 context가 running이 아니면 노드를 아예 안 만들고 보류만 해뒀으니까,
           // resume이 진짜로 끝난 지금 시점에 실제로 노드를 만들어서 재생을 시작함. 다운/업
           // 호출 시점 기준 값을 그대로 들고 있어서, 그 사이 다른 트랙으로 바뀌었으면
@@ -438,9 +334,8 @@ class WebAudioBackend implements AudioBackend {
           );
         },
         onError: (Object e) {
-          _resumeTimeoutTimer?.cancel();
           _resumeInFlight = false;
-          logAudioError('WebAudioBackend.resume', '실패(state=${_audioContext.state}): $e');
+          logAudioError('WebAudioBackend.resume', e);
         },
       );
     }
@@ -456,51 +351,6 @@ class WebAudioBackend implements AudioBackend {
       trackGain: trackGain,
       bgmLevel: bgmLevel,
     );
-  }
-
-  // 지금 재생 중이던 노드를 버림(정지+연결 해제는 안 하고 그냥 참조만 놓음 - 어차피
-  // interrupted 상태에서 만들어진 소스라 멀쩡히 stop()이 될 거란 보장도 없어서, 실패해도
-  // 상관없게 가장 단순하게 처리함). _activeTrack이 null이 되면 _maybeRevivePending이
-  // "노드가 없다"고 보고 playBgm을 다시 불러서 처음부터 새로 만듦
-  void _discardActiveTrackForRecovery(String reason) {
-    final _ActiveTrack? stale = _activeTrack;
-    if (stale == null) return;
-    logAudioError(
-      'WebAudioBackend._discardActiveTrackForRecovery',
-      '$reason - trackId=${stale.trackId} 기존 소스 버리고 재시작 준비(state=${_audioContext.state})',
-    );
-    _activeTrack = null;
-    try {
-      stale.source.stop();
-    } catch (_) {
-      // 이미 끊겼거나 멈춰있을 수 있음 - 상관없음, 버리는 게 목적이라 실패해도 그냥 넘어감
-    }
-    try {
-      stale.source.disconnect();
-      stale.gainNode.disconnect();
-    } catch (_) {}
-  }
-
-  // resume() 성공 직후 AudioContext의 시간이 진짜로 흐르는지 확인함. iOS에서 interrupted
-  // 이후 resume()이 성공한 것처럼 보여도 실제로는 오디오 하드웨어 세션이 안 돌아와서
-  // currentTime이 멈춰있는 채로 남는 알려진 버그가 있음 - 이 경우를 감지해서 다음 터치에서
-  // 강제로 다시 틀게 예약함(여기서 바로 playBgm을 부르지 않는 이유: 이 콜백은 사용자
-  // 제스처 밖에서 실행되는 거라, 여기서 새 소스를 만들어도 또 막힐 수 있음)
-  Future<void> _verifyAudioAliveAfterResume() async {
-    final double t0 = _audioContext.currentTime;
-    await Future.delayed(const Duration(milliseconds: 200));
-    final double t1 = _audioContext.currentTime;
-    logAudioError(
-      'WebAudioBackend._verifyAudioAliveAfterResume',
-      't0=$t0 t1=$t1 state=${_audioContext.state}',
-    );
-    if (_audioContext.state == 'running' && (t1 - t0) < 0.05) {
-      logAudioError(
-        'WebAudioBackend._verifyAudioAliveAfterResume',
-        'currentTime이 거의 안 흐름(running인데도) - 다음 터치에서 강제 재시작 예약',
-      );
-      _markRecoveryNeeded('_verifyAudioAliveAfterResume(currentTime stuck)');
-    }
   }
 
   // activeTrackId에 맞는 노드가 이미 떠 있으면(=정상 재생 중) 더 할 일 없음. 노드가 아직
@@ -530,10 +380,6 @@ class WebAudioBackend implements AudioBackend {
 
   @override
   Future<void> pauseForLifecycle() async {
-    logAudioError(
-      'WebAudioBackend.pauseForLifecycle',
-      '호출(state=${_audioContext.state})',
-    );
     try {
       await _audioContext.suspend().toDart;
     } catch (e) {
@@ -543,21 +389,8 @@ class WebAudioBackend implements AudioBackend {
 
   @override
   Future<void> resumeForLifecycle() async {
-    logAudioError(
-      'WebAudioBackend.resumeForLifecycle',
-      '호출(state=${_audioContext.state})',
-    );
-    // 이 resume은 Flutter의 AppLifecycleState.resumed 콜백에서 오는 거라 사용자 제스처가
-    // 아님 - iOS에서는 거부될 가능성이 높음. 그래서 성공/실패랑 상관없이 일단 "다음 터치에서
-    // 한 번 더 확실하게 확인"하도록 복구 플래그를 세워둠 - document.onvisibilitychange 같은
-    // DOM 이벤트가 어떤 이유로든 안 걸렸을 때의 보조 경로 역할도 함
-    _markRecoveryNeeded('resumeForLifecycle');
     try {
       await _audioContext.resume().toDart;
-      logAudioError(
-        'WebAudioBackend.resumeForLifecycle',
-        '성공(state=${_audioContext.state})',
-      );
     } catch (e) {
       // 탭 복귀가 사용자 제스처로 안 치는 브라우저도 있어서 여기선 실패가 흔할 수 있음 -
       // 그래도 괜찮음, 다음 터치(onUserGesture)에서 다시 시도됨

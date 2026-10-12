@@ -20,8 +20,8 @@ void main() async {
 
   // 볼륨 값 불러오기 + 앱 생명주기 감지 등록. 오디오 자체의 재생 잠금 해제(웹 오디오는
   // 사용자 제스처가 있어야 풀림)는 아직 안 된 상태라, 여기서 playBgm을 불러도 실제 재생은
-  // 안 되고 요청만 기억해둠 - 화면 최상위에 깔린 _AudioUnlockGate가 첫 탭을 감지하면 그때
-  // AudioService.unlock()이 불리면서 기억해둔 트랙이 재생됨
+  // 안 되고 요청만 기억해둠 - 화면 최상위에 깔린 _AudioUnlockGate가 터치마다
+  // AudioService.onUserGesture()를 불러주면서 기억해둔 트랙을 재생/복구함
   await AudioService.init();
 
   // 가로 화면 고정
@@ -54,44 +54,44 @@ class EmotionalBakery extends StatelessWidget {
       // 게이트) -> 콘텐츠 경고 -> 로고 화면(MainScreen) 순으로 이어지는 최초 실행
       // 흐름의 시작점
       home: const OrientationGateScreen(),
-      // Navigator를 포함한 트리 전체를 감싸서, 어느 화면에서 첫 탭이 일어나든(iOS 홈
-      // 화면 추가 안내의 "확인"이든, 안내 없이 바로 메인 메뉴의 버튼이든) 놓치지 않고
-      // 오디오 잠금을 풀 수 있게 함
+      // Navigator를 포함한 트리 전체를 감싸서, 어느 화면에서 탭이 일어나든(iOS 홈
+      // 화면 추가 안내의 "확인"이든, 메인 메뉴의 버튼이든) 놓치지 않고 오디오 상태를
+      // 확인/복구할 수 있게 함
       builder: (context, child) =>
           _AudioUnlockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }
 
-// 웹(특히 아이패드 Safari)은 사용자 제스처 없이 재생된 오디오를 막는데, 이 게이트가 앱
-// 전체에서 처음 일어나는 포인터 다운 한 번만 감지해서 AudioService.unlock()을 불러줌.
-// 한 번 풀리고 나면 더 이상 Listener를 거치지 않고 child를 그대로 반환해서, 이후 모든
-// 탭에 대해 별도 일을 안 함
-class _AudioUnlockGate extends StatefulWidget {
+// 웹(특히 아이폰/아이패드 Safari)은 사용자 제스처 없이 재생된 오디오를 막고, 한 번 풀렸던
+// 오디오도 탭이 백그라운드로 가거나 전화/Siri/알림 등으로 오디오 세션이 끊기면 다시 잠길 수
+// 있음 - 그래서 이 게이트는 첫 탭에서만 동작하고 끝나는 게 아니라, 포인터 다운이 일어날
+// 때마다(=세션 내내) AudioService.onUserGesture()를 계속 불러줌. onUserGesture 자체가
+// 가벼운 함수라(이미 정상 재생 중이면 바로 return) 매번 불러도 성능에 영향 없음. 예전엔
+// _hasUnlocked 플래그로 첫 탭 이후 Listener를 아예 떼어버렸는데, 그러면 나중에 iOS가
+// 오디오를 다시 잠갔을 때 풀어줄 방법이 없어서 이렇게 바꿈 - Listener는 위젯 트리에
+// 항상 그대로 둠(떼지 않음)
+//
+// (업데이트: 포인터 다운뿐 아니라 포인터 업에서도 똑같이 불러줌 - iOS Safari는 손가락을
+// 뗄 때(click 계열 이벤트)의 사용자 활성화를 더 확실하게 쳐주는 경우가 많아서, 다운
+// 시점의 resume() 시도가 거부되더라도 업 시점에 한 번 더 기회를 줌. onPointerCancel은
+// 제외함 - 드래그가 취소된 경우라 "사용자가 의도한 탭"으로 보기 애매함)
+class _AudioUnlockGate extends StatelessWidget {
   const _AudioUnlockGate({required this.child});
 
   final Widget child;
 
-  @override
-  State<_AudioUnlockGate> createState() => _AudioUnlockGateState();
-}
-
-class _AudioUnlockGateState extends State<_AudioUnlockGate> {
-  bool _hasUnlocked = false;
-
-  void _handlePointerDown(PointerDownEvent event) {
-    if (_hasUnlocked) return;
-    setState(() => _hasUnlocked = true);
-    AudioService.unlock();
+  void _handlePointerEvent(PointerEvent event) {
+    AudioService.onUserGesture();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_hasUnlocked) return widget.child;
     return Listener(
       behavior: HitTestBehavior.translucent,
-      onPointerDown: _handlePointerDown,
-      child: widget.child,
+      onPointerDown: _handlePointerEvent,
+      onPointerUp: _handlePointerEvent,
+      child: child,
     );
   }
 }

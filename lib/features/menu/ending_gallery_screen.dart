@@ -290,7 +290,8 @@ class _EndingGalleryScreenState extends State<EndingGalleryScreen> {
     // height를 줘서 회전축을 플랫폼 무관하게 고정시킴. 여유분(+0.5줄)은 폰트 측정이
     // 살짝 더 커도 아래쪽이 잘리지 않게 하는 안전 마진
     final int lineCount = '\n'.allMatches(box.summaryText).length + 1;
-    final double textBlockHeight = _summaryLineHeightRef * scale * (lineCount + 0.5);
+    final double textBlockHeight =
+        _summaryLineHeightRef * scale * (lineCount + 0.5);
 
     return [
       // 스크린샷 - 박스 중심에 박스 크기(screenW x screenH)로 덮어씌움

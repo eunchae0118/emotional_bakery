@@ -397,4 +397,58 @@ class WebAudioBackend implements AudioBackend {
       logAudioError('WebAudioBackend.resumeForLifecycle', e);
     }
   }
+
+  // 화면 진단 패널(?audiolog=1) 전용. 터치마다 찍는 로그 한 줄에 상태만 짧게 넣을 때 씀
+  @override
+  String get audioStateLabel => _audioContext.state;
+
+  // 진단 패널 상태 줄에 쓰는 한 줄 요약. 1초마다 패널이 이걸 다시 불러서 화면에 갱신함
+  @override
+  String debugStatus() {
+    final _ActiveTrack? track = _activeTrack;
+    return 'state=${_audioContext.state} '
+        'currentTime=${_audioContext.currentTime.toStringAsFixed(2)} '
+        'sampleRate=${_audioContext.sampleRate.toStringAsFixed(0)} '
+        'activeTrackId=${_activeTrackId ?? "-"} '
+        'hasActiveSource=${track != null} '
+        'masterGain=${_bgmMasterGain.gain.value.toStringAsFixed(3)} '
+        'trackGain=${track?.gainNode.gain.value.toStringAsFixed(3) ?? "-"}';
+  }
+
+  // "비프 테스트" 버튼 전용. BGM 디코딩/크로스페이드 경로를 아예 안 거치고
+  // OscillatorNode로 순수하게 440Hz 0.5초 비프음만 냄 - 이게 안 들리면 오디오 출력
+  // 자체가 막힌 거고, 이건 들리는데 mp3는 안 들리면 디코딩/에셋 경로 쪽 문제로 좁혀짐
+  @override
+  Future<void> playDiagnosticBeep() async {
+    logAudioError(
+      'WebAudioBackend.playDiagnosticBeep',
+      '시작 전 state=${_audioContext.state}',
+    );
+    try {
+      await _audioContext.resume().toDart;
+    } catch (e) {
+      logAudioError('WebAudioBackend.playDiagnosticBeep', 'resume 실패: $e');
+    }
+    logAudioError(
+      'WebAudioBackend.playDiagnosticBeep',
+      'resume 후 state=${_audioContext.state}',
+    );
+    try {
+      final web.OscillatorNode osc = _audioContext.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, _audioContext.currentTime);
+      final web.GainNode gain = _audioContext.createGain();
+      gain.gain.setValueAtTime(0.3, _audioContext.currentTime);
+      osc.connect(gain);
+      gain.connect(_audioContext.destination);
+      osc.start();
+      osc.stop(_audioContext.currentTime + 0.5);
+      logAudioError(
+        'WebAudioBackend.playDiagnosticBeep',
+        '시작 성공(state=${_audioContext.state})',
+      );
+    } catch (e) {
+      logAudioError('WebAudioBackend.playDiagnosticBeep', '시작 실패: $e');
+    }
+  }
 }

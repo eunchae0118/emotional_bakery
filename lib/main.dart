@@ -5,6 +5,8 @@ import 'features/menu/orientation_gate_screen.dart';
 import 'core/services/ios_viewport_patch.dart';
 import 'core/services/ending_unlocks.dart';
 import 'core/services/audio_service.dart';
+import 'core/services/audio_log.dart';
+import 'core/widgets/audio_diagnostics_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Flutter 엔진 초기화
@@ -82,6 +84,18 @@ class _AudioUnlockGate extends StatelessWidget {
   final Widget child;
 
   void _handlePointerEvent(PointerEvent event) {
+    // 진단 모드(?audiolog=1)일 때만 터치 하나하나를 로그로 남김 - 평소 플레이 중엔 탭마다
+    // 찍히면 콘솔/패널이 너무 시끄러워져서, 맥 없이 아이폰에서 직접 디버깅할 때만 켬.
+    // 연속으로 같은 내용이면 audio_log.dart가 알아서 한 줄로 합쳐줌(개수만 증가)
+    if (audioDiagnosticsEnabled) {
+      final String kind = event is PointerDownEvent
+          ? 'pointerdown'
+          : 'pointerup';
+      logAudioError(
+        '_AudioUnlockGate',
+        '$kind 수신(state=${AudioService.audioStateLabel})',
+      );
+    }
     AudioService.onUserGesture();
   }
 
@@ -91,7 +105,9 @@ class _AudioUnlockGate extends StatelessWidget {
       behavior: HitTestBehavior.translucent,
       onPointerDown: _handlePointerEvent,
       onPointerUp: _handlePointerEvent,
-      child: child,
+      // 진단 패널은 child 안쪽에 겹쳐서(Stack) 그려짐 - 평소(쿼리 파라미터 없음)엔
+      // AudioDiagnosticsOverlay가 child를 그대로 돌려줘서 트리에 아무 영향 없음
+      child: AudioDiagnosticsOverlay(child: child),
     );
   }
 }

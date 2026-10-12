@@ -195,6 +195,23 @@ class AudioService {
       _pendingBgmTrackId = _activeBgmTrackId;
     }
   }
+
+  // 아래 넷은 화면 진단 패널(audio_diagnostics_overlay.dart, ?audiolog=1일 때만 보임)
+  // 전용. 평소 호출 경로(화면들의 playBgm 등)랑은 무관하고, 패널의 버튼/상태 줄이 직접 씀
+
+  // 터치할 때마다 찍는 로그 한 줄에 넣는 짧은 상태 값
+  static String get audioStateLabel => _backend.audioStateLabel;
+
+  // 패널 상태 줄(1초마다 갱신)에 쓰는 한 줄 요약
+  static String debugAudioStatus() => _backend.debugStatus();
+
+  // "비프 테스트" 버튼 전용
+  static Future<void> playDiagnosticBeep() => _backend.playDiagnosticBeep();
+
+  // "음악 재시작" 버튼 전용. 지금 재생 중이어야 할 트랙이 있으면 그걸, 없으면
+  // main_theme을 기본값으로 돌려줌
+  static String currentOrDefaultBgmTrackId() =>
+      _activeBgmTrackId ?? AudioIds.mainTheme;
 }
 
 // AudioService는 static 전용 클래스라 WidgetsBindingObserver를 직접 구현할 수 없어서,

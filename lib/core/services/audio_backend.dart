@@ -46,4 +46,21 @@ abstract class AudioBackend {
   // 탭/앱이 백그라운드로 갈 때·돌아올 때
   Future<void> pauseForLifecycle();
   Future<void> resumeForLifecycle();
+
+  // 아래 셋은 화면 진단 패널(audio_diagnostics_overlay.dart, ?audiolog=1일 때만 보임) 전용.
+  // 비웹 플랫폼(AudioPlayersBackend)에선 진단 패널 자체가 의미 없어서 전부 간단한 더미로
+  // 구현해도 됨
+
+  // 터치할 때마다 찍는 로그용으로 쓰는 아주 짧은 상태 한 단어(웹이면 AudioContext.state,
+  // 그 외엔 "n/a" 같은 값)
+  String get audioStateLabel;
+
+  // 진단 패널 상태 줄에 쓰는 좀 더 자세한 한 줄 요약(state/currentTime/sampleRate/
+  // 활성 트랙/소스 유무/게인 값 등)
+  String debugStatus();
+
+  // "비프 테스트" 버튼 전용. 기존 BGM 재생 경로(디코딩/크로스페이드)를 아예 안 거치고
+  // 순수하게 짧은 테스트음만 내서, 오디오 출력 자체가 막혔는지 vs mp3 재생 경로만
+  // 문제인지 구분하는 용도
+  Future<void> playDiagnosticBeep();
 }

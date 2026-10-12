@@ -278,4 +278,16 @@ class AudioPlayersBackend implements AudioBackend {
       logAudioError('AudioPlayersBackend.resumeForLifecycle', e);
     }
   }
+
+  // 화면 진단 패널은 웹(?audiolog=1)에서만 뜨는 기능이라 이 플랫폼에선 의미가 없음 -
+  // 그냥 아무 영향 없는 더미로 구현해둠
+  @override
+  String get audioStateLabel => 'n/a(native)';
+
+  @override
+  String debugStatus() =>
+      'native backend - activeTrackId=${_activeBgmTrackId ?? "-"}';
+
+  @override
+  Future<void> playDiagnosticBeep() async {}
 }

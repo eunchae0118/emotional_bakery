@@ -189,16 +189,25 @@ class _GamePlayScreenState extends State<GamePlayScreen>
 
   bool _thermometerImagesPrecached = false;
 
+  // 이 화면(GamePlayScreen)은 챕터랑 상관없이 전부 "빵집 배경"이라서, reentryChapter가
+  // 뭐든(챕터3/4/5 재진입 중이어도) 그 챕터 곡이 아니라 항상 main_theme이어야 함 -
+  // 빵집에서 벌어지는 chapter3_door.json/chapter5_start.json 같은 재진입 대사도 마찬가지.
+  // 프롤로그(isPrologue)만 예외로 pro_theme. initState의 첫 재생이랑 TutorialScreen/주방에서
+  // pop으로 돌아온 직후 재요청(아래 참고) 전부 이 하나의 기준을 그대로 씀
+  String _bgmTrackIdForCurrentMode() =>
+      widget.isPrologue ? AudioIds.proTheme : AudioIds.mainTheme;
+
   @override
   void initState() {
     super.initState();
 
-    // 이 화면은 프롤로그 본편(isPrologue)이랑 챕터1/5 빵집 본편을 같은 위젯으로 같이
-    // 처리해서, 틀어주는 곡만 갈라줌. resumeCheckpoint로 재개 진입해도 isPrologue는
+    // 이 화면은 프롤로그 본편(isPrologue)이랑 챕터1/3/4/5 재진입(reentryChapter)을 같은
+    // 위젯으로 같이 처리해서, 틀어주는 곡만 갈라줌. reentryChapter==chapter3/4/5인 동안은
+    // chapter3_door.json/chapter5_start.json 같은 그 챕터 소속 대사를 이 화면 안에서 바로
+    // 재생하기 때문에(onReachChapter3Door/onReachChapter5Start 참고), main_theme이 아니라
+    // 그 챕터 메인곡이 맞게 흘러야 함. resumeCheckpoint로 재개 진입해도 isPrologue는
     // 항상 false로 들어오니까(프롤로그는 재개 체크포인트가 없음) 그냥 분기만 보면 됨
-    AudioService.playBgm(
-      widget.isPrologue ? AudioIds.proTheme : AudioIds.mainTheme,
-    );
+    AudioService.playBgm(_bgmTrackIdForCurrentMode());
 
     // resumeCheckpoint로 들어온 경우, BakeryGame을 만들 때 재개 위치를 같이 넘겨줘야 함 -
     // _game이 만들어진 다음에 chaeon 위치를 옮기려고 하면 그 시점엔 chaeon이 아직 mount되기
@@ -506,11 +515,10 @@ class _GamePlayScreenState extends State<GamePlayScreen>
         if (!mounted) return;
         // 마을(TutorialScreen)이 returnToExistingGame=true로 pop만 하고 돌아와서 이 화면
         // initState가 다시 안 불림 - street_theme에서 안 돌아오고 계속 흐르던 문제라 여기서
-        // 직접 다시 요청해줌. isPrologue는 이 콜백 진입 조건상 항상 false지만(맨 위 분기
-        // 참고), initState랑 똑같은 기준으로 맞춰둠. 이미 맞는 곡이면 AudioService가 무시함
-        AudioService.playBgm(
-          widget.isPrologue ? AudioIds.proTheme : AudioIds.mainTheme,
-        );
+        // 직접 다시 요청해줌. initState랑 똑같이 _bgmTrackIdForCurrentMode()를 써서 이
+        // 화면(빵집)은 항상 main_theme(프롤로그면 pro_theme)으로 돌아오게 함. 이미 맞는
+        // 곡이면 AudioService가 무시함
+        AudioService.playBgm(_bgmTrackIdForCurrentMode());
         // 왼쪽 벽 트리거 좌표(size.x/2)에 그대로 멈춰있으면 복귀하자마자 onReachLeftEdge가
         // 다시 발동해버리므로, 벽에서 살짝 떨어진 곳으로 옮기고 이동 입력도 정지시켜둠
         _game.movePlayer(0);
@@ -848,6 +856,11 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   // table.json 종료 -> 검은 화면 페이드인(300ms) -> 유지(400ms, 이 동안 회상 컷씬으로 전환해둠)
   // -> 페이드아웃(300ms)되며 memory_car_bumpy.gif 노출
   void _transitionToMemoryFlashback() {
+    // 페이드가 끝나고 회상 미니게임이 뜨기 전에 park 곡을 미리 디코딩해둠 - 파일이 아직
+    // 없으면(readyTracks에 없으면) 요청 자체를 건너뜀
+    if (AudioIds.readyTracks.contains(AudioIds.park)) {
+      AudioService.prefetchBgm(AudioIds.park);
+    }
     setState(() {
       _showMemoryFadeOverlay = true;
       _memoryFadeOpacity = 0.0;
@@ -860,6 +873,10 @@ class _GamePlayScreenState extends State<GamePlayScreen>
       if (!mounted) return;
       // 화면이 완전히 검게 덮인 상태에서 미리 전환해둬서, 화면이 열릴 때 바로 회상 컷씬이 보임
       setState(() => _dialoguePhase = DialoguePhase.memoryFlashback);
+      // 회상 미니게임 전용곡
+      AudioService.playBgm(
+        AudioIds.resolveReady(AudioIds.park, fallback: _bgmTrackIdForCurrentMode()),
+      );
       _memoryFadeTimer = Timer(_memoryFadeHoldDuration, () {
         if (!mounted) return;
         setState(() => _memoryFadeOpacity = 0.0);
@@ -1168,6 +1185,11 @@ class _GamePlayScreenState extends State<GamePlayScreen>
         ),
       );
       if (!mounted) return;
+      // KitchenScreen(chapter1End)이 주방 도착 순간부터 챕터2 곡을 틀어두기 시작하는데,
+      // 거기서 계단을 다시 올라와 여기로 pop만 하고 돌아오면(이 화면 initState가 다시 안
+      // 불림) 챕터2 곡이 그대로 안 끊기고 계속 흐름 - 여기서 직접 다시 요청해서 빵집 구간
+      // 곡(main_theme 등)으로 되돌림. 이미 맞는 곡이면 AudioService가 무시함
+      AudioService.playBgm(_bgmTrackIdForCurrentMode());
       // 주방에서 왼쪽 끝까지 이동해 다시 계단을 올라와 돌아온 경우: 하강 연출 상태를 되돌리고,
       // 트리거 좌표에 딱 걸쳐있으면 돌아오자마자 하강 연출이 다시 발동해버리므로 살짝 떨어뜨려둠
       _game.chaeon?.position.x = kitchenStairsTriggerX - 100;
@@ -1815,6 +1837,8 @@ class _GamePlayScreenState extends State<GamePlayScreen>
                   onTemperatureIncrease: () =>
                       _sceneController.applyTemperatureEffect(1),
                   onComplete: () {
+                    // 회상 미니게임 끝났으니 이 화면 기본곡으로 복귀
+                    AudioService.playBgm(_bgmTrackIdForCurrentMode());
                     setState(() => _dialoguePhase = DialoguePhase.firstBread);
                     _sceneController.loadDialogue(
                       'assets/lines/chapter1/first_bread.json',

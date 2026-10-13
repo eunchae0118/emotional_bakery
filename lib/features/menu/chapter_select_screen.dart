@@ -593,6 +593,14 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                       );
                       return;
                     }
+                    // 이 챕터로 들어가기로 확정된 시점이니, 화면 전환 애니메이션이 도는
+                    // 동안 그 챕터 메인곡 디코딩을 한 발 먼저 당겨둠(웹 전용 최적화 -
+                    // LRU 캐시 한도 안에서만 유지되고, 실제 재생은 각 화면 진입 시 그대로 요청함)
+                    if (chapterNumber != null) {
+                      AudioService.prefetchBgm(
+                        AudioIds.themeForChapter(chapterNumber),
+                      );
+                    }
                     if (title == "Prolog") {
                       final result = await Navigator.push(
                         context,

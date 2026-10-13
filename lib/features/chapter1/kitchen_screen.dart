@@ -6,8 +6,10 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/ending_unlocks.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
@@ -304,9 +306,27 @@ class _KitchenScreenState extends State<KitchenScreen>
 
   late final SceneDialogueController _sceneController;
 
+  // mode별 챕터 메인곡 요청. 이 화면은 챕터2/3/4/5를 전부 mode 하나로 구분해서 호스팅하는데
+  // mode 자체엔 숫자 필드가 없어서 여기서 AudioIds.themeForChapter에 넘길 챕터 번호로
+  // 변환함. chapter1End(주방 도착 ~ 챕터1 끝)는 챕터1 소속이지만, 주방에 들어서는 순간부터
+  // 챕터2 곡으로 미리 넘어가 있어야 한다는 지시대로 2를 돌려줌(null이면 아무 요청도 안 함)
+  int? _chapterNumberForBgm(KitchenScreenMode mode) => switch (mode) {
+    KitchenScreenMode.chapter1End => 2,
+    KitchenScreenMode.chapter2Start => 2,
+    KitchenScreenMode.chapter3Start => 3,
+    KitchenScreenMode.chapter4Start => 4,
+    KitchenScreenMode.chapter5Start => 5,
+  };
+
   @override
   void initState() {
     super.initState();
+    // 이어하기/챕터 재진입 등 어떤 경로로 들어와도 이 화면이 뜨는 순간 그 챕터 메인곡이
+    // 흐르고 있어야 함 - 이미 같은 곡이면 AudioService.playBgm이 알아서 무시함
+    final int? chapterNumber = _chapterNumberForBgm(widget.mode);
+    if (chapterNumber != null) {
+      AudioService.playBgm(AudioIds.themeForChapter(chapterNumber));
+    }
     _stairsUpController =
         AnimationController(vsync: this, duration: _stairsAscentDuration)
           ..addListener(() {
@@ -381,8 +401,21 @@ class _KitchenScreenState extends State<KitchenScreen>
             // 채온이를 chaeon_0_eat.gif로 2초간 고정해서 보여준 뒤 시계 맞추기 미니게임으로 넘어감.
             // 미니게임이 끝나면(ClockMinigameScene.onComplete) chapter2_after_second_game.json으로 이어짐
             setState(() => _showChaeonEating = true);
+            // 2초 뒤 시계 미니게임이 뜨기 전에 clock 곡을 미리 디코딩해둠 - 파일이 아직
+            // 없으면(readyTracks에 없으면) 요청 자체를 건너뜀(어차피 fallback인
+            // chapter2_kitchen은 이미 흐르고 있어서 미리 당겨둘 게 없음)
+            if (AudioIds.readyTracks.contains(AudioIds.clock)) {
+              AudioService.prefetchBgm(AudioIds.clock);
+            }
             _chaeonEatingTimer = Timer(const Duration(milliseconds: 2000), () {
               if (!mounted) return;
+              // 시계 미니게임 전용곡
+              AudioService.playBgm(
+                AudioIds.resolveReady(
+                  AudioIds.clock,
+                  fallback: AudioIds.chapter2Kitchen,
+                ),
+              );
               setState(() {
                 _showChaeonEating = false;
                 _showClockMinigame = true;
@@ -427,9 +460,11 @@ class _KitchenScreenState extends State<KitchenScreen>
         // DialogueOverlay onComplete 쪽에서 처리함
         if (widget.mode == KitchenScreenMode.chapter4Start) {
           if (!_hasLoadedChapter4AfterPast) {
+            AudioService.playBgm(AudioIds.past);
             setState(() => _showChapter4Cutscene = true);
           } else if (_sceneController.lastLineNode?.id == 'line_015b1') {
             // choice_001에서 "아뇨... 싫어요."를 골라 line_015b1로 끝난 경우만 배드엔딩 컷씬 표시
+            AudioService.playBgm(AudioIds.badending);
             setState(() => _showChapter4BadEndingCutscene = true);
           } else if (!_hasLoadedChapter4MakingBread) {
             // choice_001에서 "...알겠어요."를 골라 line_015a1로 끝난 경우.
@@ -440,6 +475,7 @@ class _KitchenScreenState extends State<KitchenScreen>
             );
           } else if (!_hasLoadedChapter4AfterLetter) {
             // chapter4_making_bread.json이 끝나면(line_014, "그럼...") 여기로 옴. 편지 컷씬 표시
+            AudioService.playBgm(AudioIds.letter);
             setState(() => _showChapter4Letter = true);
           } else if (!_hasLoadedChapter4AfterMaking) {
             // chapter4_after_letter.json이 끝나면(line_003) 여기로 옴. 빵만들기 컷씬 표시
@@ -1700,6 +1736,8 @@ class _KitchenScreenState extends State<KitchenScreen>
                 key: const ValueKey('clock_minigame'),
                 child: ClockMinigameScene(
                   onComplete: () {
+                    // 시계 미니게임 끝났으니 챕터2 메인곡으로 복귀
+                    AudioService.playBgm(AudioIds.chapter2Kitchen);
                     setState(() {
                       _showClockMinigame = false;
                       _showChaeonEmotion0to20 = true;
@@ -1974,6 +2012,8 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: DialogueOverlay(
                   data: chapter4CutsceneData,
                   onComplete: () {
+                    // 과거 회상(past) 구간이 끝났으니 챕터4 메인곡으로 복귀
+                    AudioService.playBgm(AudioIds.chapter4Kitchen);
                     setState(() => _showChapter4Cutscene = false);
                     _hasLoadedChapter4AfterPast = true;
                     _sceneController.loadDialogue(
@@ -2012,6 +2052,8 @@ class _KitchenScreenState extends State<KitchenScreen>
                 key: const ValueKey('chapter4_letter'),
                 child: LetterScene(
                   onComplete: () {
+                    // 편지 읽기 구간이 끝났으니 챕터4 메인곡으로 복귀
+                    AudioService.playBgm(AudioIds.chapter4Kitchen);
                     setState(() => _showChapter4Letter = false);
                     _hasLoadedChapter4AfterLetter = true;
                     _sceneController.loadDialogue(

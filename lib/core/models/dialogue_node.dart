@@ -81,6 +81,10 @@ class DialogueNode {
   // 채온이 스프라이트 오버라이드. expression과 별도 필드라 한 노드에서 둘 다(릴리안+채온이)
   // 동시에 다르게 지정 가능. 기존 파일들은 이 필드가 없어도 그대로 동작함(마이그레이션 불필요)
   final DialogueExpression? chaeonExpression;
+  // 이 노드에 들어서는 순간 바꿀 BGM 트랙 id(audio_ids.dart의 id 문자열). type == 'line'일
+  // 때만 의미 있고, 없으면(필드 자체가 없는 기존 파일들) 곡을 안 바꿈 - scene_dialogue_
+  // controller.dart의 _enterSceneNode에서 사용
+  final String? bgm;
 
   DialogueNode({
     required this.id,
@@ -93,6 +97,7 @@ class DialogueNode {
     this.animation,
     this.expression,
     this.chaeonExpression,
+    this.bgm,
   });
 
   factory DialogueNode.fromJson(String id, Map<String, dynamic> json) {
@@ -168,6 +173,7 @@ class DialogueNode {
       animation: json['animation'] as String?,
       expression: expression,
       chaeonExpression: chaeonExpression,
+      bgm: json['bgm'] as String?,
     );
   }
 }

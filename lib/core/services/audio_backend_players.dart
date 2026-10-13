@@ -246,6 +246,11 @@ class AudioPlayersBackend implements AudioBackend {
     );
   }
 
+  // 네이티브 플레이어는 play() 호출 시점에 그때그때 에셋을 읽어서 재생하고, 웹처럼
+  // fetch+decodeAudioData 같은 별도의 느린 디코딩 단계가 없어서 미리 당겨둘 게 없음
+  @override
+  void prefetchBgm(String path) {}
+
   // 네이티브 플랫폼은 요소 재잠금 문제가 없어서 할 일이 없음
   @override
   void onUserGesture({required bool canAttemptResume}) {}

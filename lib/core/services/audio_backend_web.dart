@@ -45,25 +45,47 @@ class WebAudioBackend implements AudioBackend {
   // 사용자 볼륨 단계 변경 시 마스터 게인을 부드럽게 바꾸는 램프 길이
   static const double _volumeRampSeconds = 0.15;
 
-  // AudioContext는 앱 전체에서 하나만 만들고 재사용함 - MDN도 이걸 권장함("재사용하고
+  // AudioContext는 보통 앱 전체에서 하나만 만들고 재사용함 - MDN도 이걸 권장함("재사용하고
   // 새로 만들지 마라"). 생성자에서 바로 만들어두되, 실제로 소리가 나려면 resume()이
-  // 사용자 제스처 안에서 불려야 함(onUserGesture 참고)
-  final web.AudioContext _audioContext = web.AudioContext();
+  // 사용자 제스처 안에서 불려야 함(onUserGesture 참고). 단, 백그라운드 복귀 시에는
+  // _rebuildContextSynchronously에서 통째로 새로 만들어 이 필드를 교체하기 때문에 final이
+  // 아님 - 아래 메서드들은 다 이 필드를 그때그때 다시 읽으니 교체돼도 자연히 새 걸 씀
+  web.AudioContext _audioContext = web.AudioContext();
 
   // BGM 마스터 게인. 트랙 전용 게인(trackGain, 크로스페이드) -> 이 마스터 게인(bgmLevel,
-  // 사용자 볼륨 단계) -> destination 순서로 연결함
-  late final web.GainNode _bgmMasterGain = _audioContext.createGain()
-    ..connect(_audioContext.destination);
+  // 사용자 볼륨 단계) -> destination 순서로 연결함. _audioContext랑 같은 이유로 final이
+  // 아님 - context가 바뀌면 새 context에 묶인 새 게인 노드로 같이 바꿔줘야 함
+  late web.GainNode _bgmMasterGain;
 
-  // 디코딩된 AudioBuffer 캐시. BGM/효과음 공용 - path 하나당 한 번만 fetch+decode하고,
-  // 디코딩 도중에 또 같은 path가 요청되면 같은 Future를 그대로 돌려줘서 "디코딩 끝날 때까지
+  // bgmMasterGain을 만들고 destination까지 연결해서 돌려줌 - 생성자에서 처음 만들 때랑
+  // 백그라운드 복귀 후 context를 새로 만들 때(_rebuildContextSynchronously) 둘 다 씀
+  web.GainNode _createMasterGain(web.AudioContext context) {
+    final web.GainNode gain = context.createGain();
+    gain.connect(context.destination);
+    return gain;
+  }
+
+  // 디코딩된 BGM AudioBuffer 캐시의 최대 개수(LRU). 곡이 10곡 안팎으로 늘면 디코딩된
+  // PCM 버퍼가 전부 메모리에 눌러앉아서 아이폰 사파리에서 메모리 부족으로 탭이 죽을 수
+  // 있어서, 최근에 요청한 곡만 이 개수만큼 들고 있고 나머지는 디코딩 결과를 버림(다시
+  // 필요해지면 그때 또 디코딩함 - 느려지는 것뿐이지 끊기거나 틀리게 재생되진 않음)
+  static const int _bgmBufferCacheLimit = 3;
+
+  // 디코딩된 BGM AudioBuffer 캐시. Dart의 Map은 삽입 순서를 그대로 유지하는
+  // LinkedHashMap이라, "읽을 때마다 remove 후 다시 넣기"로 최근 사용 순서를 유지함 -
+  // 맨 앞(keys.first)이 항상 가장 오래 안 쓴 항목이 됨(_bgmBufferFor/
+  // _evictOldestBgmBufferIfNeeded 참고). path 하나당 한 번만 fetch+decode하고, 디코딩
+  // 도중에 또 같은 path가 요청되면 같은 Future를 그대로 돌려줘서 "디코딩 끝날 때까지
   // 기다렸다가 재생"이 자연스럽게 됨(이미 끝난 것도 캐시라 즉시 반환됨)
-  final Map<String, Future<web.AudioBuffer>> _bufferCache = {};
+  final Map<String, Future<web.AudioBuffer>> _bgmBufferCache = {};
+
+  // 효과음용 디코딩 캐시. 짧은 파일이라 메모리 부담이 적어서 BGM이랑 별개로 한도 없이
+  // 유지함(이쪽은 LRU 안 씀)
+  final Map<String, Future<web.AudioBuffer>> _sfxBufferCache = {};
 
   String? _activeTrackId; // 지금 재생 "되어야 하는" 트랙(장부) - await 전에 동기적으로 커밋됨
   _ActiveTrack? _activeTrack; // 실제로 만들어져서 재생 중인 노드
   int _fadeToken = 0;
-  bool _hasPrefetched = false;
 
   // setBgmLevel이 마지막으로 받은 사용자 볼륨 레벨(0~1). 네이티브 DOM 리스너처럼
   // AudioService를 거치지 않고 백엔드 혼자 재생을 되살려야 하는 경로에서 다시 씀
@@ -76,12 +98,40 @@ class WebAudioBackend implements AudioBackend {
   // 보여주는 참고용 상태값으로만 씀
   bool _resumeInFlight = false;
 
+  // 탭이 백그라운드로 나갔다가(hidden/pagehide) 돌아왔을 때, 복귀 후 첫 터치에서
+  // AudioContext를 통째로 새로 만들어야 하는지 표시하는 플래그. iOS가 백그라운드 동안
+  // context를 'interrupted'로 바꾸는데, 이걸 resume()으로 되살리려 하면 깨진 버퍼
+  // 조각이 반복 재생되는 비프음이 날 수 있어서, 복구 대신 "나갔다 오면 항상 새 context를
+  // 만든다"는 결정적인 방식을 씀. 이 플래그는 나갈 때(hidden/pagehide) true로 세팅되고,
+  // 복귀 후 첫 네이티브 활성화 이벤트(touchend/pointerup/click)에서 소비됨
+  bool _needsRebuildOnReturn = false;
+
+  // 나갈 때 마스터 게인을 0으로 페이드했다가, 복귀 후 새 context의 마스터 게인을 원래
+  // 값으로 되돌리기 위해 기억해두는 값. 페이드로 날려버린 값이라 나중에 다시 읽을 방법이
+  // 없어서 미리 찍어둬야 함
+  double? _rebuildTargetMasterGain;
+
+  // 나갈 때 마스터 게인을 0으로 줄이는 데 걸리는 시간(초). iOS가 context를 interrupted로
+  // 바꾸면서 재생 중이던 버퍼 조각이 그대로 반복되는 비프음이 나는 걸 막으려고, suspend()
+  // 호출 전에 아주 짧게 무음으로 만들어둠
+  static const double _hideGainFadeSeconds = 0.08;
+
   // Flutter의 Listener(onPointerUp) 경로는 이벤트가 프레임 단위로 지연 전달될 수 있어서,
   // iOS가 "사용자 활성화"로 안 쳐줄 가능성이 있음 - 그래서 document에 직접 네이티브 DOM
   // 리스너를 달아서 더 확실하게 resume()을 시도함. 생성자는 한 번만 불리니까 리스너도
   // 자연히 한 번만 등록됨
   WebAudioBackend() {
+    _bgmMasterGain = _createMasterGain(_audioContext);
+
     void handleActivationEvent(web.Event event) {
+      // 백그라운드에서 돌아온 뒤 첫 활성화 이벤트면 resume() 대신 context를 통째로
+      // 새로 만듦. 같은 터치에서 touchend/pointerup/click이 연달아 와도 플래그를 제일
+      // 먼저 내려서(동기적으로) 한 번만 재구축되게 함
+      if (_needsRebuildOnReturn) {
+        _needsRebuildOnReturn = false;
+        _rebuildContextSynchronously(event.type);
+        return;
+      }
       _tryResume(event.type);
     }
 
@@ -93,6 +143,202 @@ class WebAudioBackend implements AudioBackend {
     web.document.addEventListener('touchend', listener, options);
     web.document.addEventListener('pointerup', listener, options);
     web.document.addEventListener('click', listener, options);
+
+    // 탭이 백그라운드로 나가는 걸 감지하는 두 경로. visibilitychange(hidden)가 기본이고,
+    // pagehide는 iOS Safari가 visibilitychange보다 먼저/대신 쏘는 경우가 있어서 같이 둠 -
+    // _fadeOutAndSuspend 자체가 "이미 처리 중이면 무시"라 둘 다 걸려도 중복 실행은 안 됨
+    web.document.addEventListener(
+      'visibilitychange',
+      ((web.Event _) {
+        if (web.document.visibilityState == 'hidden') {
+          unawaited(_fadeOutAndSuspend('visibilitychange(hidden)'));
+        } else {
+          logAudioError(
+            'WebAudioBackend.visibilitychange',
+            'visible 감지(state=${_audioContext.state} needsRebuild=$_needsRebuildOnReturn)',
+          );
+        }
+      }).toJS,
+      options,
+    );
+    web.window.addEventListener(
+      'pagehide',
+      ((web.Event _) {
+        unawaited(_fadeOutAndSuspend('pagehide'));
+      }).toJS,
+      options,
+    );
+
+    // 돌아올 때는 여기서 아무 오디오 호출도 안 함 - iOS는 사용자 터치 없이는 resume을
+    // 허용 안 해서, 실제 복구는 복귀 후 첫 터치(위 handleActivationEvent)에서만 함.
+    // 여기선 진단용 로그만 남김
+    web.window.addEventListener(
+      'pageshow',
+      ((web.Event _) {
+        logAudioError(
+          'WebAudioBackend.pageshow',
+          '감지(state=${_audioContext.state} needsRebuild=$_needsRebuildOnReturn)',
+        );
+      }).toJS,
+      options,
+    );
+    web.window.addEventListener(
+      'focus',
+      ((web.Event _) {
+        logAudioError(
+          'WebAudioBackend.focus',
+          '감지(state=${_audioContext.state} needsRebuild=$_needsRebuildOnReturn)',
+        );
+      }).toJS,
+      options,
+    );
+  }
+
+  // 탭이 백그라운드로 나갈 때(hidden/pagehide) 호출됨. iOS가 곧 context를 interrupted로
+  // 바꾸면서 그 순간 재생 중이던 버퍼 조각이 반복 재생되는 비프음이 나는 걸 막으려고,
+  // suspend() 호출 전에 마스터 게인을 아주 짧게 0으로 줄여둠. 복귀 후 첫 터치에서
+  // context를 통째로 새로 만들 거라는 표시(_needsRebuildOnReturn)와, 그때 마스터 게인을
+  // 되돌릴 목표값(_rebuildTargetMasterGain)도 여기서 같이 남겨둠
+  Future<void> _fadeOutAndSuspend(String reason) async {
+    if (_needsRebuildOnReturn) return; // 이미 처리 중 - hidden+pagehide 겹쳐 와도 한 번만
+    logAudioError(
+      'WebAudioBackend._fadeOutAndSuspend',
+      '감지됨(reason=$reason state=${_audioContext.state})',
+    );
+    _needsRebuildOnReturn = true;
+    _rebuildTargetMasterGain = _bgmMasterGain.gain.value;
+
+    final web.AudioContext context = _audioContext;
+    final web.GainNode masterGain = _bgmMasterGain;
+    try {
+      final double now = context.currentTime;
+      final double current = masterGain.gain.value;
+      masterGain.gain.cancelScheduledValues(now);
+      masterGain.gain.setValueAtTime(current, now);
+      masterGain.gain.linearRampToValueAtTime(0.0, now + _hideGainFadeSeconds);
+      logAudioError(
+        'WebAudioBackend._fadeOutAndSuspend',
+        '게인 페이드 예약됨(reason=$reason)',
+      );
+    } catch (e) {
+      logAudioError(
+        'WebAudioBackend._fadeOutAndSuspend',
+        '게인 페이드 예약 실패(reason=$reason): $e',
+      );
+    }
+
+    await Future.delayed(
+      Duration(milliseconds: (_hideGainFadeSeconds * 1000).round()),
+    );
+
+    try {
+      await context.suspend().toDart;
+      logAudioError(
+        'WebAudioBackend._fadeOutAndSuspend',
+        'suspend 성공(reason=$reason state=${context.state})',
+      );
+    } catch (e) {
+      logAudioError(
+        'WebAudioBackend._fadeOutAndSuspend',
+        'suspend 실패(reason=$reason): $e',
+      );
+    }
+  }
+
+  // 백그라운드 복귀 후 첫 활성화 이벤트(touchend/pointerup/click) 안에서 동기적으로
+  // 불림 - AudioContext 생성과 resume() 호출 사이에 await가 하나도 없어야 iOS가 이
+  // resume()을 사용자 제스처로 인정해주기 때문에, 이 함수는 async가 아니라 그냥 void로
+  // 만들어서 앞부분(context 교체, 게인 노드 재연결)이 전부 한 틱 안에 동기적으로 끝나게 함.
+  // 이미 디코딩된 AudioBuffer 캐시(_bgmBufferCache/_sfxBufferCache)는 context에 안
+  // 묶여있어서 그대로 재사용함 - 여기서 다시 디코딩하지 않음
+  void _rebuildContextSynchronously(String eventLabel) {
+    logAudioError('WebAudioBackend.rebuildContext', '시작(event=$eventLabel)');
+
+    // a) 기존 context는 닫기만 하고 결과는 안 기다림(await 금지) - 실패해도 무시
+    final web.AudioContext oldContext = _audioContext;
+    try {
+      oldContext.close().toDart.then(
+        (_) => logAudioError(
+          'WebAudioBackend.rebuildContext',
+          '기존 context close 성공',
+        ),
+        onError: (Object e) => logAudioError(
+          'WebAudioBackend.rebuildContext',
+          '기존 context close 실패(무시): $e',
+        ),
+      );
+    } catch (e) {
+      logAudioError(
+        'WebAudioBackend.rebuildContext',
+        '기존 context close 호출 자체 실패(무시): $e',
+      );
+    }
+
+    // b) 새 context를 만들고 바로 resume() 호출 - 여기까지 await가 하나도 없어야 함
+    final web.AudioContext newContext = web.AudioContext();
+    _audioContext = newContext;
+
+    // 옛 context에 묶여있던 소스/게인 노드 참조는 여기서 버림 - 새 context 위에서
+    // 새로 만들 거라 재사용 안 함. 토큰도 올려서 옛 context를 참조하던 진행 중인
+    // 크로스페이드/타이머 클로저가 전부 낡은 것으로 처리되게 함
+    _activeTrack = null;
+    ++_fadeToken;
+
+    // c) 마스터 게인을 새 context 위에 다시 만들고 destination까지 재연결, 나갈 때
+    // 기억해둔 목표값으로 즉시 복원(여기도 램프 없이 바로 세팅 - 끊긴 상태에서 막 돌아온
+    // 거라 페이드할 "이전 값"이라는 개념이 없음)
+    _bgmMasterGain = _createMasterGain(newContext);
+    final double targetMasterGain = _rebuildTargetMasterGain ?? _lastBgmLevel;
+    _bgmMasterGain.gain.setValueAtTime(targetMasterGain, newContext.currentTime);
+    _rebuildTargetMasterGain = null;
+
+    logAudioError(
+      'WebAudioBackend.rebuildContext',
+      '새 context 생성 완료(state=${newContext.state})',
+    );
+
+    newContext.resume().toDart.then(
+      (_) {
+        logAudioError(
+          'WebAudioBackend.rebuildContext',
+          'resume 성공(event=$eventLabel state=${newContext.state})',
+        );
+        // 아래 playBgm 동기 호출 시점에 아직 resume이 안 끝나서 재생이 보류됐을 수
+        // 있으니, resume이 실제로 끝난 뒤 한 번 더 되살려봄 - 이미 노드가 떠 있으면
+        // 멱등이라 아무 일도 안 함
+        _maybeRevivePendingFromState();
+      },
+      onError: (Object e) {
+        logAudioError(
+          'WebAudioBackend.rebuildContext',
+          'resume 실패(event=$eventLabel): $e',
+        );
+      },
+    );
+
+    // d) 기억해둔(장부에 남아있는) 곡을 처음부터 재생 - 디코딩된 버퍼는 캐시에 이미
+    // 있어서 재사용되고, 페이드인은 playBgm이 "노드가 없던 상태에서 처음 재생"으로 인식해
+    // _firstPlayFadeInDuration(기존 로직)을 그대로 씀
+    final String? trackId = _activeTrackId;
+    if (trackId != null) {
+      final String? path = AudioIds.bgmTracks[trackId];
+      final double trackGain = AudioIds.trackGain[trackId] ?? 1.0;
+      if (path != null) {
+        logAudioError(
+          'WebAudioBackend.rebuildContext',
+          '재생 시작 시도(trackId=$trackId)',
+        );
+        playBgm(
+          trackId: trackId,
+          path: path,
+          trackGain: trackGain,
+          bgmLevel: _lastBgmLevel,
+          fadeDuration: _firstPlayFadeInDuration,
+        );
+      }
+    }
+
+    logAudioError('WebAudioBackend.rebuildContext', '완료(event=$eventLabel)');
   }
 
   // resume() 호출 + 로그 + 성공/실패 후처리를 한곳에 모아둠 - Flutter Listener 경로
@@ -142,8 +388,35 @@ class WebAudioBackend implements AudioBackend {
     return base.resolve('assets/assets/$path').toString();
   }
 
-  Future<web.AudioBuffer> _bufferFor(String path) {
-    return _bufferCache.putIfAbsent(path, () => _decode(path));
+  Future<web.AudioBuffer> _bgmBufferFor(String path) {
+    final Future<web.AudioBuffer>? cached = _bgmBufferCache.remove(path);
+    if (cached != null) {
+      _bgmBufferCache[path] = cached; // 다시 넣어서 맨 뒤(최근 사용)로 옮김
+      return cached;
+    }
+    final Future<web.AudioBuffer> future = _decode(path);
+    _bgmBufferCache[path] = future;
+    _evictOldestBgmBufferIfNeeded();
+    return future;
+  }
+
+  // 캐시가 한도를 넘으면 가장 오래 안 쓴 항목(맨 앞)부터 내림. 디코딩이 아직 안 끝난
+  // Future를 내려도 문제없음 - 그 Future는 호출한 쪽(playBgm의 로컬 변수)이 이미 따로
+  // 참조하고 있어서 디코딩 자체는 끝까지 진행되고, 여기서는 캐시에서만 빠짐(나중에 같은
+  // 곡을 다시 요청하면 캐시에 없으니 처음부터 다시 디코딩함)
+  void _evictOldestBgmBufferIfNeeded() {
+    while (_bgmBufferCache.length > _bgmBufferCacheLimit) {
+      final String oldestPath = _bgmBufferCache.keys.first;
+      _bgmBufferCache.remove(oldestPath);
+      logAudioError(
+        'WebAudioBackend._evictOldestBgmBufferIfNeeded',
+        '캐시에서 내림: $oldestPath',
+      );
+    }
+  }
+
+  Future<web.AudioBuffer> _sfxBufferFor(String path) {
+    return _sfxBufferCache.putIfAbsent(path, () => _decode(path));
   }
 
   Future<web.AudioBuffer> _decode(String path) async {
@@ -177,18 +450,18 @@ class WebAudioBackend implements AudioBackend {
     }
   }
 
-  // 첫 사용자 제스처 직후 한 번, 등록된 BGM 트랙을 전부 백그라운드로 미리 디코딩해둠.
-  // playBgm이 그 전에 불려도 _bufferFor가 같은 Future를 공유하니 중복 디코딩은 안 됨
-  void _prefetchAll() {
-    for (final String path in AudioIds.bgmTracks.values) {
-      unawaited(
-        _bufferFor(path).catchError((Object e) {
-          // 실패해도 여기선 조용히 넘어감 - 실제 재생 시도(playBgm)에서 다시 에러가 찍히고
-          // 거기서 정식으로 처리됨. 프리페치는 그냥 미리 당겨두는 최적화일 뿐
-          throw e;
-        }),
-      );
-    }
+  // 곧 재생할 BGM을 재생 없이 디코딩만 당겨둠. 챕터 진입 화면이 "다음에 나올 곡"을 한
+  // 발 먼저 요청해두는 용도(AudioService.prefetchBgm 참고) - _bgmBufferFor가 같은
+  // Future를 공유하니 실제 playBgm 때 중복 디코딩은 안 되고, LRU 캐시 한도도 그대로 적용됨
+  @override
+  void prefetchBgm(String path) {
+    unawaited(
+      _bgmBufferFor(path).catchError((Object e) {
+        // 실패해도 여기선 조용히 넘어감 - 실제 재생 시도(playBgm)에서 다시 에러가 찍히고
+        // 거기서 정식으로 처리됨. 프리페치는 그냥 미리 당겨두는 최적화일 뿐
+        throw e;
+      }),
+    );
   }
 
   @override
@@ -220,7 +493,7 @@ class WebAudioBackend implements AudioBackend {
 
     web.AudioBuffer buffer;
     try {
-      buffer = await _bufferFor(path);
+      buffer = await _bgmBufferFor(path);
     } catch (e) {
       if (!isSameTrackRetry && token == _fadeToken) _activeTrackId = previousTrackId;
       return false;
@@ -283,13 +556,6 @@ class WebAudioBackend implements AudioBackend {
       Future.delayed(effectiveFade, () => _safeStopTrack(outgoing));
     }
 
-    // 첫 터치가 일어났다는 뜻이니(여기까지 왔다는 건 디코딩도 성공했다는 거라) 아직 안
-    // 당겨놨으면 나머지 등록된 곡들도 미리 디코딩해둠
-    if (!_hasPrefetched) {
-      _hasPrefetched = true;
-      _prefetchAll();
-    }
-
     return _audioContext.state == 'running';
   }
 
@@ -343,7 +609,7 @@ class WebAudioBackend implements AudioBackend {
     if (sfxLevel <= 0) return;
     web.AudioBuffer buffer;
     try {
-      buffer = await _bufferFor(path);
+      buffer = await _sfxBufferFor(path);
     } catch (e) {
       return; // 디코딩 실패는 _decode에서 이미 로그 남김
     }
@@ -366,11 +632,6 @@ class WebAudioBackend implements AudioBackend {
     // 시도 자체를 안 함 - 여기서 부르면 Promise가 안 풀리는 채로 남을 수 있음
     if (canAttemptResume) {
       _tryResume('onUserGesture');
-    }
-
-    if (!_hasPrefetched && _audioContext.state == 'running') {
-      _hasPrefetched = true;
-      _prefetchAll();
     }
 
     // resume 성공을 기다릴 것도 없이, 지금 이미 running이면(예: 네이티브 리스너가 먼저

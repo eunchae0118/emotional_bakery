@@ -180,6 +180,11 @@ class SceneDialogueController extends ChangeNotifier {
     final node = _resolvePlaceholders(graph, nodeId);
     if (node.type == 'line') {
       lastLineNode = node;
+      // JSON 노드에 bgm 필드가 있으면 그 트랙으로 바꿈. 이미 같은 트랙이면
+      // AudioService.playBgm이 알아서 무시함
+      if (node.bgm != null) {
+        AudioService.playBgm(node.bgm!);
+      }
       if (node.temperatureEffect != 0) {
         temperature = (temperature + node.temperatureEffect)
             .clamp(1, 10)
@@ -301,6 +306,7 @@ class SceneDialogueController extends ChangeNotifier {
       animation: node.animation,
       expression: node.expression,
       chaeonExpression: node.chaeonExpression,
+      bgm: node.bgm,
     );
     graph.nodes[nodeId] = resolvedNode;
     return resolvedNode;

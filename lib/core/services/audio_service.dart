@@ -121,6 +121,15 @@ class AudioService {
     await _backend.stopBgm(fadeOut);
   }
 
+  // 곧 재생할 BGM을 재생 없이 미리 디코딩만 해두고 싶을 때 씀(챕터 선택 화면에서 들어갈
+  // 챕터 곡을 한 발 먼저 당겨두는 용도) - 웹 전용 최적화고, 비웹 백엔드는 그냥 아무것도
+  // 안 함(audio_backend_players.dart의 prefetchBgm 참고). 등록 안 된 id면 조용히 무시
+  static void prefetchBgm(String trackId) {
+    final String? path = AudioIds.bgmTracks[trackId];
+    if (path == null) return;
+    _backend.prefetchBgm(path);
+  }
+
   // 효과음 하나 재생. 동시에 여러 번 불려도(예: 연속 탭) 서로 안 끊기고 겹쳐서 남
   static Future<void> playSfx(String sfxId) async {
     if (sfxVolume <= 0) return; // 0단계(무음)면 재생 시도 자체를 안 함

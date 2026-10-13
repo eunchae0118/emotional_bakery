@@ -8,8 +8,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
 import 'package:emotional_bakery/core/models/interaction_model.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/ending_unlocks.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
@@ -178,9 +180,37 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     precacheAndWarmUpAsset(kTutorialBgAsset, context);
   }
 
+  // ChaeonRoomMode는 챕터3/4 둘뿐이라 바로 챕터 번호로 변환함. kitchen_screen.dart의
+  // _chapterNumberForBgm이랑 동일한 이유(챕터 번호 자체를 들고 있는 필드가 없어서, mode를
+  // AudioIds.themeForChapter에 넘길 번호로 바꿔주는 역할)
+  int _chapterNumberForBgm(ChaeonRoomMode mode) => switch (mode) {
+    ChaeonRoomMode.chapter3 => 3,
+    ChaeonRoomMode.chapter4 => 4,
+  };
+
+  // 이 방(채온의 방)에서 평소에 깔리는 기본곡(chaeon_room). 방 진입 시점(initState)이랑
+  // dream 등 구간 컷씬이 끝나고 방으로 복귀하는 지점 둘 다 이 함수를 그대로 씀. 챕터4의
+  // 두 번째 방문(enterFromDoor==true, 슬픔의 빵을 들고 돌아온 경우)만 sad_chaeon_room을
+  // 우선 틀고, 그 파일이 없으면 chaeon_room으로, chaeon_room도 없으면 그 챕터 메인곡으로
+  // 순서대로 내려가며 resolveReady를 두 번 거침(연쇄 fallback) - 지금은 둘 다 파일이
+  // 있어서 사실상 항상 chaeon_room 또는 sad_chaeon_room이 그대로 나옴
+  String _roomBgmTrackId() {
+    final String roomFallback = AudioIds.resolveReady(
+      AudioIds.chaeonRoom,
+      fallback: AudioIds.themeForChapter(_chapterNumberForBgm(widget.mode)),
+    );
+    final bool isSecondVisitWithSadBread =
+        widget.mode == ChaeonRoomMode.chapter4 && widget.enterFromDoor;
+    if (!isSecondVisitWithSadBread) return roomFallback;
+    return AudioIds.resolveReady(AudioIds.sadChaeonRoom, fallback: roomFallback);
+  }
+
   @override
   void initState() {
     super.initState();
+    // 문으로 재진입(enterFromDoor)하든 체크포인트로 바로 복원되든, 이 화면이 뜨는 순간
+    // 방 기본곡이 흐르고 있어야 함 - 이미 같은 곡이면 AudioService.playBgm이 무시함
+    AudioService.playBgm(_roomBgmTrackId());
     _sceneController = SceneDialogueController(
       onDialogueEnd: () {
         // enterFromDoor 흐름(챕터4 방 복귀)에서만 room_choice -> 온도 분기 체이닝을 타고,
@@ -200,9 +230,11 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
           // 끝나면 여기로 옴. 온도 분기 사이에 온도가 바뀔 일은 없어서 위와 동일 조건 재사용
           _hasLoadedChapter4TempBranch = true;
           if (_sceneController.temperature <= 3) {
+            AudioService.playBgm(AudioIds.badending);
             setState(() => _showChapter4BadEndingCutscene = true);
           } else {
-            // 온도 높음(4~10) 분기: 슬픔의 빵을 먹는 컷씬 표시
+            // 온도 높음(4~10) 분기: 슬픔의 빵을 먹는 컷씬(dream) 표시
+            AudioService.playBgm(AudioIds.dream);
             setState(() => _showChapter4EatSadBreadCutscene = true);
           }
           return;
@@ -830,6 +862,9 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 child: DialogueOverlay(
                   data: chapter4EatSadBreadCutsceneData,
                   onComplete: () {
+                    // dream 구간이 끝났으니 방 기본곡으로 복귀 - 아래 두 분기(노말엔딩/
+                    // 챕터5행) 다 별도로 요청받은 전용곡이 없어서 방 기본곡을 그대로 씀
+                    AudioService.playBgm(_roomBgmTrackId());
                     setState(() => _showChapter4EatSadBreadCutscene = false);
                     if (_sceneController.temperature <= 7) {
                       setState(() => _showChapter4EndingNormalCutscene = true);

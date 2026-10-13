@@ -32,6 +32,12 @@ abstract class AudioBackend {
   // 효과음 1회 재생(동시에 여러 번 불려도 서로 안 끊김)
   Future<void> playSfx({required String path, required double sfxLevel});
 
+  // 곧 재생할 BGM을 미리 디코딩만 해둠(재생은 안 함) - 챕터 진입 화면에서 다음에 나올
+  // 곡을 한 발 먼저 당겨두면, 실제로 playBgm이 불릴 때 디코딩 대기 없이 바로 소리가
+  // 남. 웹 백엔드는 디코딩 자체가 시간이 걸려서 의미가 있고, 네이티브 백엔드는 할 일이
+  // 없어서 아무것도 안 해도 됨
+  void prefetchBgm(String path);
+
   // 포인터 이벤트(사용자 제스처)마다 호출됨 - 가벼워야 함. 지금 재생 "되어야 하는" 트랙이
   // 뭔지는 백엔드가 이미 playBgm 호출 시점에 자기 내부 상태로 커밋해둬서, 여기서 따로 안
   // 넘겨받아도 됨(웹 구현 쪽은 네이티브 DOM 리스너에서도 같은 복구 로직을 타야 해서,

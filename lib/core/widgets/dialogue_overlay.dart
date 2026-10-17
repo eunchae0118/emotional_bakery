@@ -94,29 +94,27 @@ class _DialogueOverlayState extends State<DialogueOverlay> {
             // BoxFit.cover로 화면을 항상 빈틈없이 채움. fitWidth를 쓰면 창을 세로로 늘렸을 때
             // 이미지 원본 비율 때문에 위아래에 빈 공간이 생겼음
             //
-            // widget.data == null일 때만(=진짜 프롤로그 경로, main_screen.dart에서 GPU
-            // 워밍업까지 끝내놓은 그 이미지들) AnimatedSwitcher로 짧은 크로스페이드를 줌 -
-            // 탭할 때마다 컷 전환처럼 번쩍이던 걸 완화하려는 목적. 이미지는 이미 디코딩+GPU
-            // 텍스처 업로드까지 끝난 상태라 애니메이션 자체가 새로 버퍼링처럼 느껴지진 않음.
-            // widget.data가 있는 다른 컷씬(챕터4/5 엔딩 등)은 원래 동작 그대로 둬서 영향 안 줌
+            // AnimatedSwitcher로 짧은 크로스페이드를 줌 - 탭할 때마다 컷 전환처럼 번쩍이던 걸
+            // 완화하려는 목적. 원래는 widget.data == null(프롤로그 경로)일 때만 이렇게 하고
+            // widget.data가 있는 다른 컷씬(챕터4/5 past/dream/엔딩 등)은 그냥 Image.asset을
+            // 바로 바꿔 끼워서 탭마다 번쩍거렸는데, 이 위젯을 같이 쓰는 이상 굳이 프롤로그만
+            // 다르게 둘 이유가 없어서 전부 같은 크로스페이드를 타게 통일함(프롤로그 쪽 동작은
+            // 그대로 유지됨 - data==null이면 전이랑 똑같이 동작함). 프롤로그 이미지는
+            // main_screen.dart에서 미리 디코딩+GPU 워밍업까지 끝내놓지만, 다른 컷씬 이미지는
+            // 그런 사전 준비가 없어서 크로스페이드 중에 처음 한 번은 로딩이 살짝 비칠 수 있음 -
+            // 그 이미지들을 미리 당겨두는 건 각 컷씬을 trigger하는 화면(kitchen_screen.dart,
+            // chaeon_room_screen.dart) 쪽에서 추가로 해줘야 함
             Positioned.fill(
-              child: widget.data == null
-                  ? AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child: Image.asset(
-                        'assets/images/${currentData["image"]}',
-                        key: ValueKey(currentData["image"]),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-                    )
-                  : Image.asset(
-                      'assets/images/${currentData["image"]}',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: Image.asset(
+                  'assets/images/${currentData["image"]}',
+                  key: ValueKey(currentData["image"]),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
             ),
 
             // 2층: 하단 대사창 영역

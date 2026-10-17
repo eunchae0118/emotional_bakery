@@ -16,21 +16,29 @@ class LetterScene extends StatefulWidget {
 }
 
 class _LetterSceneState extends State<LetterScene> {
-  // letter_bg.png 원본이 3496x2080이라 874 기준 레퍼런스 프레임은 정확히 874x520(3496/4, 2080/4).
-  // 편지 시작 지점(85, 64)은 이 레퍼런스 프레임 기준 좌표
+  // letter_bg.png 원본은 1920x1142(비율은 874x520이랑 거의 동일, 1920/1142≈1.681 vs
+  // 874/520≈1.681)이라 874 기준 레퍼런스 프레임은 874x520을 그대로 씀.
+  // 아래 네 값(85, 36, 줄 시작/끝 x)은 letter_bg.png를 직접 픽셀 스캔해서 잰 값임 -
+  // 첫 줄은 세로 36 지점에 있고, 줄은 가로 76~797.5 사이에 그려져 있어서 시작(85)/
+  // 끝(874-85=789, 797.5랑 거의 대칭) 둘 다 그 안쪽에 적당히 여백을 두고 앉게 잡음
   static const double _bgRefWidth = 874;
   static const double _bgRefHeight = 520;
   static const double _letterStartXRef = 85;
-  static const double _letterStartYRef = 64;
+  static const double _letterStartYRef = 36;
   // 폰트 크기/아이콘 크기/문단 여백도 배경 기준(874x520) 레퍼런스 값. 배경이랑 똑같은
-  // containScale로 키워야, 배경 줄 간격이 늘어나거나 줄어들 때 글자도 같이 늘어나거나
-  // 줄어들어서 계속 줄에 맞음
+  // scale로 키워야, 배경 줄 간격이 늘어나거나 줄어들 때 글자도 같이 늘어나거나 줄어들어서
+  // 계속 줄에 맞음
   static const double _letterFontSizeRef = 14;
   static const double _letterIconSizeRef = 20;
   static const double _letterParagraphGapRef = 28;
-  // 배경+글씨 덩어리 자체를 화면에 딱 맞는 크기보다 조금 더 키우고 싶을 때 쓰는 배율.
-  // 1보다 크게 잡으면 화면 비율에 따라 배경 가장자리가 살짝 잘릴 수 있음(원본 비율은 유지됨)
-  static const double _letterZoomFactor = 1.2;
+  // 마지막 줄 아래 최소 여백(레퍼런스 기준) - 글자 아랫부분이 화면 끝에 바로 닿지
+  // 않게 조금 띄워두는 값. 측정값이 아니라 다른 여백들(85, 36)이랑 비슷한 크기로
+  // 잡은 디자인 값임
+  static const double _letterBottomPaddingRef = 24;
+  // letter_bg.png 가장자리(종이 바깥 크림색 배경) 픽셀을 직접 스캔해서 뽑은 색.
+  // 화면을 cover보다 작은 스케일로 줄였을 때 남는 빈 공간을 이 색으로 채워서, 종이
+  // 가장자리랑 이어져 보이게 함(흰색이면 거기만 튀어 보임)
+  static const Color _letterBgColor = Color(0xFFFFF8E6);
 
   // 편지 원문. 원본엔 12번째 줄("사랑해, 우리 채온.") 앞에 문단 구분용 빈 줄이 있었는데,
   // 그건 별도 탭 없이 렌더링할 때 인덱스 11 앞에 여백만 끼워주는 걸로 처리함
@@ -62,26 +70,106 @@ class _LetterSceneState extends State<LetterScene> {
     }
   }
 
+  // 편지 13줄(+문단 여백) 전체를 주어진 컬럼 폭/글자 크기로 실제로 줄바꿈했을 때 총
+  // 높이가 얼마나 나오는지 TextPainter로 직접 측정함. _revealedCount랑 상관없이 항상
+  // 전체 줄 기준으로 재는 이유: 화면 스케일이 "지금 몇 줄째 보이는지"에 따라 들쭉날쭉
+  // 바뀌면 탭할 때마다 종이 크기가 변하는 것처럼 보이니까, 편지를 펼친 순간부터 끝까지
+  // 스케일은 한 번 정해지면 고정돼야 함. columnWidth/fontSize 단위는 호출하는 쪽에서
+  // 맞춰서 넘기면 됨(레퍼런스 단위든 실제 화면 px든 상관없이 똑같이 동작함)
+  double _measureFullLetterHeight({
+    required double columnWidth,
+    required double fontSize,
+  }) {
+    final TextStyle style = TextStyle(
+      fontFamily: 'SCDream',
+      fontWeight: FontWeight.w500,
+      fontSize: fontSize,
+      height: 2.02,
+    );
+    final double scaleForGap = fontSize / _letterFontSizeRef;
+    double total = 0;
+    for (var i = 0; i < _letterLines.length; i++) {
+      if (i == 11) total += _letterParagraphGapRef * scaleForGap;
+      final TextPainter tp = TextPainter(
+        text: TextSpan(text: _letterLines[i], style: style),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: columnWidth);
+      total += tp.height;
+    }
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
 
-    // 배경이랑 글씨를 따로 스케일링하면 화면 비율마다 어긋나는 문제가 있어서, 배경을
-    // BoxFit.cover 대신 BoxFit.contain으로 원본 비율 그대로(잘리지 않게) 축소/확대하고,
-    // 남는 공간은 흰 배경(Container color)이 채우게 함. 이러면 배경 이미지와 글씨가
-    // 항상 똑같은 배율(containScale) 하나로만 커지고 작아지니까 절대 어긋날 수가 없음
-    final containScale =
-        math.min(w / _bgRefWidth, h / _bgRefHeight) * _letterZoomFactor;
-    final bgAnchorX = (w - _bgRefWidth * containScale) / 2;
-    final bgAnchorY = (h - _bgRefHeight * containScale) / 2;
-    final letterStartX = bgAnchorX + _letterStartXRef * containScale;
-    final letterStartY = bgAnchorY + _letterStartYRef * containScale;
+    // 배경이 화면을 항상 꽉 채워야 해서(BoxFit.cover랑 동일한 효과) min이 아니라 max를
+    // 씀 - min을 쓰면 화면 비율이 874x520이랑 많이 다를 때(예: 아주 가로로 넓은 창)
+    // 한쪽 축만 꽉 차고 반대 축엔 빈 공간이 남음. max를 쓰면 더 많이 늘려야 하는 쪽
+    // 기준으로 맞춰서 반대 축은 화면 밖으로 넘치게(=잘리게) 되니까 항상 꽉 참. 다만
+    // 이 스케일 그대로 쓰면 화면이 가로로 넓고 세로는 짧을 때(예: 874x402) 종이가
+    // 세로로 잘려서 마지막 줄이 화면 밖으로 밀려날 수 있음 - 그래서 이 값은 "화면을
+    // 덮는 데 필요한 스케일" 후보로만 쓰고, 실제로 쓸 스케일은 아래에서 정함
+    final double coverScale = math.max(w / _bgRefWidth, h / _bgRefHeight);
+
+    // coverScale을 그대로 썼을 때 실제로 쓰일 가로 앵커/글자 컬럼 폭을 먼저 구해봄(글자
+    // 시작 지점이 화면 밖으로 안 밀리게 보호하는 로직 - 화면이 세로로 많이 길어서 양옆이
+    // 심하게 잘리면 가운데 정렬로는 글자 시작 지점(85)까지 화면 밖으로 밀려나서, "글자
+    // 시작 x가 화면 안에 들어오는 선"까지만 가운데에서 오른쪽으로 밀어줌)
+    final double centeredAnchorXAtCover = (w - _bgRefWidth * coverScale) / 2;
+    final double clampedAnchorXAtCover = math.max(
+      centeredAnchorXAtCover,
+      -_letterStartXRef * coverScale,
+    );
+    final double columnWidthAtCover =
+        w - 2 * (clampedAnchorXAtCover + _letterStartXRef * coverScale);
+    // coverScale로 실제 렌더될 컬럼 폭/글자 크기 기준으로 편지 전체(13줄) 높이를 재서,
+    // 첫 줄 시작 지점부터 마지막 줄 아래 여백까지 화면 높이 안에 들어오는지 확인함
+    final double neededHeightAtCover =
+        _letterStartYRef * coverScale +
+        _measureFullLetterHeight(
+          columnWidth: columnWidthAtCover,
+          fontSize: _letterFontSizeRef * coverScale,
+        ) +
+        _letterBottomPaddingRef * coverScale;
+
+    final double scale;
+    final double bgAnchorX;
+    if (neededHeightAtCover <= h) {
+      // (a) cover 스케일 그대로 써도 첫 줄부터 마지막 줄까지 다 들어옴 - 화면을
+      // 최대한 꽉 채우는 쪽을 그대로 씀
+      scale = coverScale;
+      bgAnchorX = clampedAnchorXAtCover;
+    } else {
+      // (b) cover 스케일로는 마지막 줄이 화면 밖으로 밀려남 - 컬럼 폭을 레퍼런스
+      // 그대로(874-85*2=704, 안 잘린 폭) 두고 쟀을 때의 높이를 기준으로, 화면 높이
+      // 안에 꼭 맞는 스케일을 새로 구함. 그리고 이 스케일을 w/_bgRefWidth로 한 번 더
+      // 묶어서 종이 가로폭이 화면보다 커지는 일 자체가 없게 함 - 그래야 글자 컬럼도
+      // 항상 이 레퍼런스 폭(704) 그대로 나와서 방금 잰 높이랑 어긋나지 않고, 가로로
+      // 잘릴 일도 없어서 글자 보호용 가로 클램프도 따로 필요 없어짐
+      final double idealContentHeight = _measureFullLetterHeight(
+        columnWidth: _bgRefWidth - 2 * _letterStartXRef,
+        fontSize: _letterFontSizeRef,
+      );
+      final double neededRefHeight =
+          _letterStartYRef + idealContentHeight + _letterBottomPaddingRef;
+      final double heightFitScale = h / neededRefHeight;
+      scale = math.min(heightFitScale, w / _bgRefWidth);
+      // scale이 항상 w/_bgRefWidth 이하로 묶여 있어서 이 값은 절대 음수가 안 됨
+      bgAnchorX = (w - _bgRefWidth * scale) / 2;
+    }
+    // 세로는 가운데 정렬이 아니라 항상 위쪽을 고정함 - 편지는 늘 첫 줄("채온아,")부터
+    // 보여야 하니까, 종이가 화면보다 작든 크든 위쪽 기준으로 두고 남는/잘리는 공간은
+    // 전부 아래쪽에 두는 게 맞음
+    final double bgAnchorY = 0.0;
+    final double letterStartX = bgAnchorX + _letterStartXRef * scale;
+    final double letterStartY = bgAnchorY + _letterStartYRef * scale;
     // 오른쪽 여백은 시작 지점(85)과 대칭이라고 보고 그대로 미러링함
-    final letterEndMargin = bgAnchorX + _letterStartXRef * containScale;
+    final double letterEndMargin = bgAnchorX + _letterStartXRef * scale;
     // 배경 기준(874x520) 픽셀을 실제 화면 픽셀로 옮길 때 쓰는 배율. 폰트/아이콘/문단
     // 여백도 이걸로 키워야 배경 줄 간격이랑 계속 맞음
-    double bgScale(double px) => px * containScale;
+    double bgScale(double px) => px * scale;
 
     final textStyle = TextStyle(
       fontFamily: 'SCDream',
@@ -128,15 +216,24 @@ class _LetterSceneState extends State<LetterScene> {
       child: Container(
         width: w,
         height: h,
-        color: Colors.white,
+        // (b) 스케일을 쓰면 종이가 화면보다 작아져서 옆/아래에 빈 공간이 생기는데,
+        // 흰색 대신 이 색(letter_bg.png 가장자리 색)으로 채워서 종이 바깥이랑
+        // 이어져 보이게 함
+        color: _letterBgColor,
         child: Stack(
           children: [
             Positioned(
               left: bgAnchorX,
               top: bgAnchorY,
-              width: _bgRefWidth * containScale,
-              height: _bgRefHeight * containScale,
-              child: Image.asset('assets/images/letter_bg.png'),
+              width: _bgRefWidth * scale,
+              height: _bgRefHeight * scale,
+              // 이 박스 크기 자체가 이미 원본 비율(874:520)을 그대로 유지한 채 계산된
+              // 거라 fit은 안 줘도 되지만, Stack이 화면을 벗어나는 부분을 잘라내는
+              // 걸 명확히 하려고 fill로 명시해둠(비율이 같아서 fill이든 cover든 결과는 동일)
+              child: Image.asset(
+                'assets/images/letter_bg.png',
+                fit: BoxFit.fill,
+              ),
             ),
             Positioned(
               left: letterStartX,

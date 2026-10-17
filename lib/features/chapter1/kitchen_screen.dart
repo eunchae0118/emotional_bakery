@@ -16,6 +16,7 @@ import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
+import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
@@ -460,7 +461,6 @@ class _KitchenScreenState extends State<KitchenScreen>
         // DialogueOverlay onComplete 쪽에서 처리함
         if (widget.mode == KitchenScreenMode.chapter4Start) {
           if (!_hasLoadedChapter4AfterPast) {
-            AudioService.playBgm(AudioIds.past);
             setState(() => _showChapter4Cutscene = true);
           } else if (_sceneController.lastLineNode?.id == 'line_015b1') {
             // choice_001에서 "아뇨... 싫어요."를 골라 line_015b1로 끝난 경우만 배드엔딩 컷씬 표시
@@ -502,6 +502,8 @@ class _KitchenScreenState extends State<KitchenScreen>
             _startChapter5MemorySequence();
           } else if (StoryState.resolveChapter5EndingType() ==
               Chapter5EndingType.happy) {
+            // 해피엔딩 전용곡. 엔딩이라 끝나도 원래 곡으로 안 돌아가고 그대로 유지됨
+            AudioService.playBgm(AudioIds.happy);
             setState(() => _showChapter5EndingHappyCutscene = true);
           } else if (!_hasLoadedChapter5Hidden) {
             // hidden 분기: chapter2Start/chapter3Start랑 동일한 체이닝 패턴으로
@@ -870,6 +872,8 @@ class _KitchenScreenState extends State<KitchenScreen>
   // hold가 끝나고 페이드아웃 "시작 직전"이라 아직 까맣긴 하지만, 그 전에 이미 화면이 까만
   // 채로 유지되는 hold 구간 내내 떠있어야 하는 playground_bg를 그때서야 켜면 너무 늦음
   void _startChapter5MemorySequence() {
+    // 곰돌이 위로의 빵 만들기 게임 회상 부분 전용곡. BearArmPuzzleScene이 끝날 때까지 이어짐
+    AudioService.playBgm(AudioIds.comfortBread);
     _startMemoryBlackout(
       onFullyBlack: () {
         setState(() => _showChapter5Playground = true);
@@ -898,6 +902,8 @@ class _KitchenScreenState extends State<KitchenScreen>
   void _startChapter5HiddenEndingSequence() {
     _startMemoryBlackout(
       onComplete: () {
+        // 히든엔딩 전용곡. 엔딩이라 끝나도 원래 곡으로 안 돌아가고 그대로 유지됨
+        AudioService.playBgm(AudioIds.hidden);
         setState(() => _showChapter5EndingHiddenCutscene = true);
       },
     );
@@ -907,6 +913,8 @@ class _KitchenScreenState extends State<KitchenScreen>
   // 일기장 인트로 이미지 -> DiaryPuzzleScene 순으로 이어짐. 퍼즐 완성 이후는
   // _onChapter3DiaryPuzzleComplete에서 이어받음
   void _startChapter3DiarySequence() {
+    // 일기장 회상 구간 전용곡. DiaryPuzzleScene 완성까지 이어짐
+    AudioService.playBgm(AudioIds.diary);
     setState(() => _showChapter3DiaryBlackout = true);
     _chapter3DiaryBlackoutTimer = Timer(_chapter3DiaryBlackoutHoldDuration, () {
       if (!mounted) return;
@@ -972,6 +980,8 @@ class _KitchenScreenState extends State<KitchenScreen>
           _chapter3DiaryEndBlackoutHoldDuration,
           () {
             if (!mounted) return;
+            // 일기장 회상 끝났으니 챕터3 메인곡으로 복귀
+            AudioService.playBgm(AudioIds.chapter3Kitchen);
             setState(() => _showChapter3DiaryEndBlackout = false);
             _hasLoadedChapter3AfterEatDialogue = true;
             _sceneController.loadDialogue(
@@ -1013,6 +1023,22 @@ class _KitchenScreenState extends State<KitchenScreen>
         for (final asset in overrides.values) {
           precacheImage(AssetImage(asset), context);
         }
+      }
+      // past/배드엔딩/빵만들기 컷씬, 챕터5 엔딩 컷씬(DialogueOverlay data)이 쓰는
+      // 일러스트들. dialogue_overlay.dart의 AnimatedSwitcher 크로스페이드가 프롤로그처럼
+      // 매끄럽게 보이려면 이미지가 미리 디코딩+GPU 업로드까지 끝나있어야 해서, 프롤로그
+      // (main_screen.dart)랑 똑같이 precacheAndWarmUpAsset을 씀. 목록은 각 데이터 상수
+      // 자체에서 뽑아 써서 대사 내용이 바뀌어도 여기를 따로 손볼 필요 없음
+      for (final asset in {
+        ...chapter4CutsceneData.map((e) => 'assets/images/${e["image"]}'),
+        ...chapter4BadEndingData.map((e) => 'assets/images/${e["image"]}'),
+        ...chapter4MakingBreadCutsceneData.map(
+          (e) => 'assets/images/${e["image"]}',
+        ),
+        ...chapter5EndingHappyData.map((e) => 'assets/images/${e["image"]}'),
+        ...chapter5EndingHiddenData.map((e) => 'assets/images/${e["image"]}'),
+      }) {
+        precacheAndWarmUpAsset(asset, context);
       }
     }
   }
@@ -2012,8 +2038,6 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: DialogueOverlay(
                   data: chapter4CutsceneData,
                   onComplete: () {
-                    // 과거 회상(past) 구간이 끝났으니 챕터4 메인곡으로 복귀
-                    AudioService.playBgm(AudioIds.chapter4Kitchen);
                     setState(() => _showChapter4Cutscene = false);
                     _hasLoadedChapter4AfterPast = true;
                     _sceneController.loadDialogue(
@@ -2214,6 +2238,8 @@ class _KitchenScreenState extends State<KitchenScreen>
                 key: const ValueKey('chapter5_bear_arm_puzzle'),
                 child: BearArmPuzzleScene(
                   onComplete: () {
+                    // 회상 끝났으니 챕터5 메인곡으로 복귀
+                    AudioService.playBgm(AudioIds.chapter5);
                     setState(() => _showChapter5BearArmPuzzle = false);
                     _hasLoadedChapter5AfterEat = true;
                     _sceneController.loadDialogue(

@@ -178,6 +178,20 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     precacheAndWarmUpAsset(kRoomBgAsset, context);
     // 문으로 나가면 바로 골목길(TutorialScreen)이라 다음 화면 배경도 미리 데워둠
     precacheAndWarmUpAsset(kTutorialBgAsset, context);
+    // 배드엔딩/dream/노말엔딩/챕터5행 컷씬(DialogueOverlay data)이 쓰는 일러스트들도
+    // 같이 데워둠 - kitchen_screen.dart의 챕터4/5 컷씬 프리캐싱이랑 동일한 이유(
+    // AnimatedSwitcher 크로스페이드가 프롤로그처럼 매끄러우려면 이미지가 미리 준비돼
+    // 있어야 함). 목록은 데이터 상수 자체에서 뽑음
+    for (final asset in {
+      ...chapter4BadEndingData.map((e) => 'assets/images/${e["image"]}'),
+      ...chapter4EatSadBreadCutsceneData.map(
+        (e) => 'assets/images/${e["image"]}',
+      ),
+      ...chapter4EndingNormalData.map((e) => 'assets/images/${e["image"]}'),
+      ...chapter4BackToBakeryData.map((e) => 'assets/images/${e["image"]}'),
+    }) {
+      precacheAndWarmUpAsset(asset, context);
+    }
   }
 
   // ChaeonRoomMode는 챕터3/4 둘뿐이라 바로 챕터 번호로 변환함. kitchen_screen.dart의

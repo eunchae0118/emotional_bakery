@@ -498,9 +498,17 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     // sh(220)이 커져도, 가로 폭이 좁으면 이 상한이 먼저 걸려서 카드가 더 안 커짐
     const double listPaddingRef = 80;
     const double cardGapRef = 40;
-    final double cardWidthCap =
-        (w - sh(listPaddingRef) * 2) / kChapterVisibleCardCount -
-        sh(cardGapRef);
+    // w는 가로 기준, sh()는 세로(h) 기준이라 섞여 있음 - 창이 세로로 아주 길고 가로는
+    // 좁으면(예: 다른 화면 밑에 깔린 채 리사이즈 중간에 잠깐 이런 비율이 되는 경우) 빼는
+    // 쪽(listPaddingRef*2, cardGapRef)이 w보다 커져서 이 값이 음수로 떨어질 수 있음. 바로
+    // 아래 thumbnailSize가 이 값을 math.min에 그대로 넣어 쓰는데, 음수가 들어가면
+    // thumbnailSize도 음수가 돼서 카드 내부 SizedBox들이 음수 폭을 받아 레이아웃이 깨짐 -
+    // 그래서 여기서 0 밑으로는 안 내려가게 막아둠
+    final double cardWidthCap = math.max(
+      0.0,
+      (w - sh(listPaddingRef) * 2) / kChapterVisibleCardCount -
+          sh(cardGapRef),
+    );
 
     return Padding(
       padding: EdgeInsets.only(right: sh(cardGapRef)),

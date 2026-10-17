@@ -29,7 +29,6 @@ class AudioIds {
   static const String badending = 'badending';
   static const String dream = 'dream';
   static const String letter = 'letter';
-  static const String past = 'past';
   // 채온의 방(ChaeonRoomScreen) 기본곡
   static const String chaeonRoom = 'chaeon_room';
   // 챕터1 기억 회상 미니게임(구름 치우기)
@@ -38,6 +37,15 @@ class AudioIds {
   static const String clock = 'clock';
   // 챕터4에서 슬픔의 빵을 들고 자기 방으로 돌아온 두 번째 방문 전용
   static const String sadChaeonRoom = 'sad_chaeon_room';
+  // 챕터5 곰돌이 위로의 빵 만들기 게임 회상 부분(_startChapter5MemorySequence ~
+  // BearArmPuzzleScene)
+  static const String comfortBread = 'comfort_bread';
+  // 챕터5 해피엔딩 컷씬(빵을 안 좋아한다고 답한 분기)
+  static const String happy = 'happy';
+  // 챕터5 히든엔딩 컷씬(빵을 좋아한다고 답한 분기)
+  static const String hidden = 'hidden';
+  // 챕터3 일기장 회상 구간(_startChapter3DiarySequence ~ DiaryPuzzleScene)
+  static const String diary = 'diary';
 
   // BGM 트랙 id -> assets/sounds/ 안의 파일 경로('assets/' 뺀 상대 경로).
   // 예: 'main_menu': 'sounds/bgm_main_menu.mp3'
@@ -52,11 +60,14 @@ class AudioIds {
     badending: 'sounds/bad_ending.mp3', // 배드엔딩 구간
     dream: 'sounds/dream.mp3', // 챕터4 "슬픔의 빵을 먹고 꿈에서 엄마를 만나는" 구간
     letter: 'sounds/letter.mp3', // 챕터4 편지 읽기 구간(LetterScene)
-    past: 'sounds/past.mp3', // 챕터4 과거 회상 구간
     chaeonRoom: 'sounds/chaeon_room.mp3', // 채온의 방(ChaeonRoomScreen)
     park: 'sounds/park.mp3', // 챕터1 기억 회상 미니게임(구름 치우기)
     clock: 'sounds/clock.mp3', // 챕터2 시계 미니게임
     sadChaeonRoom: 'sounds/sad_chaeon_room.mp3', // 챕터4 방 두 번째 방문
+    comfortBread: 'sounds/comfort_bread.mp3', // 챕터5 곰돌이 빵 만들기 게임 회상
+    happy: 'sounds/happy.mp3', // 챕터5 해피엔딩
+    hidden: 'sounds/hidden.mp3', // 챕터5 히든엔딩
+    diary: 'sounds/diary.mp3', // 챕터3 일기장 회상
   };
 
   // 트랙별 음량 보정값(기본 1.0). AudioService가 실제 재생 음량을 "사용자 볼륨 단계 x
@@ -73,11 +84,14 @@ class AudioIds {
     badending: 1.0,
     dream: 1.0,
     letter: 1.0,
-    past: 1.0,
     chaeonRoom: 1.0,
     park: 1.0,
     clock: 1.0,
     sadChaeonRoom: 1.0,
+    comfortBread: 1.0,
+    happy: 1.0,
+    hidden: 1.0,
+    diary: 1.0,
   };
 
   // 파일이 실제로 assets/sounds/에 있는 트랙 id 집합. resolveReady가 이 집합 기준으로
@@ -98,11 +112,14 @@ class AudioIds {
     badending,
     dream,
     letter,
-    past,
     chaeonRoom,
     park,
     clock,
     sadChaeonRoom,
+    comfortBread,
+    happy,
+    hidden,
+    diary,
   };
   // ↑↑↑ 파일이 생기면 여기 추가 ↑↑↑
 
@@ -129,11 +146,14 @@ class AudioIds {
     badending,
     dream,
     letter,
-    past,
     chaeonRoom,
     park,
     clock,
     sadChaeonRoom,
+    comfortBread,
+    happy,
+    hidden,
+    diary,
   };
 
   // 챕터 번호 -> 그 챕터 메인곡 id. KitchenScreen/ChaeonRoomScreen처럼 챕터 내용을

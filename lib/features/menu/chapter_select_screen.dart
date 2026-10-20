@@ -71,17 +71,31 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
 
   // "현재 진행 중인 챕터" 카드를 탭했을 때 부름(여기 도달했다는 건 위 잠금 체크를
   // 통과했다는 뜻이라 chapterNumber == highestUnlocked && !hasSeenEnding가 항상 성립함).
-  // 세이브 파일이 있으면 choice_screen.dart의 "이어하기"랑 완전히 동일한 방식
-  // (save_resume.dart의 screenForCheckpoint)으로 그 체크포인트로 바로 이동해서, 챕터를
-  // 처음부터 다시 시작하다가 온도/선택 변수가 실제 세이브랑 달라지는 문제를 막음.
-  // 세이브가 아예 없으면(이번 세션에 저장을 한 번도 안 하고 진행만 한 경우 등)
-  // fallbackScreen으로 기존처럼 챕터 맨 처음부터 시작함
-  Future<void> _enterCurrentChapter(Widget fallbackScreen) async {
+  // 세이브 파일이 있고 그 체크포인트가 지금 누른 카드의 챕터(chapterNumber) 소속이면
+  // choice_screen.dart의 "이어하기"랑 완전히 동일한 방식(save_resume.dart의
+  // screenForCheckpoint)으로 그 체크포인트로 바로 이동해서, 챕터를 처음부터 다시
+  // 시작하다가 온도/선택 변수가 실제 세이브랑 달라지는 문제를 막음.
+  //
+  // (수정: 예전엔 챕터 비교 없이 세이브만 있으면 무조건 그 체크포인트로 이동했음. 그런데
+  // isChapterNUnlocked는 체크포인트 저장이랑 별개로(컷씬 onComplete 등에서) 먼저
+  // 켜지는 경우가 있어서 - 예를 들어 챕터1 "종료 임시 화면"을 탭하면 아직 저장은 안
+  // 했는데도 isChapter2Unlocked가 바로 켜짐 - 그 상태에서 챕터2를 플레이해보지도 않고
+  // 챕터2 카드를 누르면 highestUnlocked==2라 여기까지 들어오는데, 세이브는 여전히 챕터1
+  // 지점이라 그 지점으로 끌려가는 버그가 있었음. checkpointChapterNumber로 체크포인트
+  // 소속 챕터를 비교해서, 다른 챕터 소속이면 세이브를 무시하고 fallbackScreen으로 감)
+  //
+  // 세이브가 아예 없거나, 있어도 다른 챕터 소속이면 fallbackScreen으로 기존처럼 챕터
+  // 맨 처음부터 시작함
+  Future<void> _enterCurrentChapter(
+    Widget fallbackScreen,
+    int chapterNumber,
+  ) async {
     final SaveData? data = await SaveManager.load();
     if (mounted && data != null) {
-      restoreStoryStateFromSave(data);
       final SaveCheckpoint? checkpoint = resolveSaveCheckpoint(data);
-      if (checkpoint != null) {
+      if (checkpoint != null &&
+          checkpointChapterNumber(checkpoint, data) == chapterNumber) {
+        restoreStoryStateFromSave(data);
         Navigator.push(
           context,
           fadeThroughBlackRoute(screenForCheckpoint(checkpoint, data)),
@@ -506,8 +520,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     // 그래서 여기서 0 밑으로는 안 내려가게 막아둠
     final double cardWidthCap = math.max(
       0.0,
-      (w - sh(listPaddingRef) * 2) / kChapterVisibleCardCount -
-          sh(cardGapRef),
+      (w - sh(listPaddingRef) * 2) / kChapterVisibleCardCount - sh(cardGapRef),
     );
 
     return Padding(
@@ -637,22 +650,24 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     } else if (title == "Chapter 1") {
                       // "현재 진행 중인 챕터"면 처음부터 다시 시작하는 대신 마지막 저장
                       // 지점으로 이어감(세이브 없으면 fallback으로 원래대로 튜토리얼부터)
-                      await _enterCurrentChapter(const TutorialScreen());
+                      await _enterCurrentChapter(const TutorialScreen(), 1);
                     } else if (title == "Chapter 2") {
                       // 챕터2는 빵집/튜토리얼 없이 바로 주방 화면(챕터2 시작 모드)에서 시작
                       await _enterCurrentChapter(
                         const KitchenScreen(
                           mode: KitchenScreenMode.chapter2Start,
                         ),
+                        2,
                       );
                     } else if (title == "Chapter 3") {
                       // 챕터3도 챕터2랑 동일하게 중간 화면 없이 바로 시작. DEV 바로가기 버튼이랑
                       // 동일한 진입점(채온이 방 화면)으로 연결함
-                      await _enterCurrentChapter(const ChaeonRoomScreen());
+                      await _enterCurrentChapter(const ChaeonRoomScreen(), 3);
                     } else if (title == "Chapter 4") {
                       // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
                       await _enterCurrentChapter(
                         const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
+                        4,
                       );
                     } else if (title == "Chapter 5") {
                       // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. DEV: 챕터5
@@ -662,6 +677,7 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                           skipChapter1Events: true,
                           reentryChapter: ReentryChapter.chapter5,
                         ),
+                        5,
                       );
                     }
                   } else {

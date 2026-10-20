@@ -37,9 +37,7 @@ class _ActiveTrack {
 
 class WebAudioBackend implements AudioBackend {
   // 지금 아무 곡도 안 흐르고 있다가 처음 소리가 나는 순간 전용 페이드인 길이
-  static const Duration _firstPlayFadeInDuration = Duration(
-    milliseconds: 1500,
-  );
+  static const Duration _firstPlayFadeInDuration = Duration(milliseconds: 1500);
   // onUserGesture가 끊긴 재생을 되살릴 때 쓰는 기본 크로스페이드 길이
   static const Duration _recoveryFadeDuration = Duration(milliseconds: 600);
   // 사용자 볼륨 단계 변경 시 마스터 게인을 부드럽게 바꾸는 램프 길이
@@ -69,7 +67,7 @@ class WebAudioBackend implements AudioBackend {
   // PCM 버퍼가 전부 메모리에 눌러앉아서 아이폰 사파리에서 메모리 부족으로 탭이 죽을 수
   // 있어서, 최근에 요청한 곡만 이 개수만큼 들고 있고 나머지는 디코딩 결과를 버림(다시
   // 필요해지면 그때 또 디코딩함 - 느려지는 것뿐이지 끊기거나 틀리게 재생되진 않음)
-  static const int _bgmBufferCacheLimit = 3;
+  static const int _bgmBufferCacheLimit = 2;
 
   // 디코딩된 BGM AudioBuffer 캐시. Dart의 Map은 삽입 순서를 그대로 유지하는
   // LinkedHashMap이라, "읽을 때마다 remove 후 다시 넣기"로 최근 사용 순서를 유지함 -
@@ -86,6 +84,23 @@ class WebAudioBackend implements AudioBackend {
   String? _activeTrackId; // 지금 재생 "되어야 하는" 트랙(장부) - await 전에 동기적으로 커밋됨
   _ActiveTrack? _activeTrack; // 실제로 만들어져서 재생 중인 노드
   int _fadeToken = 0;
+
+  // 지금 재생 "되어야 하는" 트랙의 asset 경로. _evictOldestBgmBufferIfNeeded가 캐시를
+  // 비울 때 이 경로는 절대 안 건드리려고 뽑아둠 - 재생 중인 트랙은 한참 전에 캐시에서
+  // 한 번만 요청되고 그 뒤로는 다시 안 건드려지니까(계속 루프 재생만 하니까), LRU 기준
+  // "오래 안 쓴 항목"에 걸려서 다른 곡 prefetch 때문에 밀려날 수 있음
+  String? get _activeBgmPath {
+    final String? trackId = _activeTrackId;
+    if (trackId == null) return null;
+    return AudioIds.bgmTracks[trackId];
+  }
+
+  // BGM 디코딩(fetch+decodeAudioData)을 한 번에 하나씩만 돌게 직렬화하는 큐. 재생 중인
+  // 곡 디코딩이랑 다음 챕터 prefetch가 동시에 겹치면 그 순간 두 곡의 PCM이 동시에
+  // 메모리에 떠서 피크가 커지니까, 뒤에 온 요청은 앞 디코딩이 끝날 때까지 기다리게 함.
+  // 체이닝한 Future 안에서 try/catch로 에러를 흡수해서, 하나가 실패해도 큐 자체는 안
+  // 끊기고 다음 요청이 그대로 이어서 돎
+  Future<void> _bgmDecodeQueue = Future.value();
 
   // setBgmLevel이 마지막으로 받은 사용자 볼륨 레벨(0~1). 네이티브 DOM 리스너처럼
   // AudioService를 거치지 않고 백엔드 혼자 재생을 되살려야 하는 경로에서 다시 씀
@@ -289,7 +304,10 @@ class WebAudioBackend implements AudioBackend {
     // 거라 페이드할 "이전 값"이라는 개념이 없음)
     _bgmMasterGain = _createMasterGain(newContext);
     final double targetMasterGain = _rebuildTargetMasterGain ?? _lastBgmLevel;
-    _bgmMasterGain.gain.setValueAtTime(targetMasterGain, newContext.currentTime);
+    _bgmMasterGain.gain.setValueAtTime(
+      targetMasterGain,
+      newContext.currentTime,
+    );
     _rebuildTargetMasterGain = null;
 
     logAudioError(
@@ -394,9 +412,12 @@ class WebAudioBackend implements AudioBackend {
       _bgmBufferCache[path] = cached; // 다시 넣어서 맨 뒤(최근 사용)로 옮김
       return cached;
     }
-    final Future<web.AudioBuffer> future = _decode(path);
+    // 새 디코딩을 큐에 올리기 전에 먼저 자리를 비움 - 디코딩이 끝난 뒤에 비우면 그 사이
+    // 새 버퍼랑 오래된 버퍼가 둘 다 메모리에 떠있는 순간이 생기니까, 순서를 뒤집어서
+    // "비우고 -> 디코딩 시작"으로 함. 지금 재생 중인 트랙(_activeBgmPath)은 예외
+    _evictOldestBgmBufferIfNeeded(keepPath: _activeBgmPath);
+    final Future<web.AudioBuffer> future = _decodeBgmQueued(path);
     _bgmBufferCache[path] = future;
-    _evictOldestBgmBufferIfNeeded();
     return future;
   }
 
@@ -404,15 +425,38 @@ class WebAudioBackend implements AudioBackend {
   // Future를 내려도 문제없음 - 그 Future는 호출한 쪽(playBgm의 로컬 변수)이 이미 따로
   // 참조하고 있어서 디코딩 자체는 끝까지 진행되고, 여기서는 캐시에서만 빠짐(나중에 같은
   // 곡을 다시 요청하면 캐시에 없으니 처음부터 다시 디코딩함)
-  void _evictOldestBgmBufferIfNeeded() {
-    while (_bgmBufferCache.length > _bgmBufferCacheLimit) {
-      final String oldestPath = _bgmBufferCache.keys.first;
+  //
+  // keepPath는 절대 안 내림 - 지금 재생 중인 트랙을 챕터 선택 카드 prefetch 같은 걸로
+  // 밀어내지 않으려는 용도. 호출 시점이 "새 디코딩을 큐에 올리기 전"으로 바뀌어서, 기준도
+  // "넘으면"이 아니라 "넘을 예정이면"(= 지금 길이가 이미 한도 이상)으로 바뀜 - 비우고 난
+  // 뒤에 새 항목 하나가 들어와야 한도를 맞출 수 있어서임
+  void _evictOldestBgmBufferIfNeeded({String? keepPath}) {
+    final List<String> candidates = _bgmBufferCache.keys
+        .where((path) => path != keepPath)
+        .toList();
+    for (final String oldestPath in candidates) {
+      if (_bgmBufferCache.length < _bgmBufferCacheLimit) break;
       _bgmBufferCache.remove(oldestPath);
       logAudioError(
         'WebAudioBackend._evictOldestBgmBufferIfNeeded',
         '캐시에서 내림: $oldestPath',
       );
     }
+  }
+
+  // _decode(path)를 직접 안 부르고 _bgmDecodeQueue에 체이닝해서, 앞서 요청된 BGM
+  // 디코딩이 끝나야 이 디코딩의 실제 fetch+decodeAudioData가 시작되게 함. SFX는 파일이
+  // 작아서 이 큐에 안 태우고 그대로 둠(_sfxBufferFor는 안 건드림)
+  Future<web.AudioBuffer> _decodeBgmQueued(String path) {
+    final Completer<web.AudioBuffer> completer = Completer<web.AudioBuffer>();
+    _bgmDecodeQueue = _bgmDecodeQueue.then((_) async {
+      try {
+        completer.complete(await _decode(path));
+      } catch (e) {
+        completer.completeError(e);
+      }
+    });
+    return completer.future;
   }
 
   Future<web.AudioBuffer> _sfxBufferFor(String path) {
@@ -495,7 +539,8 @@ class WebAudioBackend implements AudioBackend {
     try {
       buffer = await _bgmBufferFor(path);
     } catch (e) {
-      if (!isSameTrackRetry && token == _fadeToken) _activeTrackId = previousTrackId;
+      if (!isSameTrackRetry && token == _fadeToken)
+        _activeTrackId = previousTrackId;
       return false;
     }
     // 디코딩을 기다리는 사이 더 최신 요청이 들어와서 이미 추월당했으면 조용히 포기
@@ -614,7 +659,8 @@ class WebAudioBackend implements AudioBackend {
       return; // 디코딩 실패는 _decode에서 이미 로그 남김
     }
     try {
-      final web.AudioBufferSourceNode source = _audioContext.createBufferSource();
+      final web.AudioBufferSourceNode source = _audioContext
+          .createBufferSource();
       source.buffer = buffer;
       final web.GainNode gainNode = _audioContext.createGain();
       gainNode.gain.setValueAtTime(sfxLevel, _audioContext.currentTime);

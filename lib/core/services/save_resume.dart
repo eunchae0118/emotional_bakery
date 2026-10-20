@@ -136,6 +136,54 @@ Widget screenForCheckpoint(SaveCheckpoint checkpoint, SaveData data) {
   }
 }
 
+// checkpoint가 실제로 몇 챕터 소속인지 돌려줌. chapter_select_screen.dart의
+// _enterCurrentChapter가 "지금 누른 카드의 챕터 번호"랑 이 값을 비교해서, 다른 챕터
+// 체크포인트를 잘못 이어받는 걸 막는 데 씀(예: 챕터1 저장 지점이 남아있는 채로 챕터2가
+// 막 해금된 경우 챕터2 카드를 눌러도 챕터1 저장 지점으로 끌려가던 버그). chapter3Door는
+// screenForCheckpoint랑 똑같은 이유로 data.isChapter4Unlocked로 챕터3/4를 구분함.
+// screenForCheckpoint처럼 default 없이 둬서 체크포인트가 하나라도 빠지면 컴파일 에러로 바로 알 수 있음
+int checkpointChapterNumber(SaveCheckpoint checkpoint, SaveData data) {
+  switch (checkpoint) {
+    case SaveCheckpoint.chapter1KitchenArrival:
+    case SaveCheckpoint.chapter1Table:
+    case SaveCheckpoint.chapter1FirstMeet:
+    case SaveCheckpoint.chapter1FirstMeetMid:
+    case SaveCheckpoint.chapter1FirstBread:
+      return 1;
+    case SaveCheckpoint.chapter2Ready:
+    case SaveCheckpoint.chapter2IngredientQuiz:
+    case SaveCheckpoint.chapter2AfterQuiz:
+    case SaveCheckpoint.chapter2MakingBread:
+    case SaveCheckpoint.chapter2AfterFirstGame:
+    case SaveCheckpoint.chapter2AfterSecondGame:
+      return 2;
+    case SaveCheckpoint.chapter3ChaeonRoomAfter:
+    case SaveCheckpoint.chapter3BeforeGame:
+    case SaveCheckpoint.chapter3AfterFirstGame:
+    case SaveCheckpoint.chapter3AfterEat:
+    case SaveCheckpoint.chapter3ChaeonRoom:
+      return 3;
+    case SaveCheckpoint.chapter4BeforeCutscene:
+    case SaveCheckpoint.chapter4AfterPast:
+    case SaveCheckpoint.chapter4MakingBread:
+    case SaveCheckpoint.chapter4AfterLetter:
+    case SaveCheckpoint.chapter4AfterMaking:
+    case SaveCheckpoint.chapter4StartRoom:
+    case SaveCheckpoint.chapter4RoomChoice:
+    case SaveCheckpoint.chapter4TempLow:
+    case SaveCheckpoint.chapter4TempHigh:
+      return 4;
+    case SaveCheckpoint.chapter5Bear:
+    case SaveCheckpoint.chapter5Eat:
+    case SaveCheckpoint.chapter5AfterEat:
+    case SaveCheckpoint.chapter5Hidden:
+    case SaveCheckpoint.chapter5Start:
+      return 5;
+    case SaveCheckpoint.chapter3Door:
+      return data.isChapter4Unlocked ? 4 : 3;
+  }
+}
+
 // SaveData를 StoryState/ChapterProgress에 그대로 복원함. 저장할 때 읽어갔던 값들을
 // 그대로 되돌려놓는 것 - choice_screen.dart의 "이어하기"/chapter_select_screen.dart의
 // "진행 중인 챕터 재진입"이 공통으로 필요로 함

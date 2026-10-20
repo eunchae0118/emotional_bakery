@@ -178,20 +178,13 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     precacheAndWarmUpAsset(kRoomBgAsset, context);
     // 문으로 나가면 바로 골목길(TutorialScreen)이라 다음 화면 배경도 미리 데워둠
     precacheAndWarmUpAsset(kTutorialBgAsset, context);
-    // 배드엔딩/dream/노말엔딩/챕터5행 컷씬(DialogueOverlay data)이 쓰는 일러스트들도
-    // 같이 데워둠 - kitchen_screen.dart의 챕터4/5 컷씬 프리캐싱이랑 동일한 이유(
-    // AnimatedSwitcher 크로스페이드가 프롤로그처럼 매끄러우려면 이미지가 미리 준비돼
-    // 있어야 함). 목록은 데이터 상수 자체에서 뽑음
-    for (final asset in {
-      ...chapter4BadEndingData.map((e) => 'assets/images/${e["image"]}'),
-      ...chapter4EatSadBreadCutsceneData.map(
-        (e) => 'assets/images/${e["image"]}',
-      ),
-      ...chapter4EndingNormalData.map((e) => 'assets/images/${e["image"]}'),
-      ...chapter4BackToBakeryData.map((e) => 'assets/images/${e["image"]}'),
-    }) {
-      precacheAndWarmUpAsset(asset, context);
-    }
+    // (수정: 배드엔딩/dream/노말엔딩/챕터5행 컷씬(DialogueOverlay data)이 쓰는
+    // 일러스트들을 여기서 한꺼번에 미리 데워두던 걸 뺐음 - kitchen_screen.dart 쪽이랑
+    // 합쳐서 4개 세트가 전부 3500x2032급이라 한꺼번에 디코딩하면 순간 메모리가 많이 뜰 수
+    // 있었음(아이폰 사파리 메모리 부족 리로딩의 주요 원인으로 추정됨). 이제는
+    // dialogue_overlay.dart가 각 컷씬 시작 시점에 자기 데이터 기준으로 필요한 만큼만
+    // (현재+다음 1장) 순서대로 당겨오고, 지나간 이미지는 evict함 - 자세한 이유는
+    // dialogue_overlay.dart의 _DialogueOverlayState 주석 참고)
   }
 
   // ChaeonRoomMode는 챕터3/4 둘뿐이라 바로 챕터 번호로 변환함. kitchen_screen.dart의

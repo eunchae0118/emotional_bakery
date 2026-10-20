@@ -16,7 +16,6 @@ import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
-import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
@@ -1024,22 +1023,13 @@ class _KitchenScreenState extends State<KitchenScreen>
           precacheImage(AssetImage(asset), context);
         }
       }
-      // past/배드엔딩/빵만들기 컷씬, 챕터5 엔딩 컷씬(DialogueOverlay data)이 쓰는
-      // 일러스트들. dialogue_overlay.dart의 AnimatedSwitcher 크로스페이드가 프롤로그처럼
-      // 매끄럽게 보이려면 이미지가 미리 디코딩+GPU 업로드까지 끝나있어야 해서, 프롤로그
-      // (main_screen.dart)랑 똑같이 precacheAndWarmUpAsset을 씀. 목록은 각 데이터 상수
-      // 자체에서 뽑아 써서 대사 내용이 바뀌어도 여기를 따로 손볼 필요 없음
-      for (final asset in {
-        ...chapter4CutsceneData.map((e) => 'assets/images/${e["image"]}'),
-        ...chapter4BadEndingData.map((e) => 'assets/images/${e["image"]}'),
-        ...chapter4MakingBreadCutsceneData.map(
-          (e) => 'assets/images/${e["image"]}',
-        ),
-        ...chapter5EndingHappyData.map((e) => 'assets/images/${e["image"]}'),
-        ...chapter5EndingHiddenData.map((e) => 'assets/images/${e["image"]}'),
-      }) {
-        precacheAndWarmUpAsset(asset, context);
-      }
+      // (수정: past/배드엔딩/빵만들기 컷씬, 챕터5 엔딩 컷씬(DialogueOverlay data)이 쓰는
+      // 일러스트들을 여기서 한꺼번에 미리 당겨두던 걸 뺐음 - 5개 세트 합쳐서 47장, 그중
+      // 26장이 3500x2032라 장당 28.5MB씩이라 한꺼번에 디코딩하면 순간 메모리가 900MB대까지
+      // 뜰 수 있었음(아이폰 사파리 메모리 부족 리로딩의 주요 원인으로 추정됨). 이제는
+      // dialogue_overlay.dart가 각 컷씬 시작 시점에 자기 데이터 기준으로 필요한 만큼만
+      // (현재+다음 1장) 순서대로 당겨오고, 지나간 이미지는 evict함 - 자세한 이유는
+      // dialogue_overlay.dart의 _DialogueOverlayState 주석 참고)
     }
   }
 

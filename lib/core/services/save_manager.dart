@@ -124,4 +124,16 @@ class SaveManager {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.containsKey(_saveKey);
   }
+
+  // 저장된 체크포인트를 완전히 지움. choice_screen.dart의 "처음부터"가 부름 -
+  // ChapterProgress.resetAllProgress()는 메모리(해금 상태/온도/변수)만 초기화하고 여긴 안
+  // 건드려서, 이걸 따로 안 부르면 리셋 후에도 예전 체크포인트가 shared_preferences에
+  // 그대로 남아있었음. 그 상태로 챕터1에 다시 들어가면 _enterCurrentChapter가 그 예전
+  // 체크포인트를 그대로 불러와서 "처음부터"가 사실상 안 먹히는 버그가 있었음. ending_unlocks_v1
+  // (엔딩보기 해금 기록)은 별개 키라 여기서 안 건드림 - 그쪽은 새 게임을 시작해도 계속 쌓여야
+  // 하는 게 의도된 동작임(ending_unlocks.dart 상단 주석 참고)
+  static Future<void> clear() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_saveKey);
+  }
 }

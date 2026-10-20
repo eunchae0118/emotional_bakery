@@ -101,8 +101,16 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
       _blockTopRef + _logoHeightRef + _itemGapRef;
 
   // 새 게임 시작 처리. 진행 상황 전부 초기화하고 기존 시작 로직(챕터 선택창 이동) 그대로 탐
-  void _startNewGame() {
+  //
+  // (수정: SaveManager.clear()를 먼저 끝냄 - resetAllProgress()는 메모리만 초기화해서
+  // 예전 체크포인트(save_data_v1)가 안 지워진 채 남아있었음. 그 상태로 챕터1에 다시
+  // 들어가면 예전 저장 지점으로 끌려가는 버그가 있었음. 이것 때문에 함수 자체가 async로
+  // 바뀌었는데, 호출부(onPressed 3곳)는 이미 비동기거나 await 없이 불러도 문제없는
+  // 자리라 그대로 둠)
+  Future<void> _startNewGame() async {
+    await SaveManager.clear();
     ChapterProgress.resetAllProgress();
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ChapterSelectScreen()),

@@ -19,7 +19,6 @@ import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
-import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/chapter2/bread_making_scene.dart';
 import 'package:emotional_bakery/features/chapter2/clock_minigame_scene.dart';
@@ -474,7 +473,6 @@ class _KitchenScreenState extends State<KitchenScreen>
             );
           } else if (!_hasLoadedChapter4AfterLetter) {
             // chapter4_making_bread.json이 끝나면(line_014, "그럼...") 여기로 옴. 편지 컷씬 표시
-            AudioService.playBgm(AudioIds.letter);
             setState(() => _showChapter4Letter = true);
           } else if (!_hasLoadedChapter4AfterMaking) {
             // chapter4_after_letter.json이 끝나면(line_003) 여기로 옴. 빵만들기 컷씬 표시
@@ -2077,8 +2075,6 @@ class _KitchenScreenState extends State<KitchenScreen>
                 key: const ValueKey('chapter4_letter'),
                 child: LetterScene(
                   onComplete: () {
-                    // 편지 읽기 구간이 끝났으니 챕터4 메인곡으로 복귀
-                    AudioService.playBgm(AudioIds.chapter4Kitchen);
                     setState(() => _showChapter4Letter = false);
                     _hasLoadedChapter4AfterLetter = true;
                     _sceneController.loadDialogue(

@@ -18,13 +18,48 @@ class LetterScene extends StatefulWidget {
 class _LetterSceneState extends State<LetterScene> {
   // letter_bg.png 원본은 1920x1142(비율은 874x520이랑 거의 동일, 1920/1142≈1.681 vs
   // 874/520≈1.681)이라 874 기준 레퍼런스 프레임은 874x520을 그대로 씀.
-  // 아래 네 값(85, 36, 줄 시작/끝 x)은 letter_bg.png를 직접 픽셀 스캔해서 잰 값임 -
-  // 첫 줄은 세로 36 지점에 있고, 줄은 가로 76~797.5 사이에 그려져 있어서 시작(85)/
-  // 끝(874-85=789, 797.5랑 거의 대칭) 둘 다 그 안쪽에 적당히 여백을 두고 앉게 잡음
+  // 아래 네 값(85, 35.709, 줄 시작/끝 x)은 letter_bg.png를 직접 픽셀 스캔해서 잰 값임 -
+  // 줄은 가로 76~797.5 사이에 그려져 있어서 시작(85)/끝(874-85=789, 797.5랑 거의 대칭)
+  // 둘 다 그 안쪽에 적당히 여백을 두고 앉게 잡음
   static const double _bgRefWidth = 874;
   static const double _bgRefHeight = 520;
   static const double _letterStartXRef = 85;
-  static const double _letterStartYRef = 36;
+  // 가로 보호 클램프 하한값 - 화면 가로폭 중 최소 이 비율만큼은 글자 시작 x가 화면
+  // 왼쪽 끝에서 떨어져 있게 함(아이패드 프로 13처럼 정사각형에 가까운 화면에서 글자가
+  // 화면 끝에 바로 붙는 걸 막으려고 넣음). 5%는 임의로 잡은 값 - 더 크게 잡고 싶으면
+  // 이 숫자만 올리면 됨
+  static const double _letterMinLeftMarginRatio = 0.05;
+  // 편지지 가로줄 17개를 10개 x열에서 서브픽셀 단위(밝기 가중 평균)로 스캔해서 잰 값.
+  // 줄 간격은 평균 27.998(최대 편차 0.026)로 거의 완벽하게 일정하고, 첫 줄 중심이
+  // 36이 아니라 35.709라서 여기만 그 값으로 고침
+  static const double _letterStartYRef = 35.709;
+  // 처음엔 height:2.02 그대로 두고 시작 y만 고쳐도 될 줄 알았는데(기준 크기 874x520,
+  // scale=1에선 실제로 줄당 오차 0.03px 이하로 거의 완벽했음), scale이 1이 아닌
+  // 화면(예: 아이폰 에뮬레이션처럼 높이에 맞춰 축소되는 경우)에서 다시 재보니 줄마다
+  // 오차가 꾸준히 쌓여서 마지막 줄 기준 7~10px까지 벌어지는 걸 확인함. 원인은 Flutter가
+  // TextStyle.height로 정해지는 줄 높이를 정수 px로 올림 처리해서인 걸로 보이는데(실제
+  // 필요한 줄 높이가 소수점이면 scale!=1일 때마다 반올림 오차가 줄마다 누적됨), 그래서
+  // 아예 글자 줄마다 자동 줄간격에 맡기지 않고 이 선 좌표 리스트에 직접 앉히는 쪽으로
+  // 바꿈(_ruleYForLine 참고). 인덱스는 선 번호고, 값은 874 기준 y좌표임
+  static const List<double> _letterRuleYRef = [
+    35.709,
+    63.683,
+    91.707,
+    119.686,
+    147.703,
+    175.690,
+    203.700,
+    231.696,
+    259.696,
+    287.698,
+    315.693,
+    343.703,
+    371.690,
+    399.707,
+    427.687,
+    455.709,
+    483.682,
+  ];
   // 폰트 크기/아이콘 크기/문단 여백도 배경 기준(874x520) 레퍼런스 값. 배경이랑 똑같은
   // scale로 키워야, 배경 줄 간격이 늘어나거나 줄어들 때 글자도 같이 늘어나거나 줄어들어서
   // 계속 줄에 맞음
@@ -41,7 +76,8 @@ class _LetterSceneState extends State<LetterScene> {
   static const Color _letterBgColor = Color(0xFFFFF8E6);
 
   // 편지 원문. 원본엔 12번째 줄("사랑해, 우리 채온.") 앞에 문단 구분용 빈 줄이 있었는데,
-  // 그건 별도 탭 없이 렌더링할 때 인덱스 11 앞에 여백만 끼워주는 걸로 처리함
+  // 그건 별도 탭 없이 렌더링할 때 인덱스 11부터 선 하나를 건너뛰고 앉히는 걸로 처리함
+  // (_ruleYForLine 참고)
   static const List<String> _letterLines = [
     '채온아,',
     '이 편지를 쓰는 지금, 엄마는 네가 자는 걸 보고 있어.',
@@ -69,6 +105,12 @@ class _LetterSceneState extends State<LetterScene> {
       widget.onComplete();
     }
   }
+
+  // 줄 인덱스 -> 그 줄이 앉아야 할 선 번호(_letterRuleYRef 인덱스). 인덱스 11("사랑해,
+  // 우리 채온.")부터는 문단 구분용 빈 줄 때문에 선 하나(11번)를 건너뛰고 12번 선에
+  // 앉아야 해서 +1을 해줌. 그 전까지는 줄 인덱스랑 선 번호가 그대로 1:1로 맞음
+  static double _ruleYForLine(int lineIndex) =>
+      _letterRuleYRef[lineIndex <= 10 ? lineIndex : lineIndex + 1];
 
   // 편지 13줄(+문단 여백) 전체를 주어진 컬럼 폭/글자 크기로 실제로 줄바꿈했을 때 총
   // 높이가 얼마나 나오는지 TextPainter로 직접 측정함. _revealedCount랑 상관없이 항상
@@ -118,9 +160,17 @@ class _LetterSceneState extends State<LetterScene> {
     // 심하게 잘리면 가운데 정렬로는 글자 시작 지점(85)까지 화면 밖으로 밀려나서, "글자
     // 시작 x가 화면 안에 들어오는 선"까지만 가운데에서 오른쪽으로 밀어줌)
     final double centeredAnchorXAtCover = (w - _bgRefWidth * coverScale) / 2;
+    // 원래 하한은 "글자 시작 x >= 0"(안 잘리기만 하면 OK)이었는데, 아이패드 프로
+    // 13(1376x1032)처럼 편지지 비율(874:520)이랑 많이 다른(정사각형에 가까운) 화면에서
+    // 하한이 딱 0에 걸려서 글자가 화면 왼쪽 끝에 바로 붙어버리는 걸 확인함. 그래서 하한을
+    // "0 이상"이 아니라 "화면 가로폭의 5% 이상"으로 올림 - 이 비율만큼은 최소한 보장함.
+    // (참고: 이 하한을 올려도 편지지 오른쪽 끝이 화면 안으로 들어오는 일(오른쪽 빈 틈)은
+    // 생길 수 없음 - coverScale 자체가 "874*coverScale >= w"를 항상 보장해서, anchorX를
+    // 오른쪽으로 밀수록 편지지 오른쪽 끝(anchorX + 874*coverScale)은 w에서 더 멀어지기만
+    // 함. 그래서 따로 오른쪽 틈 방지용 상한은 안 둬도 됨)
     final double clampedAnchorXAtCover = math.max(
       centeredAnchorXAtCover,
-      -_letterStartXRef * coverScale,
+      w * _letterMinLeftMarginRatio - _letterStartXRef * coverScale,
     );
     final double columnWidthAtCover =
         w - 2 * (clampedAnchorXAtCover + _letterStartXRef * coverScale);
@@ -164,7 +214,6 @@ class _LetterSceneState extends State<LetterScene> {
     // 전부 아래쪽에 두는 게 맞음
     final double bgAnchorY = 0.0;
     final double letterStartX = bgAnchorX + _letterStartXRef * scale;
-    final double letterStartY = bgAnchorY + _letterStartYRef * scale;
     // 오른쪽 여백은 시작 지점(85)과 대칭이라고 보고 그대로 미러링함
     final double letterEndMargin = bgAnchorX + _letterStartXRef * scale;
     // 배경 기준(874x520) 픽셀을 실제 화면 픽셀로 옮길 때 쓰는 배율. 폰트/아이콘/문단
@@ -179,37 +228,37 @@ class _LetterSceneState extends State<LetterScene> {
       color: const Color(0xFF451805),
     );
 
-    // 공개된 줄만큼 위젯을 쌓고, 제일 마지막 줄에만 진행 안내 아이콘을 붙여줌
-    final lineWidgets = <Widget>[];
-    for (var i = 0; i < _revealedCount; i++) {
-      // 12번째 줄(인덱스 11) 앞 문단 구분 여백
-      if (i == 11) {
-        lineWidgets.add(SizedBox(height: bgScale(_letterParagraphGapRef)));
-      }
-      final isLastRevealedLine = i == _revealedCount - 1;
-      if (!isLastRevealedLine) {
-        lineWidgets.add(Text(_letterLines[i], style: textStyle));
-      } else {
-        lineWidgets.add(
-          Text.rich(
-            TextSpan(
-              style: textStyle,
-              children: [
-                TextSpan(text: _letterLines[i]),
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: Icon(
-                    Icons.arrow_drop_down,
-                    color: const Color(0xFF451805),
-                    size: bgScale(_letterIconSizeRef),
+    // 공개된 줄마다 선 좌표(_ruleYForLine)에 스케일만 곱해서 직접 Positioned로 앉힘.
+    // Column + TextStyle.height 자동 줄간격으로 쌓으면 scale이 1이 아닐 때 줄마다
+    // 생기는 반올림 오차가 누적되길래(위 _letterRuleYRef 주석 참고), 아예 줄마다
+    // 독립적으로 선 좌표에 고정하는 쪽으로 바꿈 - 이러면 앞줄 오차가 뒷줄로 안 번짐.
+    // 제일 마지막 줄에만 진행 안내 아이콘을 붙여줌
+    final lineWidgets = <Widget>[
+      for (var i = 0; i < _revealedCount; i++)
+        Positioned(
+          left: letterStartX,
+          top: bgAnchorY + _ruleYForLine(i) * scale,
+          right: letterEndMargin,
+          child: i == _revealedCount - 1
+              ? Text.rich(
+                  TextSpan(
+                    style: textStyle,
+                    children: [
+                      TextSpan(text: _letterLines[i]),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Icon(
+                          Icons.arrow_drop_down,
+                          color: const Color(0xFF451805),
+                          size: bgScale(_letterIconSizeRef),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-    }
+                )
+              : Text(_letterLines[i], style: textStyle),
+        ),
+    ];
 
     return GestureDetector(
       onTap: _handleTap,
@@ -235,15 +284,7 @@ class _LetterSceneState extends State<LetterScene> {
                 fit: BoxFit.fill,
               ),
             ),
-            Positioned(
-              left: letterStartX,
-              top: letterStartY,
-              right: letterEndMargin,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: lineWidgets,
-              ),
-            ),
+            ...lineWidgets,
           ],
         ),
       ),

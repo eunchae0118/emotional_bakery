@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flame/flame.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/services/audio_service.dart';
@@ -289,137 +290,140 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
 
           // 개발용 임시 버튼 모음. 챕터1~5 화면을 매번 순서대로 안 거치고 바로 테스트하려고
           // 세로로 쌓아둔 지름길 버튼들. 전부 임시 개발용 코드라 나중에 통째로 지울 것
-          Positioned(
-            right: sh(10),
-            bottom: sh(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 챕터1도 잠금이나 프롤로그/튜토리얼 안 거치고 바로 GamePlayScreen으로 진입.
-                // 챕터2 버튼처럼 잠금 체크 없이 바로 들어감. 임시 개발용 코드
-                GestureDetector(
-                  onTap: () {
-                    // DEV 버튼은 매번 같은 상태에서 테스트해야 재현이 되니까, 이전 플레이에서
-                    // 남은 온도값을 여기서 기본값(3)으로 리셋하고 들어감
-                    StoryState.currentTemperature = 3;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const GamePlayScreen(isPrologue: false),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    "DEV: 챕터1 바로가기",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
-                      fontSize: sh(10),
-                    ),
-                  ),
-                ),
-                SizedBox(height: sh(4)),
-                // 개발용 임시 버튼: 챕터2 테스트하려고 프롤로그부터 챕터1 전체를 매번 다시 플레이하기
-                // 번거로워서 만든 지름길. 화면 구석에 눈에 안 띄게 작게 배치. 나중에 지울 코드
-                GestureDetector(
-                  onTap: () {
-                    // 위 챕터1 버튼이랑 동일한 이유로 리셋하고 들어감
-                    StoryState.currentTemperature = 3;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const KitchenScreen(
-                          mode: KitchenScreenMode.chapter2Start,
+          // kDebugMode로 감싸서 릴리즈 빌드에선 아예 안 보이게 함 - ending_gallery_screen.dart의
+          // "전체 해금(DEBUG)" 버튼이랑 동일한 패턴
+          if (kDebugMode)
+            Positioned(
+              right: sh(10),
+              bottom: sh(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 챕터1도 잠금이나 프롤로그/튜토리얼 안 거치고 바로 GamePlayScreen으로 진입.
+                  // 챕터2 버튼처럼 잠금 체크 없이 바로 들어감. 임시 개발용 코드
+                  GestureDetector(
+                    onTap: () {
+                      // DEV 버튼은 매번 같은 상태에서 테스트해야 재현이 되니까, 이전 플레이에서
+                      // 남은 온도값을 여기서 기본값(3)으로 리셋하고 들어감
+                      StoryState.currentTemperature = 3;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const GamePlayScreen(isPrologue: false),
                         ),
+                      );
+                    },
+                    child: Text(
+                      "DEV: 챕터1 바로가기",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.3),
+                        fontSize: sh(10),
                       ),
-                    );
-                  },
-                  child: Text(
-                    "DEV: 챕터2 바로가기",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
-                      fontSize: sh(10),
                     ),
                   ),
-                ),
-                SizedBox(height: sh(4)),
-                // 챕터4/5는 화면 자체가 아직 없어서 이동하면 에러남. 탭하면 화면 전환 없이
-                // 스낵바로 미구현 안내만 잠깐 띄우고 끝냄. 임시 개발용 코드
-                // 챕터3은 채온이 방 화면부터 바로 시작. 다른 DEV 버튼들이랑 동일하게 잠금 체크 없음
-                GestureDetector(
-                  onTap: () {
-                    // 위 챕터1/2 버튼이랑 동일한 이유로 리셋하고 들어감
-                    StoryState.currentTemperature = 3;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ChaeonRoomScreen(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    "DEV: 챕터3 바로가기",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
-                      fontSize: sh(10),
-                    ),
-                  ),
-                ),
-                SizedBox(height: sh(4)),
-                // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
-                GestureDetector(
-                  onTap: () {
-                    // 위 챕터1/2/3 버튼이랑 동일한 이유로 리셋하고 들어감
-                    StoryState.currentTemperature = 3;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ChaeonRoomScreen(
-                          mode: ChaeonRoomMode.chapter4,
+                  SizedBox(height: sh(4)),
+                  // 개발용 임시 버튼: 챕터2 테스트하려고 프롤로그부터 챕터1 전체를 매번 다시 플레이하기
+                  // 번거로워서 만든 지름길. 화면 구석에 눈에 안 띄게 작게 배치. 나중에 지울 코드
+                  GestureDetector(
+                    onTap: () {
+                      // 위 챕터1 버튼이랑 동일한 이유로 리셋하고 들어감
+                      StoryState.currentTemperature = 3;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const KitchenScreen(
+                            mode: KitchenScreenMode.chapter2Start,
+                          ),
                         ),
+                      );
+                    },
+                    child: Text(
+                      "DEV: 챕터2 바로가기",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.3),
+                        fontSize: sh(10),
                       ),
-                    );
-                  },
-                  child: Text(
-                    "DEV: 챕터4 바로가기",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
-                      fontSize: sh(10),
                     ),
                   ),
-                ),
-                SizedBox(height: sh(4)),
-                // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. skipChapter1Events도
-                // 같이 true로 넘겨야 챕터1 가이드 대사/릴리안 계단 등장 트리거가 안 새어나감
-                // (tutorial_screen.dart가 챕터3/4 진입할 때 derive해주는 값이랑 동일).
-                // 다른 DEV 버튼들이랑 동일하게 fadeThroughBlackRoute 없이 바로 push함
-                // (로딩 지연은 initState의 Flame.images 프리캐싱으로 대응)
-                GestureDetector(
-                  onTap: () {
-                    // 위 챕터1/2/3/4 버튼이랑 동일한 이유로 리셋하고 들어감
-                    StoryState.currentTemperature = 3;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GamePlayScreen(
-                          skipChapter1Events: true,
-                          reentryChapter: ReentryChapter.chapter5,
+                  SizedBox(height: sh(4)),
+                  // 챕터4/5는 화면 자체가 아직 없어서 이동하면 에러남. 탭하면 화면 전환 없이
+                  // 스낵바로 미구현 안내만 잠깐 띄우고 끝냄. 임시 개발용 코드
+                  // 챕터3은 채온이 방 화면부터 바로 시작. 다른 DEV 버튼들이랑 동일하게 잠금 체크 없음
+                  GestureDetector(
+                    onTap: () {
+                      // 위 챕터1/2 버튼이랑 동일한 이유로 리셋하고 들어감
+                      StoryState.currentTemperature = 3;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChaeonRoomScreen(),
                         ),
+                      );
+                    },
+                    child: Text(
+                      "DEV: 챕터3 바로가기",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.3),
+                        fontSize: sh(10),
                       ),
-                    );
-                  },
-                  child: Text(
-                    "DEV: 챕터5 바로가기",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
-                      fontSize: sh(10),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(height: sh(4)),
+                  // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
+                  GestureDetector(
+                    onTap: () {
+                      // 위 챕터1/2/3 버튼이랑 동일한 이유로 리셋하고 들어감
+                      StoryState.currentTemperature = 3;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChaeonRoomScreen(
+                            mode: ChaeonRoomMode.chapter4,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "DEV: 챕터4 바로가기",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.3),
+                        fontSize: sh(10),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: sh(4)),
+                  // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. skipChapter1Events도
+                  // 같이 true로 넘겨야 챕터1 가이드 대사/릴리안 계단 등장 트리거가 안 새어나감
+                  // (tutorial_screen.dart가 챕터3/4 진입할 때 derive해주는 값이랑 동일).
+                  // 다른 DEV 버튼들이랑 동일하게 fadeThroughBlackRoute 없이 바로 push함
+                  // (로딩 지연은 initState의 Flame.images 프리캐싱으로 대응)
+                  GestureDetector(
+                    onTap: () {
+                      // 위 챕터1/2/3/4 버튼이랑 동일한 이유로 리셋하고 들어감
+                      StoryState.currentTemperature = 3;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GamePlayScreen(
+                            skipChapter1Events: true,
+                            reentryChapter: ReentryChapter.chapter5,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "DEV: 챕터5 바로가기",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.3),
+                        fontSize: sh(10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
           // 하단 스크롤 진행 바
           Positioned(

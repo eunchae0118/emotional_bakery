@@ -209,7 +209,10 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     final bool isSecondVisitWithSadBread =
         widget.mode == ChaeonRoomMode.chapter4 && widget.enterFromDoor;
     if (!isSecondVisitWithSadBread) return roomFallback;
-    return AudioIds.resolveReady(AudioIds.sadChaeonRoom, fallback: roomFallback);
+    return AudioIds.resolveReady(
+      AudioIds.sadChaeonRoom,
+      fallback: roomFallback,
+    );
   }
 
   @override
@@ -843,11 +846,15 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 key: const ValueKey('chaeon_room_chapter4_bad_ending_cutscene'),
                 child: DialogueOverlay(
                   data: chapter4BadEndingData,
-                  onComplete: () {
+                  onComplete: () async {
                     // 배드엔딩 도달 - 재플레이로 온도/선택 변수 조작 못 하게 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
                     // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
                     EndingUnlocks.unlock(EndingType.bad);
+                    // (신규: 여기서 저장을 안 해두면 앱을 재시작했을 때 이어하기가 엉뚱한
+                    // 지점으로 가버림 - 체크포인트 없이 지금 해금/엔딩 플래그 그대로 저장함
+                    await SaveManager.save(null);
+                    if (!mounted) return;
                     setState(() {
                       _showChapter4BadEndingCutscene = false;
                       _isChapter4BadEnding = true;
@@ -891,11 +898,14 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 ),
                 child: DialogueOverlay(
                   data: chapter4EndingNormalData,
-                  onComplete: () {
+                  onComplete: () async {
                     // 노말엔딩 도달 - 배드엔딩이랑 동일한 이유로 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
                     // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
                     EndingUnlocks.unlock(EndingType.normal);
+                    // (신규: 배드엔딩이랑 동일한 이유로 체크포인트 없이 저장함
+                    await SaveManager.save(null);
+                    if (!mounted) return;
                     setState(() {
                       _showChapter4EndingNormalCutscene = false;
                       _showChapterEndPlaceholder = true;
@@ -913,8 +923,12 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 ),
                 child: DialogueOverlay(
                   data: chapter4BackToBakeryData,
-                  onComplete: () {
+                  onComplete: () async {
                     ChapterProgress.isChapter5Unlocked = true;
+                    // (신규: 여기서 저장을 안 해두면 앱을 재시작했을 때 이어하기가 엉뚱한
+                    // 지점으로 가버림 - 체크포인트 없이 지금 해금 플래그 그대로 저장함
+                    await SaveManager.save(null);
+                    if (!mounted) return;
                     goToChapterSelectClearingStack(context);
                   },
                 ),

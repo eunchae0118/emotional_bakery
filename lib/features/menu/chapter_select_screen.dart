@@ -35,6 +35,10 @@ const double _lockedChapterNoticeTopRef = 45;
 // 카드 수가 바로 조정됨
 const double kChapterVisibleCardCount = 1.5;
 
+// 완료한 챕터 카드에 얹는 도장 이미지(stamp1~5.png) 크기 - 카드 한 변(thumbnailSize) 대비
+// 비율. 카드 폭의 55%로 시작함 - 화면 보면서 조정 예정
+const double kCompletedStampSizeRatio = 0.55;
+
 class ChapterSelectScreen extends StatefulWidget {
   const ChapterSelectScreen({super.key});
 
@@ -506,6 +510,16 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     int? chapterNumber,
     int highestUnlocked,
   ) {
+    // (신규: "완료한 챕터" 표시용. 아래 onTap의 재진입 막는 조건(챕터가 이미 지나갔거나,
+    // 마지막 챕터인데 엔딩까지 봄)이랑 똑같은 기준으로 판단함 - 같은 챕터를 두고 "완료
+    // 여부"가 서로 다르게 판단되면 혼란스러우니까 기준을 맞춤. onTap 쪽 코드/주석은 안
+    // 건드리고 여기서 따로 한 번 더 계산함(간단한 bool 비교라 중복 비용은 무시할 만함)
+    final bool isCompletedChapter =
+        chapterNumber != null &&
+        (chapterNumber < highestUnlocked ||
+            (chapterNumber == highestUnlocked &&
+                ChapterProgress.hasSeenEnding));
+
     // 리스트 패딩/카드 간격(둘 다 sh 기준, build()의 Positioned/padding이랑 같은 값을 그대로
     // 씀). 가로 폭(w)에서 양쪽 패딩을 뺀 공간 안에 "카드+간격"이 kChapterVisibleCardCount번
     // 들어가게 카드 한 변의 상한(cardWidthCap)을 역산함 - 아이패드처럼 세로가 길어서
@@ -684,43 +698,89 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     _showLockedChapterNotice();
                   }
                 },
-                child: Container(
-                  // 위 LayoutBuilder에서 구한 thumbnailSize를 가로/세로에 똑같이 써서 항상
-                  // 정사각형으로 유지함(가로 기준 rW(220)이랑 세로 여유 공간 중 더 작은 값)
-                  width: thumbnailSize,
-                  height: thumbnailSize,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/$imgName'),
-                      fit: BoxFit.cover,
-                      // 잠겨있으면 흑백, 풀렸으면 컬러 처리
-                      colorFilter: isUnlocked
-                          ? null
-                          : const ColorFilter.matrix([
-                              0.2126,
-                              0.7152,
-                              0.0722,
-                              0,
-                              0,
-                              0.2126,
-                              0.7152,
-                              0.0722,
-                              0,
-                              0,
-                              0.2126,
-                              0.7152,
-                              0.0722,
-                              0,
-                              0,
-                              0,
-                              0,
-                              0,
-                              1,
-                              0,
-                            ]),
+                child: Stack(
+                  // (수정: 완료 표시를 얹으려고 Container를 Stack으로 한 번 더 감쌈 - 기존
+                  // Container/장식은 전혀 안 건드림. 처음엔 체크 배지였다가 지금은 도장
+                  // 이미지로 바뀜, 아래 참고)
+                  children: [
+                    Container(
+                      // 위 LayoutBuilder에서 구한 thumbnailSize를 가로/세로에 똑같이 써서 항상
+                      // 정사각형으로 유지함(가로 기준 rW(220)이랑 세로 여유 공간 중 더 작은 값)
+                      width: thumbnailSize,
+                      height: thumbnailSize,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/$imgName'),
+                          fit: BoxFit.cover,
+                          // 잠겨있으면 흑백, 풀렸으면 컬러 처리
+                          colorFilter: isUnlocked
+                              ? null
+                              : const ColorFilter.matrix([
+                                  0.2126,
+                                  0.7152,
+                                  0.0722,
+                                  0,
+                                  0,
+                                  0.2126,
+                                  0.7152,
+                                  0.0722,
+                                  0,
+                                  0,
+                                  0.2126,
+                                  0.7152,
+                                  0.0722,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  1,
+                                  0,
+                                ]),
+                        ),
+                      ),
                     ),
-                  ),
+                    // 완료한 챕터 표시. (수정: 체크 배지 대신 챕터별 도장 이미지(stamp1~5.png)로
+                    // 바꿈 - 흰색 30% 오버레이를 깔고 그 위에 도장을 카드 중앙에 얹음. ClipRRect로
+                    // 감싸서 썸네일 모서리 둥글기(borderRadius 30) 밖으로 안 삐져나가게 함.
+                    // 도장 크기(kCompletedStampSizeRatio)는 thumbnailSize 기준 비율이라
+                    // cardWidthCap에 걸려 카드가 작아지면 도장도 자연히 같이 작아짐
+                    if (isCompletedChapter)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: SizedBox(
+                          width: thumbnailSize,
+                          height: thumbnailSize,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Positioned.fill(
+                                child: Container(
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                              ),
+                              Image.asset(
+                                'assets/images/stamp$chapterNumber.png',
+                                width: thumbnailSize * kCompletedStampSizeRatio,
+                                height:
+                                    thumbnailSize * kCompletedStampSizeRatio,
+                                // precache는 안 하고 그냥 그리되, 실제로 보이는 크기만큼만
+                                // 디코딩하게 cacheWidth를 줌(원본은 591x591) - devicePixelRatio까지
+                                // 반영해서 레티나에서도 안 흐릿하게 나오면서 메모리는 더 안 씀
+                                cacheWidth:
+                                    (thumbnailSize *
+                                            kCompletedStampSizeRatio *
+                                            MediaQuery.of(
+                                              context,
+                                            ).devicePixelRatio)
+                                        .round(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],

@@ -29,8 +29,11 @@ class SaveData {
     this.choicesSinceCheckpoint = const [],
   });
 
-  // save_checkpoints.dart의 SaveCheckpoint를 문자열로 저장한 값(SaveCheckpoint.name)
-  final String checkpoint;
+  // save_checkpoints.dart의 SaveCheckpoint를 문자열로 저장한 값(SaveCheckpoint.name).
+  // (수정: null이 될 수 있게 바꿈 - 챕터를 완료한 직후처럼 "중간 체크포인트는 없지만
+  // 해금 플래그는 최신인" 상태를 표현하려고 씀. resolveSaveCheckpoint(data)는 null이면
+  // 그냥 못 찾은 것으로 자연스럽게 처리됨)
+  final String? checkpoint;
   final int temperature;
   // StoryState.vars 그대로. Map이라 SharedPreferences에 직접 못 넣어서, SaveData
   // 전체를 jsonEncode할 때 이 필드도 같이 문자열 안에 중첩된 객체로 들어감
@@ -62,7 +65,7 @@ class SaveData {
   };
 
   factory SaveData.fromJson(Map<String, dynamic> json) => SaveData(
-    checkpoint: json['checkpoint'] as String,
+    checkpoint: json['checkpoint'] as String?,
     temperature: json['temperature'] as int,
     vars: Map<String, dynamic>.from(json['vars'] as Map),
     isChapter1Unlocked: json['isChapter1Unlocked'] as bool,
@@ -90,12 +93,17 @@ class SaveManager {
   // 체크포인트에서 저장하는 건지는 저장을 부르는 화면이 제일 잘 알고 있어서.
   // choicesSinceCheckpoint도 마찬가지로 호출부(SceneDialogueController.choiceHistory)가
   // 제일 잘 알고 있어서 넘겨받음 - 없는 화면(프롤로그 등)은 기본값(빈 리스트) 그대로 둠
+  //
+  // (수정: checkpoint를 nullable로 바꿔서 null을 넘길 수 있게 함 - 챕터 종료 임시 화면/
+  // 엔딩 컷씬처럼 "체크포인트는 없지만 챕터 완료(해금 플래그)는 저장해야 하는" 지점에서
+  // SaveManager.save(null)로 부름. 기존 호출부(중간 저장 버튼들)는 전부 SaveCheckpoint를
+  // 그대로 넘기니까 동작이 안 바뀜
   static Future<void> save(
-    SaveCheckpoint checkpoint, {
+    SaveCheckpoint? checkpoint, {
     List<RecordedChoice> choicesSinceCheckpoint = const [],
   }) async {
     final SaveData data = SaveData(
-      checkpoint: checkpoint.name,
+      checkpoint: checkpoint?.name,
       temperature: StoryState.currentTemperature,
       vars: StoryState.vars,
       isChapter1Unlocked: ChapterProgress.isChapter1Unlocked,

@@ -1266,17 +1266,28 @@ class _KitchenScreenState extends State<KitchenScreen>
 
   // 챕터 1 종료 임시 화면 탭하면 챕터 선택창으로 이동. tutorial_screen.dart에서 빵집 문 클릭 시
   // GamePlayScreen으로 넘어가는 것과 동일하게 pushReplacement로 스택 정리
-  void _handleChapterEndTap() {
+  //
+  // (수정: 여기서 해금 플래그만 켜고 저장은 안 해서, 앱을 재시작한 뒤 "이어하기"를 누르면
+  // 예전 체크포인트(또는 세이브가 아예 없으면 처음부터)로 가버리는 버그가 있었음 - 해금
+  // 플래그가 켜진 챕터를 또 저장도 안 한 채로 재진입시키는 꼴이었음. 분기마다
+  // SaveManager.save(null)을 추가해서, 체크포인트 없이(이 챕터는 끝났고 다음 챕터는 아직
+  // 중간 저장이 없다는 뜻) 지금 해금 플래그 그대로 저장함 - choice_screen.dart의
+  // _handleContinue가 checkpoint==null을 보고 챕터 선택창으로 보내줌)
+  Future<void> _handleChapterEndTap() async {
     // 챕터1 엔딩을 다 봤으니 챕터2 해금. 챕터2 모드(이미 해금된 상태)에서 탭할 땐 안 해도 됨
     if (widget.mode == KitchenScreenMode.chapter1End) {
       ChapterProgress.isChapter2Unlocked = true;
+      await SaveManager.save(null);
     } else if (widget.mode == KitchenScreenMode.chapter2Start) {
       // 챕터2 완전 종료(chapter2_after_second_game.json까지 다 봄)했으니 챕터3 해금
       ChapterProgress.isChapter3Unlocked = true;
+      await SaveManager.save(null);
     } else if (widget.mode == KitchenScreenMode.chapter3Start) {
       // 챕터3 완전 종료(일기장 퍼즐 시퀀스 끝)했으니 챕터4 해금
       ChapterProgress.isChapter4Unlocked = true;
+      await SaveManager.save(null);
     }
+    if (!mounted) return;
     // ChoiceScreen 위에 쌓인 이전 챕터 화면들(빵집 GamePlayScreen/Flame 게임 등)까지 전부 정리하고
     // 챕터 선택창으로 감
     goToChapterSelectClearingStack(context);
@@ -2249,11 +2260,15 @@ class _KitchenScreenState extends State<KitchenScreen>
                 key: const ValueKey('chapter5_ending_happy_cutscene'),
                 child: DialogueOverlay(
                   data: chapter5EndingHappyData,
-                  onComplete: () {
+                  onComplete: () async {
                     // 해피엔딩 도달 - 재플레이로 온도/선택 변수 조작 못 하게 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
                     // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
                     EndingUnlocks.unlock(EndingType.happy);
+                    // (신규: 여기서 저장을 안 해두면 앱을 재시작했을 때 이어하기가 엉뚱한
+                    // 지점으로 가버림 - 체크포인트 없이 지금 해금/엔딩 플래그 그대로 저장함
+                    await SaveManager.save(null);
+                    if (!mounted) return;
                     setState(() {
                       _showChapter5EndingHappyCutscene = false;
                       _showChapterEndPlaceholder = true;
@@ -2270,11 +2285,14 @@ class _KitchenScreenState extends State<KitchenScreen>
                 key: const ValueKey('chapter5_ending_hidden_cutscene'),
                 child: DialogueOverlay(
                   data: chapter5EndingHiddenData,
-                  onComplete: () {
+                  onComplete: () async {
                     // 히든엔딩 도달 - 재플레이로 온도/선택 변수 조작 못 하게 전역 플래그 켬
                     ChapterProgress.hasSeenEnding = true;
                     // 엔딩보기 갤러리용 영구 해금 기록(위 hasSeenEnding이랑 별개 저장소)
                     EndingUnlocks.unlock(EndingType.hidden);
+                    // (신규: 해피엔딩이랑 동일한 이유로 체크포인트 없이 저장함
+                    await SaveManager.save(null);
+                    if (!mounted) return;
                     setState(() {
                       _showChapter5EndingHiddenCutscene = false;
                       _showChapterEndPlaceholder = true;

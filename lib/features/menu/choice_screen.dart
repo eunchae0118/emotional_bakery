@@ -128,6 +128,19 @@ class _ChoiceScreenState extends State<ChoiceScreen> {
     // StoryState/ChapterProgress 복원. 저장할 때 읽어갔던 값들을 그대로 되돌려놓음
     restoreStoryStateFromSave(data);
 
+    // (수정: data.checkpoint 자체가 null인 경우를 먼저 따로 봄 - 챕터 종료 임시 화면/엔딩
+    // 컷씬에서 SaveManager.save(null)로 저장한, "체크포인트는 없지만 해금 플래그는 최신인"
+    // 정상적인 상태임(저장 파일이 깨진 게 아님). 이 경우엔 바로 위에서 복원한 해금 플래그
+    // 기준으로 다음 챕터를 고를 수 있게 챕터 선택창으로 보냄
+    if (data.checkpoint == null) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ChapterSelectScreen()),
+      );
+      return;
+    }
+
     final SaveCheckpoint? checkpoint = resolveSaveCheckpoint(data);
     if (checkpoint == null) {
       // 저장 파일이 깨졌거나 옛날 포맷이라 체크포인트 이름을 못 알아본 경우 - 엉뚱한

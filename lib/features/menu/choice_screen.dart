@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/constants/audio_ids.dart';
-import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';

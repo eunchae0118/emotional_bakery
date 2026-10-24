@@ -354,8 +354,6 @@ class BakeryGame extends FlameGame {
 
   // 외부 위젯에서 플레이어 방향 제어용 함수
   void movePlayer(int direction) {
-    // 디버그: 방향키 없이 자동으로 걷는 버그 추적용. 호출될 때마다 direction이랑 호출 스택을 같이 찍음
-    print('movePlayer($direction) 호출됨\n${StackTrace.current}');
     if (isMovementBlocked) {
       chaeon?.moveDirection = 0;
       return;

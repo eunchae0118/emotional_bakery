@@ -28,7 +28,6 @@ class AudioIds {
   static const String chapter5 = 'chapter5';
   static const String badending = 'badending';
   static const String dream = 'dream';
-  static const String letter = 'letter';
   // 채온의 방(ChaeonRoomScreen) 기본곡
   static const String chaeonRoom = 'chaeon_room';
   // 챕터1 기억 회상 미니게임(구름 치우기)
@@ -59,7 +58,6 @@ class AudioIds {
     chapter5: 'sounds/chapter5.mp3', // 챕터5 메인곡
     badending: 'sounds/bad_ending.mp3', // 배드엔딩 구간
     dream: 'sounds/dream.mp3', // 챕터4 "슬픔의 빵을 먹고 꿈에서 엄마를 만나는" 구간
-    letter: 'sounds/letter.mp3', // 챕터4 편지 읽기 구간(LetterScene)
     chaeonRoom: 'sounds/chaeon_room.mp3', // 채온의 방(ChaeonRoomScreen)
     park: 'sounds/park.mp3', // 챕터1 기억 회상 미니게임(구름 치우기)
     clock: 'sounds/clock.mp3', // 챕터2 시계 미니게임
@@ -83,7 +81,6 @@ class AudioIds {
     chapter5: 1.0,
     badending: 1.0,
     dream: 1.0,
-    letter: 1.0,
     chaeonRoom: 1.0,
     park: 1.0,
     clock: 1.0,
@@ -111,7 +108,6 @@ class AudioIds {
     chapter5,
     badending,
     dream,
-    letter,
     chaeonRoom,
     park,
     clock,
@@ -145,7 +141,6 @@ class AudioIds {
     chapter5,
     badending,
     dream,
-    letter,
     chaeonRoom,
     park,
     clock,

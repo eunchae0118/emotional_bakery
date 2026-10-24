@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'dart:async'; // 연속 이동 (화살표 꾹 누르기)
 import '../chapter1/game_play_screen.dart';
 import 'package:emotional_bakery/core/constants/audio_ids.dart';
-import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';

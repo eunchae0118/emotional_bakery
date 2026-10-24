@@ -11,7 +11,6 @@ import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
-import 'package:emotional_bakery/core/services/app_exit.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/prologue/tutorial_screen.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';

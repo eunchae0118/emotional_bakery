@@ -36,8 +36,18 @@ const double _lockedChapterNoticeTopRef = 45;
 const double kChapterVisibleCardCount = 1.5;
 
 // 완료한 챕터 카드에 얹는 도장 이미지(stamp1~5.png) 크기 - 카드 한 변(thumbnailSize) 대비
-// 비율. 카드 폭의 55%로 시작함 - 화면 보면서 조정 예정
-const double kCompletedStampSizeRatio = 0.55;
+// 비율. 55%로 시작했는데 너무 작아서 80%로 올림. 중앙에 Center로 얹기 때문에 1.0 밑으로만
+// 두면 카드 밖으로는 안 삐져나감 - 화면 보면서 조정 예정
+const double kCompletedStampSizeRatio = 0.8;
+
+// 완료한 챕터 카드 썸네일 위에 까는 오버레이의 불투명도(오버레이 색 자체의 alpha).
+// (수정: 원래 흰색 30%였다가 15%로 낮췄었는데, 지금은 색 자체를 검정으로 바꿈 - 자세한
+// 이유는 아래 kCompletedOverlayColor 참고) - 화면 보면서 조정 예정
+const double kCompletedOverlayOpacity = 0.4;
+
+// 완료한 챕터 카드 썸네일 위에 까는 오버레이 색. 처음엔 흰색이었는데 블랙으로 바꿔달라는
+// 요청으로 바꿈 - 화면 보면서 조정 예정
+const Color kCompletedOverlayColor = Colors.black;
 
 class ChapterSelectScreen extends StatefulWidget {
   const ChapterSelectScreen({super.key});
@@ -741,43 +751,63 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                         ),
                       ),
                     ),
-                    // 완료한 챕터 표시. (수정: 체크 배지 대신 챕터별 도장 이미지(stamp1~5.png)로
-                    // 바꿈 - 흰색 30% 오버레이를 깔고 그 위에 도장을 카드 중앙에 얹음. ClipRRect로
-                    // 감싸서 썸네일 모서리 둥글기(borderRadius 30) 밖으로 안 삐져나가게 함.
+                    // 완료한 챕터 표시. 챕터별 도장 이미지(stamp1~5.png)를 카드 중앙에 얹음.
+                    //
+                    // (수정: 흰색 오버레이를 ClipRRect(radius 30)로 자르던 걸 뺐음 - ch1~5.png를
+                    // 직접 디코딩해서 확인해보니, 둥근 모서리는 코드의 BorderRadius가 아니라
+                    // PNG 자체의 알파 채널(모서리가 투명하게 뚫려 있음)에서 나오는 거였음. 모서리가
+                    // 완전히 불투명해지는 지점이 ch1.png(186px)는 대각선으로 9px, ch2~5.png(744px)는
+                    // 36px 지점 - 둘 다 원본 가로폭의 약 2.8%(반지름 기준)라 비율은 같지만, 고정값
+                    // 30px짜리 ClipRRect는 실제 썸네일이 보여주는 모양보다 훨씬 둔탁하게(더 둥글게)
+                    // 잘라서, 이미 투명해진 모서리 바깥쪽 사각 영역까지 오버레이가 하얗게 덮어
+                    // 버려서 어색해 보였음. 그래서 ClipRRect 대신 썸네일이랑 완전히 똑같은
+                    // 이미지(imgName)를 한 번 더 그려서 그 알파를 그대로 마스크로 씀
+                    // (ColorFiltered + BlendMode.srcIn) - 그러면 오버레이 모양이 실제 캐릭터
+                    // 일러스트 윤곽과 정확히 일치하게 됨(어떤 모서리 반지름이든 상관없이 항상 맞음).
                     // 도장 크기(kCompletedStampSizeRatio)는 thumbnailSize 기준 비율이라
                     // cardWidthCap에 걸려 카드가 작아지면 도장도 자연히 같이 작아짐
                     if (isCompletedChapter)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(30),
-                        child: SizedBox(
-                          width: thumbnailSize,
-                          height: thumbnailSize,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Positioned.fill(
-                                child: Container(
-                                  color: Colors.white.withOpacity(0.3),
+                      SizedBox(
+                        width: thumbnailSize,
+                        height: thumbnailSize,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // (수정: 흰색에서 블랙으로 바꿈) 오버레이. srcIn은 "src(오버레이
+                            // 색) 색을 dsta(이 썸네일 이미지)의 알파로만 마스킹"하는 Porter-Duff
+                            // 합성이라, 오버레이 색 자체의 알파값(kCompletedOverlayOpacity)이
+                            // 그대로 결과 알파가 됨 - 투명한 모서리에서는 자동으로 같이
+                            // 투명해지고, 불투명한 캐릭터 영역에서만 그 비율로 덮임
+                            ColorFiltered(
+                              colorFilter: ColorFilter.mode(
+                                kCompletedOverlayColor.withOpacity(
+                                  kCompletedOverlayOpacity,
                                 ),
+                                BlendMode.srcIn,
                               ),
-                              Image.asset(
-                                'assets/images/stamp$chapterNumber.png',
-                                width: thumbnailSize * kCompletedStampSizeRatio,
-                                height:
-                                    thumbnailSize * kCompletedStampSizeRatio,
-                                // precache는 안 하고 그냥 그리되, 실제로 보이는 크기만큼만
-                                // 디코딩하게 cacheWidth를 줌(원본은 591x591) - devicePixelRatio까지
-                                // 반영해서 레티나에서도 안 흐릿하게 나오면서 메모리는 더 안 씀
-                                cacheWidth:
-                                    (thumbnailSize *
-                                            kCompletedStampSizeRatio *
-                                            MediaQuery.of(
-                                              context,
-                                            ).devicePixelRatio)
-                                        .round(),
+                              child: Image.asset(
+                                'assets/images/$imgName',
+                                width: thumbnailSize,
+                                height: thumbnailSize,
+                                fit: BoxFit.cover,
                               ),
-                            ],
-                          ),
+                            ),
+                            Image.asset(
+                              'assets/images/stamp$chapterNumber.png',
+                              width: thumbnailSize * kCompletedStampSizeRatio,
+                              height: thumbnailSize * kCompletedStampSizeRatio,
+                              // precache는 안 하고 그냥 그리되, 실제로 보이는 크기만큼만
+                              // 디코딩하게 cacheWidth를 줌(원본은 591x591) - devicePixelRatio까지
+                              // 반영해서 레티나에서도 안 흐릿하게 나오면서 메모리는 더 안 씀
+                              cacheWidth:
+                                  (thumbnailSize *
+                                          kCompletedStampSizeRatio *
+                                          MediaQuery.of(
+                                            context,
+                                          ).devicePixelRatio)
+                                      .round(),
+                            ),
+                          ],
                         ),
                       ),
                   ],

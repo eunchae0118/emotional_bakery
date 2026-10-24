@@ -81,6 +81,10 @@ class WebAudioBackend implements AudioBackend {
   // 유지함(이쪽은 LRU 안 씀)
   final Map<String, Future<web.AudioBuffer>> _sfxBufferCache = {};
 
+  // 지금 겹쳐 재생 중인 블립 소스 노드들. stopBlip()이 이걸 전부 끊어줌 - 'ended'
+  // 이벤트가 자연스럽게 끝난 노드는 알아서 이 집합에서 빠짐(아래 playBlip 참고)
+  final Set<web.AudioBufferSourceNode> _activeBlipSources = {};
+
   String? _activeTrackId; // 지금 재생 "되어야 하는" 트랙(장부) - await 전에 동기적으로 커밋됨
   _ActiveTrack? _activeTrack; // 실제로 만들어져서 재생 중인 노드
   int _fadeToken = 0;
@@ -670,6 +674,72 @@ class WebAudioBackend implements AudioBackend {
     } catch (e) {
       logAudioError('WebAudioBackend.playSfx', e);
     }
+  }
+
+  // 대사 블립 전용 재생. playSfx랑 거의 같은데 playbackRate를 추가로 받고, 재생한
+  // 소스를 _activeBlipSources에 올려서 stopBlip()이 나중에 즉시 끊을 수 있게 해둠.
+  // 디코딩/재생 어느 쪽에서 실패하든 조용히 넘어감 - 블립 하나 실패했다고 타이핑/대사
+  // 진행이 막히면 안 됨(예: 백그라운드 복귀 직후 context가 아직 안 풀린 경우 등)
+  @override
+  Future<void> playBlip({
+    required String path,
+    required double sfxLevel,
+    required double playbackRate,
+  }) async {
+    if (sfxLevel <= 0) return;
+    web.AudioBuffer buffer;
+    try {
+      buffer = await _sfxBufferFor(path);
+    } catch (e) {
+      return;
+    }
+    try {
+      final web.AudioBufferSourceNode source = _audioContext
+          .createBufferSource();
+      source.buffer = buffer;
+      source.playbackRate.value = playbackRate;
+      final web.GainNode gainNode = _audioContext.createGain();
+      gainNode.gain.setValueAtTime(sfxLevel, _audioContext.currentTime);
+      source.connect(gainNode);
+      gainNode.connect(_audioContext.destination);
+      source.onended = ((web.Event _) {
+        _activeBlipSources.remove(source);
+      }).toJS;
+      _activeBlipSources.add(source);
+      source.start(0);
+    } catch (e) {
+      logAudioError('WebAudioBackend.playBlip', e);
+    }
+  }
+
+  @override
+  void stopBlip() {
+    if (_activeBlipSources.isEmpty) return;
+    // stop()이 onended를 바로 동기적으로 쏘기도 해서, 순회 중 집합이 바뀌는 걸 피하려고
+    // 복사본을 만들어 돈 다음 한 번에 clear함
+    for (final web.AudioBufferSourceNode source in _activeBlipSources.toList()) {
+      try {
+        source.stop();
+        source.disconnect();
+      } catch (_) {
+        // 이미 끝났거나 끊겨있으면 무시 - 어차피 끄려던 거라 실패해도 상관없음
+      }
+    }
+    _activeBlipSources.clear();
+  }
+
+  @override
+  bool get supportsSfxPlaybackRate => true;
+
+  @override
+  void prefetchSfx(String path) {
+    unawaited(
+      _sfxBufferFor(path).catchError((Object e) {
+        // prefetchBgm이랑 같은 이유로 조용히 넘어감 - 실제 재생 시도(playBlip)에서
+        // 다시 에러가 찍히고 거기서 정식으로 처리됨
+        throw e;
+      }),
+    );
   }
 
   @override

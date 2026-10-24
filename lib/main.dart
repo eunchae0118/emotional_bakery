@@ -5,6 +5,7 @@ import 'features/menu/orientation_gate_screen.dart';
 import 'core/services/ios_viewport_patch.dart';
 import 'core/services/ending_unlocks.dart';
 import 'core/services/audio_service.dart';
+import 'core/constants/audio_ids.dart';
 import 'core/services/audio_log.dart';
 import 'core/widgets/audio_diagnostics_overlay.dart';
 
@@ -25,6 +26,12 @@ void main() async {
   // 안 되고 요청만 기억해둠 - 화면 최상위에 깔린 _AudioUnlockGate가 터치마다
   // AudioService.onUserGesture()를 불러주면서 기억해둔 트랙을 재생/복구함
   await AudioService.init();
+
+  // 대사 타자 효과 블립음 - 매 글자마다 쓰이니까 첫 대사가 뜨기 전에 미리 디코딩/준비만
+  // 해둠(재생은 안 함). 여기서 실패해도(에셋 없음 등) 조용히 넘어가고, 첫 블립 재생
+  // 시도 때 다시 시도됨
+  AudioService.prefetchSfx(AudioIds.chaeonBlip);
+  AudioService.prefetchSfx(AudioIds.lillianBlip);
 
   // 가로 화면 고정
   await SystemChrome.setPreferredOrientations([

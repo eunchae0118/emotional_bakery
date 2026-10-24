@@ -246,6 +246,45 @@ class AudioPlayersBackend implements AudioBackend {
     );
   }
 
+  // 대사 블립 전용 재생. audioplayers의 AudioPool.start()는 재생 속도를 받는 파라미터가
+  // 없어서 playbackRate는 그냥 무시함(supportsSfxPlaybackRate가 false라서 호출하는 쪽도
+  // 애초에 흔들린 값을 안 넘겨줌 - 여기선 받아만 두고 씀)
+  @override
+  Future<void> playBlip({
+    required String path,
+    required double sfxLevel,
+    required double playbackRate,
+  }) async {
+    if (sfxLevel <= 0) return;
+    try {
+      final AudioPool pool = await _poolFor(path);
+      await pool.start(volume: sfxLevel);
+    } catch (e) {
+      logAudioError('AudioPlayersBackend.playBlip', e);
+      _sfxPools.remove(path);
+    }
+  }
+
+  // AudioPool은 지금 재생 중인 개별 인스턴스를 밖에서 즉시 멈추는 API가 없음(maxPlayers
+  // 개수만큼 내부적으로 돌려쓸 뿐, 핸들을 안 돌려줌) - 그래서 네이티브에선 못 끊고 그냥
+  // 둠. 블립 길이가 0.1초 미만이라 끝까지 울려도 거슬릴 정도는 아님
+  @override
+  void stopBlip() {}
+
+  @override
+  bool get supportsSfxPlaybackRate => false;
+
+  // AudioPool.createFromAsset가 내부적으로 에셋을 미리 로드해두므로, 재생 전에 한 번
+  // 미리 만들어두면 첫 재생 지연을 줄일 수 있음
+  @override
+  void prefetchSfx(String path) {
+    unawaited(
+      _poolFor(path).catchError((Object e) {
+        throw e;
+      }),
+    );
+  }
+
   // 네이티브 플레이어는 play() 호출 시점에 그때그때 에셋을 읽어서 재생하고, 웹처럼
   // fetch+decodeAudioData 같은 별도의 느린 디코딩 단계가 없어서 미리 당겨둘 게 없음
   @override

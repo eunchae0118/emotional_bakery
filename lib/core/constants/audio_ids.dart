@@ -170,9 +170,19 @@ class AudioIds {
     }
   }
 
+  // 대사 타자 효과 블립 id. 채온/릴리안 말풍선에서 글자가 하나씩 나올 때마다 울림
+  // (scene_dialogue_controller.dart._startTypingEffect 참고). 상수 이름은 다른 곳(speaker
+  // 값 'lillian' 등)이랑 맞춰서 l을 두 번 썼는데, 실제 파일명은 lilian_blip.wav(l 한 번)라
+  // 경로 쪽은 그대로 파일명을 따름 - 오타 아님
+  static const String chaeonBlip = 'chaeon_blip';
+  static const String lillianBlip = 'lillian_blip';
+
   // 효과음 id -> assets/sounds/ 안의 파일 경로('assets/' 뺀 상대 경로).
   // 예: 'button_tap': 'sounds/sfx_button_tap.mp3'
-  static const Map<String, String> sfxClips = {};
+  static const Map<String, String> sfxClips = {
+    chaeonBlip: 'sounds/chaeon_blip.wav',
+    lillianBlip: 'sounds/lilian_blip.wav',
+  };
 
   // 대사 한 줄 넘길 때 울릴 효과음 id. sfxClips에 같은 키로 등록하기 전까지는 조용히 무시됨
   static const String dialogueAdvance = 'dialogue_advance';

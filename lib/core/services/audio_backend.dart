@@ -32,6 +32,30 @@ abstract class AudioBackend {
   // 효과음 1회 재생(동시에 여러 번 불려도 서로 안 끊김)
   Future<void> playSfx({required String path, required double sfxLevel});
 
+  // 대사 타자 효과 블립 전용 재생. playSfx랑 달리 playbackRate(피치 흔들기)를 받고,
+  // stopBlip()으로 "지금 겹쳐 재생 중인 블립들"만 따로 즉시 끊을 수 있어야 해서 일반
+  // playSfx랑 분리함 - BGM/다른 효과음까지 같이 끊기면 안 되니까
+  Future<void> playBlip({
+    required String path,
+    required double sfxLevel,
+    required double playbackRate,
+  });
+
+  // 지금 겹쳐 재생 중인 블립을 전부 즉시 끊음(탭 스킵/타이핑 종료/다음 대사 전환 시 호출).
+  // 재생 중인 게 없으면 아무 일도 안 함
+  void stopBlip();
+
+  // 이 백엔드가 playBlip의 playbackRate를 실제로 반영하는지. 웹(Web Audio API)은
+  // AudioBufferSourceNode.playbackRate로 지원하지만, 네이티브(audioplayers AudioPool)는
+  // start()에 재생 속도를 넘길 방법이 없어서 지원 안 함 - scene_dialogue_controller.dart가
+  // 이 값을 보고 피치를 흔들지 말지 정함
+  bool get supportsSfxPlaybackRate;
+
+  // 곧 재생할 효과음을 미리 디코딩(웹)/풀 생성(네이티브)만 해둠(재생은 안 함). 블립처럼
+  // 대사 시작 전에 반드시 준비돼 있어야 하는 짧은 효과음을 앱 시작 시점에 한 번만
+  // 당겨두는 용도
+  void prefetchSfx(String path);
+
   // 곧 재생할 BGM을 미리 디코딩만 해둠(재생은 안 함) - 챕터 진입 화면에서 다음에 나올
   // 곡을 한 발 먼저 당겨두면, 실제로 playBgm이 불릴 때 디코딩 대기 없이 바로 소리가
   // 남. 웹 백엔드는 디코딩 자체가 시간이 걸려서 의미가 있고, 네이티브 백엔드는 할 일이

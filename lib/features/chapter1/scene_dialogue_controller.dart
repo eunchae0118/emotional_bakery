@@ -1,6 +1,7 @@
 // lib/features/chapter1/scene_dialogue_controller.dart
 
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/models/dialogue_node.dart';
@@ -85,6 +86,41 @@ class SceneDialogueController extends ChangeNotifier {
   int typedCharCount = 0;
   static const Duration _typingInterval = Duration(milliseconds: 50);
 
+  // 타자 효과 블립음 - 글자가 몇 개 드러날 때마다 한 번씩 울릴지. 기본 1(매 글자마다).
+  // 공백/줄바꿈/문장부호는 애초에 안 세니까, 2 이상으로 올리면 "그 문장부호 아닌 글자
+  // 기준" 몇 개마다 한 번으로 더 뜸해짐
+  static const int _blipEveryNChars = 1;
+  // 블립마다 재생 속도를 이 비율만큼 랜덤으로 흔듦(±1%) - 매번 똑같은 음높이로 울리면
+  // 기계적으로 들려서 아주 살짝만 흔듦. 웹 백엔드만 지원함(AudioService.
+  // supportsSfxPlaybackRate 참고)
+  static const double _blipPitchJitterRatio = 0.01;
+  final Random _blipRandom = Random();
+  // 지금 타이핑 중인 노드에서 블립이 날 수 있는(공백/문장부호가 아닌) 글자가 몇 번째
+  // 나왔는지 세는 카운터. _blipEveryNChars 기준으로 "몇 번째마다 울릴지"를 여기로 판단함
+  int _blipQualifyingCharCount = 0;
+  // 지금 타이핑 중인 노드의 전체 텍스트(스팬 이어붙인 것)와 그 말하는 사람의 블립 id.
+  // _startTypingEffect에서 한 번만 계산해두고 매 틱마다 재사용함
+  String _typingFullText = '';
+  String? _typingBlipSfxId;
+
+  // 공백/줄바꿈/문장부호 모음 - 이 글자들에는 블립을 안 울림. 실제 대사 JSON에서 쓰는
+  // ! ( ) , . : ? ~ " 외에 혹시 모를 따옴표/말줄임표/대시 종류도 넉넉하게 넣어둠
+  static const String _blipSilentChars =
+      ' \n\t.,!?~:;()[]{}"\'“”‘’…-–—·';
+
+  // speaker 값 -> 블립 효과음 id. 나레이션이거나 speaker가 비어있거나 알 수 없는 값이면
+  // null을 돌려줘서 그 노드는 블립 자체를 안 냄(_startTypingEffect 참고)
+  static String? _blipSfxIdForSpeaker(String? speaker) {
+    switch (speaker) {
+      case 'chaeon':
+        return AudioIds.chaeonBlip;
+      case 'lillian':
+        return AudioIds.lillianBlip;
+      default:
+        return null;
+    }
+  }
+
   // 말풍선 대기 중인지. line_001/line_002처럼 GIF가 먼저 끝나야 하는 노드에서만 잠깐 false가 됨
   bool bubbleRevealed = true;
   Timer? _bubbleRevealTimer;
@@ -163,6 +199,9 @@ class SceneDialogueController extends ChangeNotifier {
 
   void _enterSceneNode(String? nodeId) {
     _typingTimer?.cancel();
+    // 노드를 넘어가는 모든 경로(탭/AUTO/뒤로가기 전 재진입 등)가 다 여길 거쳐가니까,
+    // 이전 노드에서 겹쳐 울리고 있었을 블립을 여기서 한 번에 끊어줌
+    AudioService.stopBlip();
     _bubbleRevealTimer?.cancel();
     _autoAdvanceTimer?.cancel();
     _autoAdvanceModeTimer?.cancel();
@@ -363,6 +402,9 @@ class SceneDialogueController extends ChangeNotifier {
   void _startTypingEffect(DialogueNode node) {
     final int fullLength = node.spans.fold(0, (sum, s) => sum + s.text.length);
     typedCharCount = 0;
+    _blipQualifyingCharCount = 0;
+    _typingFullText = node.spans.map((s) => s.text).join();
+    _typingBlipSfxId = _blipSfxIdForSpeaker(node.speaker);
     if (fullLength == 0) {
       _emptyNodeHoldElapsed = false;
       _typingTimer = Timer(_emptyNodeMinHold, () {
@@ -374,12 +416,32 @@ class SceneDialogueController extends ChangeNotifier {
     }
     _typingTimer = Timer.periodic(_typingInterval, (timer) {
       typedCharCount++;
+      _maybePlayTypingBlip(_typingFullText[typedCharCount - 1]);
       if (typedCharCount >= fullLength) {
         timer.cancel();
+        AudioService.stopBlip();
         _maybeScheduleAutoAdvance(node);
       }
       _notify();
     });
+  }
+
+  // 방금 드러난 글자 하나를 보고 블립을 울릴지 말지 정함. 말하는 사람이 없거나(나레이션 등)
+  // 공백/문장부호면 조용히 넘어감. _blipEveryNChars 간격 체크는 "블립 날 수 있는 글자"
+  // 기준으로만 셈 - 문장부호가 많은 대사도 그 사이 간격이 일정하게 들리게 하려는 목적
+  void _maybePlayTypingBlip(String justRevealedChar) {
+    final String? sfxId = _typingBlipSfxId;
+    if (sfxId == null) return;
+    if (_blipSilentChars.contains(justRevealedChar)) return;
+    _blipQualifyingCharCount++;
+    if (_blipQualifyingCharCount % _blipEveryNChars != 0) return;
+    final double playbackRate = AudioService.supportsSfxPlaybackRate
+        ? 1.0 + (_blipRandom.nextDouble() * 2 - 1) * _blipPitchJitterRatio
+        : 1.0;
+    // 재생 자체가 실패해도(디코딩 실패, iOS에서 context가 suspended인 채 등) 여기서
+    // 안 잡고 그냥 흘려보냄 - 블립은 연출일 뿐이라 실패해도 타이핑/대사 진행이 막히면
+    // 안 됨. 백엔드(playBlip) 쪽에서 이미 try/catch로 조용히 삼키게 돼있음
+    unawaited(AudioService.playBlip(sfxId, playbackRate: playbackRate));
   }
 
   // AUTO 모드가 켜져 있으면, line 타입 노드의 타이핑이 끝난(또는 탭으로 스킵된) 시점에
@@ -434,6 +496,9 @@ class SceneDialogueController extends ChangeNotifier {
     final int fullLength = node.spans.fold(0, (sum, s) => sum + s.text.length);
     if (typedCharCount < fullLength) {
       _typingTimer?.cancel();
+      // 탭으로 한 번에 다 보여주는 순간 겹쳐 울리고 있었을 블립도 바로 끊음 - 안 그러면
+      // 이미 다 보이는 텍스트에 뒤늦은 블립 소리만 남아서 어색함
+      AudioService.stopBlip();
       typedCharCount = fullLength;
       // 탭으로 스킵해서 전체 텍스트가 한 번에 드러난 것도 "타이핑 끝"으로 쳐서 AUTO 타이머를
       // 걸어줌 - 안 그러면 AUTO 켜진 상태에서 실수로 탭했을 때 자동진행이 멈춰버림
@@ -469,6 +534,7 @@ class SceneDialogueController extends ChangeNotifier {
     if (previousNode == null) return;
 
     _typingTimer?.cancel();
+    AudioService.stopBlip();
     sceneNodeId = previousId;
     lastLineNode = previousNode;
     typedCharCount = previousNode.spans.fold<int>(
@@ -513,6 +579,7 @@ class SceneDialogueController extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _typingTimer?.cancel();
+    AudioService.stopBlip();
     _bubbleRevealTimer?.cancel();
     _autoAdvanceTimer?.cancel();
     _autoAdvanceModeTimer?.cancel();

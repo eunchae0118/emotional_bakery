@@ -36,7 +36,8 @@ const double _lockedChapterNoticeTopRef = 45;
 // 카드 수가 바로 조정됨
 const double kChapterVisibleCardCount = 1.5;
 
-// 완료한 챕터 카드에 얹는 도장 이미지(stamp1~5.png) 크기 - 카드 한 변(thumbnailSize) 대비
+// 완료한 챕터 카드에 얹는 도장 이미지(stamp.png, 모든 챕터 공용) 크기 - 카드 한
+// 변(thumbnailSize) 대비
 // 비율. 55%로 시작했는데 너무 작아서 80%로 올림. 중앙에 Center로 얹기 때문에 1.0 밑으로만
 // 두면 카드 밖으로는 안 삐져나감 - 화면 보면서 조정 예정
 const double kCompletedStampSizeRatio = 0.8;
@@ -44,7 +45,7 @@ const double kCompletedStampSizeRatio = 0.8;
 // 완료한 챕터 카드 썸네일 위에 까는 오버레이의 불투명도(오버레이 색 자체의 alpha).
 // (수정: 원래 흰색 30%였다가 15%로 낮췄었는데, 지금은 색 자체를 검정으로 바꿈 - 자세한
 // 이유는 아래 kCompletedOverlayColor 참고) - 화면 보면서 조정 예정
-const double kCompletedOverlayOpacity = 0.4;
+const double kCompletedOverlayOpacity = 0.6;
 
 // 완료한 챕터 카드 썸네일 위에 까는 오버레이 색. 처음엔 흰색이었는데 블랙으로 바꿔달라는
 // 요청으로 바꿈 - 화면 보면서 조정 예정
@@ -755,7 +756,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                         ),
                       ),
                     ),
-                    // 완료한 챕터 표시. 챕터별 도장 이미지(stamp1~5.png)를 카드 중앙에 얹음.
+                    // 완료한 챕터 표시. 도장 이미지(stamp.png, 챕터 상관없이 전부 이거 하나
+                    // 씀)를 카드 중앙에 얹음.
                     //
                     // (수정: 흰색 오버레이를 ClipRRect(radius 30)로 자르던 걸 뺐음 - ch1~5.png를
                     // 직접 디코딩해서 확인해보니, 둥근 모서리는 코드의 BorderRadius가 아니라
@@ -797,11 +799,11 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                               ),
                             ),
                             Image.asset(
-                              'assets/images/stamp$chapterNumber.png',
+                              'assets/images/stamp.png',
                               width: thumbnailSize * kCompletedStampSizeRatio,
                               height: thumbnailSize * kCompletedStampSizeRatio,
                               // precache는 안 하고 그냥 그리되, 실제로 보이는 크기만큼만
-                              // 디코딩하게 cacheWidth를 줌(원본은 591x591) - devicePixelRatio까지
+                              // 디코딩하게 cacheWidth를 줌(원본은 1182x1182) - devicePixelRatio까지
                               // 반영해서 레티나에서도 안 흐릿하게 나오면서 메모리는 더 안 씀
                               cacheWidth:
                                   (thumbnailSize *

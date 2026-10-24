@@ -138,6 +138,34 @@ class AudioService {
     await _backend.playSfx(path: path, sfxLevel: _volumeForStep(sfxVolume));
   }
 
+  // 대사 타자 효과 블립 전용 재생(scene_dialogue_controller.dart 전용). 일반 playSfx랑
+  // 똑같이 sfxVolume/0단계 무음을 따르고, playbackRate만 추가로 받음 - 호출하는 쪽이
+  // supportsSfxPlaybackRate를 보고 1.0이 아닌 값을 넘길지 말지 정함
+  static Future<void> playBlip(String sfxId, {double playbackRate = 1.0}) async {
+    if (sfxVolume <= 0) return;
+    final String? path = AudioIds.sfxClips[sfxId];
+    if (path == null) return;
+    await _backend.playBlip(
+      path: path,
+      sfxLevel: _volumeForStep(sfxVolume),
+      playbackRate: playbackRate,
+    );
+  }
+
+  // 지금 겹쳐 재생 중인 블립을 전부 즉시 끊음
+  static void stopBlip() => _backend.stopBlip();
+
+  // 이 플랫폼 백엔드가 블립 재생 속도(피치 흔들기)를 실제로 반영하는지
+  static bool get supportsSfxPlaybackRate => _backend.supportsSfxPlaybackRate;
+
+  // 효과음 하나를 미리 디코딩/준비만 해둠(재생 안 함) - 블립처럼 대사 시작 전에 디코딩
+  // 지연 없이 바로 나야 하는 짧은 효과음을 앱 시작 시점에 당겨두는 용도
+  static void prefetchSfx(String sfxId) {
+    final String? path = AudioIds.sfxClips[sfxId];
+    if (path == null) return;
+    _backend.prefetchSfx(path);
+  }
+
   // main.dart의 _AudioUnlockGate가 포인터 이벤트(사용자 제스처)마다 불러줌. 가벼워야 해서
   // 여기선 그냥 백엔드로 그대로 넘기기만 함 - "지금 뭐가 재생되어야 하는지"는 백엔드가
   // playBgm 호출 시점에 이미 자기 내부 장부로 들고 있어서 따로 안 넘겨줘도 됨.

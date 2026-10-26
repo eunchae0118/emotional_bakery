@@ -99,6 +99,7 @@
       "text": "...음악 싫어하신다면서요?",
       "effect": { "temperature": -1 },
       "expression": "assets/images/lillian_thinking2.png",
+      "sfx": "pout",
       "next": "line_002a6"
     },
     "line_002b5": {
@@ -358,6 +359,7 @@
       "speaker": "lillian",
       "text": "...!",
       "expression": "assets/images/lillian_surprise.png",
+      "sfx": "surprise",
       "next": "line_023"
     },
     "line_023": {

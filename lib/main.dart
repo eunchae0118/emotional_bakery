@@ -32,6 +32,21 @@ void main() async {
   // 시도 때 다시 시도됨
   AudioService.prefetchSfx(AudioIds.chaeonBlip);
   AudioService.prefetchSfx(AudioIds.lillianBlip);
+  // 발소리도 동일한 이유로 여기서 미리 준비해둠 - 걸을 때 매번 디코딩하면 안 됨
+  AudioService.prefetchSfx(AudioIds.footstepA);
+  AudioService.prefetchSfx(AudioIds.footstepB);
+  // 계단 발소리도 똑같이 미리 준비해둠
+  AudioService.prefetchSfx(AudioIds.footstepStairsUpA);
+  AudioService.prefetchSfx(AudioIds.footstepStairsUpB);
+  AudioService.prefetchSfx(AudioIds.footstepStairsDownA);
+  AudioService.prefetchSfx(AudioIds.footstepStairsDownB);
+  // 대사 리액션 효과음도 같은 이유로 미리 준비해둠 - 대사 중 처음 울리는 순간 디코딩
+  // 지연이 있으면 안 됨
+  AudioService.prefetchSfx(AudioIds.shock);
+  AudioService.prefetchSfx(AudioIds.surprise);
+  AudioService.prefetchSfx(AudioIds.ovenDing);
+  AudioService.prefetchSfx(AudioIds.confident);
+  AudioService.prefetchSfx(AudioIds.pout);
 
   // 가로 화면 고정
   await SystemChrome.setPreferredOrientations([

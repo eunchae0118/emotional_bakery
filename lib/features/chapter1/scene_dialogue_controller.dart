@@ -105,8 +105,7 @@ class SceneDialogueController extends ChangeNotifier {
 
   // 공백/줄바꿈/문장부호 모음 - 이 글자들에는 블립을 안 울림. 실제 대사 JSON에서 쓰는
   // ! ( ) , . : ? ~ " 외에 혹시 모를 따옴표/말줄임표/대시 종류도 넉넉하게 넣어둠
-  static const String _blipSilentChars =
-      ' \n\t.,!?~:;()[]{}"\'“”‘’…-–—·';
+  static const String _blipSilentChars = ' \n\t.,!?~:;()[]{}"\'“”‘’…-–—·';
 
   // speaker 값 -> 블립 효과음 id. 나레이션이거나 speaker가 비어있거나 알 수 없는 값이면
   // null을 돌려줘서 그 노드는 블립 자체를 안 냄(_startTypingEffect 참고)
@@ -179,7 +178,9 @@ class SceneDialogueController extends ChangeNotifier {
     choiceHistory.clear();
     final List<RecordedChoice> replay = autoReplay ?? const [];
     _replayQueue = List.of(replay);
-    _replayConfirmedTemperature = replay.isNotEmpty ? confirmedTemperature : null;
+    _replayConfirmedTemperature = replay.isNotEmpty
+        ? confirmedTemperature
+        : null;
     _replayConfirmedVars = replay.isNotEmpty ? confirmedVars : null;
     final String start =
         (startNodeId != null && graph.nodes.containsKey(startNodeId))
@@ -223,6 +224,11 @@ class SceneDialogueController extends ChangeNotifier {
       // AudioService.playBgm이 알아서 무시함
       if (node.bgm != null) {
         AudioService.playBgm(node.bgm!);
+      }
+      // 바로 위 bgm이랑 비슷한데, 이건 트랙을 바꾸는 게 아니라 이 줄에 들어서는 순간
+      // 한 번만 재생하는 리액션 효과음임 - 매번 다시 들어와도(뒤로가기 등) 그때마다 다시 울림
+      if (node.sfx != null) {
+        unawaited(AudioService.playSfx(node.sfx!));
       }
       if (node.temperatureEffect != 0) {
         temperature = (temperature + node.temperatureEffect)
@@ -346,6 +352,7 @@ class SceneDialogueController extends ChangeNotifier {
       expression: node.expression,
       chaeonExpression: node.chaeonExpression,
       bgm: node.bgm,
+      sfx: node.sfx,
     );
     graph.nodes[nodeId] = resolvedNode;
     return resolvedNode;

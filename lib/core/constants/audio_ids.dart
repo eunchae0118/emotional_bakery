@@ -177,11 +177,43 @@ class AudioIds {
   static const String chaeonBlip = 'chaeon_blip';
   static const String lillianBlip = 'lillian_blip';
 
+  // 캐릭터 발소리 id(왼발/오른발 번갈아 재생). footstep_player.dart가 걸을 때 이 둘을
+  // 교대로 씀
+  static const String footstepA = 'footstep_a';
+  static const String footstepB = 'footstep_b';
+
+  // 계단 전용 발소리 id. footstepA/B랑 동일하게 왼발/오른발 번갈아 쓰는데, 오르기/
+  // 내려가기 소리가 따로 있어서 footstep_player.dart가 지금 계단 구간이 오르기인지
+  // 내려가기인지에 따라 이 네 개 중 맞는 쌍을 골라 씀
+  static const String footstepStairsUpA = 'footstep_stairs_up_a';
+  static const String footstepStairsUpB = 'footstep_stairs_up_b';
+  static const String footstepStairsDownA = 'footstep_stairs_down_a';
+  static const String footstepStairsDownB = 'footstep_stairs_down_b';
+
+  // 대사 중 특정 줄에서 한 번만 울리는 리액션 효과음 id. dialogue_node.dart의 DialogueNode.sfx
+  // 필드에 아래 값을 그대로 적으면 scene_dialogue_controller.dart가 그 줄에 들어서는 순간 재생함
+  static const String shock = 'shock';
+  static const String surprise = 'surprise';
+  static const String ovenDing = 'ovenDing';
+  static const String confident = 'confident';
+  static const String pout = 'pout';
+
   // 효과음 id -> assets/sounds/ 안의 파일 경로('assets/' 뺀 상대 경로).
   // 예: 'button_tap': 'sounds/sfx_button_tap.mp3'
   static const Map<String, String> sfxClips = {
     chaeonBlip: 'sounds/chaeon_blip.wav',
     lillianBlip: 'sounds/lilian_blip.wav',
+    footstepA: 'sounds/footstep_a.wav',
+    footstepB: 'sounds/footstep_b.wav',
+    footstepStairsUpA: 'sounds/footstep_stairs_up_a.wav',
+    footstepStairsUpB: 'sounds/footstep_stairs_up_b.wav',
+    footstepStairsDownA: 'sounds/footstep_stairs_down_a.wav',
+    footstepStairsDownB: 'sounds/footstep_stairs_down_b.wav',
+    shock: 'sounds/shock.wav',
+    surprise: 'sounds/surprise.wav',
+    ovenDing: 'sounds/oven_ding.wav',
+    confident: 'sounds/confident.wav',
+    pout: 'sounds/pout.wav',
   };
 
   // 대사 한 줄 넘길 때 울릴 효과음 id. sfxClips에 같은 키로 등록하기 전까지는 조용히 무시됨

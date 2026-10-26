@@ -20,9 +20,7 @@ class AudioPlayersBackend implements AudioBackend {
 
   // 지금 아무 곡도 안 흐르고 있다가 처음 소리가 나는 순간 전용 페이드인 길이. 트랙 전환
   // 크로스페이드(바깥에서 넘어오는 fadeDuration)보다 더 길게 잡아서 부드럽게 시작하게 함
-  static const Duration _firstPlayFadeInDuration = Duration(
-    milliseconds: 1500,
-  );
+  static const Duration _firstPlayFadeInDuration = Duration(milliseconds: 1500);
 
   // 루프 이음새 겹침 재생용. AudioIds.loopOverlapTracks에 속한 트랙은 끝나기 이만큼 전에
   // 같은 곡을 처음부터 다른 슬롯에서 틀어서 이 시간 동안 크로스페이드로 겹침
@@ -50,13 +48,7 @@ class AudioPlayersBackend implements AudioBackend {
     required Duration fadeDuration,
   }) async {
     if (_activeBgmTrackId == trackId) return true; // 이미 같은 트랙이 재생 중
-    return _crossfadeToTrack(
-      trackId,
-      path,
-      trackGain,
-      bgmLevel,
-      fadeDuration,
-    );
+    return _crossfadeToTrack(trackId, path, trackGain, bgmLevel, fadeDuration);
   }
 
   Future<bool> _crossfadeToTrack(
@@ -227,8 +219,15 @@ class AudioPlayersBackend implements AudioBackend {
     });
   }
 
+  // playbackRate는 받아만 두고 씀 - AudioPool.start()에 재생 속도를 넘길 방법이 없어서
+  // playBlip이랑 동일한 이유로 그냥 무시함(supportsSfxPlaybackRate가 false라서 호출하는
+  // 쪽도 애초에 흔들린 값을 안 넘겨줌)
   @override
-  Future<void> playSfx({required String path, required double sfxLevel}) async {
+  Future<void> playSfx({
+    required String path,
+    required double sfxLevel,
+    double playbackRate = 1.0,
+  }) async {
     if (sfxLevel <= 0) return;
     try {
       final AudioPool pool = await _poolFor(path);

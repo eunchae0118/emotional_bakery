@@ -30,7 +30,17 @@ abstract class AudioBackend {
   void setBgmLevel(double bgmLevel, double trackGain);
 
   // 효과음 1회 재생(동시에 여러 번 불려도 서로 안 끊김)
-  Future<void> playSfx({required String path, required double sfxLevel});
+  //
+  // (수정: playbackRate(피치 흔들기)를 추가함 - 발소리처럼 매번 살짝 다른 음높이로
+  // 울려야 하는데 playBlip/stopBlip 전용 채널을 쓰면 안 되는 효과음이 생겨서 여기 붙임.
+  // stopBlip()은 여전히 playBlip으로 재생한 것만 끊고 playSfx로 재생한 건 전혀 안
+  // 건드림 - 기본값 1.0(원래 속도)이라 기존 호출부는 안 바뀜. playBlip이랑 동일하게
+  // 웹 백엔드만 실제로 반영함(supportsSfxPlaybackRate 참고)
+  Future<void> playSfx({
+    required String path,
+    required double sfxLevel,
+    double playbackRate = 1.0,
+  });
 
   // 대사 타자 효과 블립 전용 재생. playSfx랑 달리 playbackRate(피치 흔들기)를 받고,
   // stopBlip()으로 "지금 겹쳐 재생 중인 블립들"만 따로 즉시 끊을 수 있어야 해서 일반

@@ -6,6 +6,8 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:emotional_bakery/core/constants/audio_ids.dart';
+import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
 
@@ -230,6 +232,13 @@ class _BreadMakingSceneState extends State<BreadMakingScene> {
                   height: rH(_dropZoneHeight),
                   child: DragTarget<int>(
                     onAcceptWithDetails: (details) {
+                      // 지금 넣는 게 마지막 재료면 완성 반죽 이미지가 바로 다음 build에서
+                      // 뜨니까, setState 부르기 전에 오븐 소리를 먼저 울림(이미지보다 소리가
+                      // 먼저 나도 괜찮음) - 챕터2/3/5가 다 이 위젯 하나를 재사용해서, 여기
+                      // 한 곳만 고치면 세 경로 모두 똑같이 적용됨
+                      if (_consumedIngredients.length + 1 >= totalIngredients) {
+                        unawaited(AudioService.playSfx(AudioIds.ovenDing));
+                      }
                       setState(() => _consumedIngredients.add(details.data));
                       // 방금 넣은 게 마지막 재료였으면, 구름 치우기 게임이랑 동일한 대기
                       // 시간(800ms) 뒤 자동으로 onComplete를 불러 다음으로 넘어감

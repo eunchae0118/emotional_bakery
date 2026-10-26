@@ -85,6 +85,10 @@ class DialogueNode {
   // 때만 의미 있고, 없으면(필드 자체가 없는 기존 파일들) 곡을 안 바꿈 - scene_dialogue_
   // controller.dart의 _enterSceneNode에서 사용
   final String? bgm;
+  // 이 노드에 들어서는 순간 한 번 울릴 리액션 효과음 id(audio_ids.dart의 id 문자열).
+  // type == 'line'일 때만 의미 있고, 없으면 아무 소리도 안 남 - scene_dialogue_
+  // controller.dart의 _enterSceneNode에서 사용
+  final String? sfx;
 
   DialogueNode({
     required this.id,
@@ -98,6 +102,7 @@ class DialogueNode {
     this.expression,
     this.chaeonExpression,
     this.bgm,
+    this.sfx,
   });
 
   factory DialogueNode.fromJson(String id, Map<String, dynamic> json) {
@@ -174,6 +179,7 @@ class DialogueNode {
       expression: expression,
       chaeonExpression: chaeonExpression,
       bgm: json['bgm'] as String?,
+      sfx: json['sfx'] as String?,
     );
   }
 }

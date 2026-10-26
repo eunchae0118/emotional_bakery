@@ -112,9 +112,7 @@ class AudioService {
   }
 
   // 재생 중인 BGM을 멈춤(백엔드가 fadeOut 동안 서서히 줄임). 재생 중이 아니면 아무것도 안 함
-  static Future<void> stopBgm({
-    Duration fadeOut = _crossfadeDuration,
-  }) async {
+  static Future<void> stopBgm({Duration fadeOut = _crossfadeDuration}) async {
     if (_activeBgmTrackId == null) return;
     _activeBgmTrackId = null;
     _pendingBgmTrackId = null;
@@ -131,17 +129,32 @@ class AudioService {
   }
 
   // 효과음 하나 재생. 동시에 여러 번 불려도(예: 연속 탭) 서로 안 끊기고 겹쳐서 남
-  static Future<void> playSfx(String sfxId) async {
+  //
+  // (수정: playbackRate(피치 흔들기)랑 volumeMultiplier(이 효과음만 따로 음량 배수 주기,
+  // 예: 발소리를 블립보다 살짝 작게)를 추가함. 둘 다 기본값이 1.0이라 기존 호출부(그냥
+  // sfxId 하나만 넘기던 곳들)는 동작이 안 바뀜
+  static Future<void> playSfx(
+    String sfxId, {
+    double playbackRate = 1.0,
+    double volumeMultiplier = 1.0,
+  }) async {
     if (sfxVolume <= 0) return; // 0단계(무음)면 재생 시도 자체를 안 함
     final String? path = AudioIds.sfxClips[sfxId];
     if (path == null) return; // 등록 안 된(아직 음원이 없는) id는 조용히 무시
-    await _backend.playSfx(path: path, sfxLevel: _volumeForStep(sfxVolume));
+    await _backend.playSfx(
+      path: path,
+      sfxLevel: _volumeForStep(sfxVolume) * volumeMultiplier,
+      playbackRate: playbackRate,
+    );
   }
 
   // 대사 타자 효과 블립 전용 재생(scene_dialogue_controller.dart 전용). 일반 playSfx랑
   // 똑같이 sfxVolume/0단계 무음을 따르고, playbackRate만 추가로 받음 - 호출하는 쪽이
   // supportsSfxPlaybackRate를 보고 1.0이 아닌 값을 넘길지 말지 정함
-  static Future<void> playBlip(String sfxId, {double playbackRate = 1.0}) async {
+  static Future<void> playBlip(
+    String sfxId, {
+    double playbackRate = 1.0,
+  }) async {
     if (sfxVolume <= 0) return;
     final String? path = AudioIds.sfxClips[sfxId];
     if (path == null) return;

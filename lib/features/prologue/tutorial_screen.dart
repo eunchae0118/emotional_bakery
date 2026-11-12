@@ -165,8 +165,11 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   // 캐릭터가 실제로 움직인 만큼만 발소리를 냄(dpad를 눌러도 벽에 막혀서 제자리면 안 남) -
   // footstep_player.dart 참고
+  // 길거리(street_theme) BGM이 커서 기본 음량 배수로는 발소리가 잘 안 들려서, 여기서만
+  // kStreetFootstepVolumeMultiplier를 넘김
   late final FootstepPlayer _footstepPlayer = FootstepPlayer(
     currentX: () => _playerX,
+    volumeMultiplier: kStreetFootstepVolumeMultiplier,
   );
 
   // 연속 이동 타이머 및 캐릭터 상태 관리 변수

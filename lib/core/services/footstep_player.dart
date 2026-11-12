@@ -63,6 +63,14 @@ const double kFootstepPitchJitterRatio = 0.02;
 // 단계가 최대(5단계=1.0)여도 1.0*0.85=0.85라 1.0을 안 넘음) - 화면 보면서 조정 예정
 const double kFootstepVolumeMultiplier = 0.85;
 
+// 길거리 계열 화면(tutorial_screen.dart 골목길, game_play_screen.dart 챕터1 빵집 앞
+// 바깥) 전용 발소리 음량 배수. 길거리 BGM(street_theme/pro_theme/main_theme)이 실내
+// BGM(주방/방)보다 체감상 커서 기본 배수(kFootstepVolumeMultiplier)로는 발소리가 거의
+// 안 들린다는 피드백이 있었음 - 정확한 dB 차이는 측정 도구가 없어서 확인 못 했고, 일단
+// 기본값보다 확실히 크게 들리게 올려둠. 전역 kFootstepVolumeMultiplier는 그대로 두고
+// 길거리 화면에서 FootstepPlayer를 생성할 때만 이 값을 따로 넘겨줌 - 화면 보면서 조정 예정
+const double kStreetFootstepVolumeMultiplier = 1.4;
+
 // 이 값보다 적게 움직였으면 "제자리"로 치고 그 틱은 "이동 중"이 아니라고 판정함 -
 // 부동소수점 오차로 인한 거짓 양성을 막는 최소 임계값. 실제 이동 틱 하나(40ms에 9px,
 // kChaeonKitchenSpeed 기준)보다 훨씬 작은 값이라 정상적인 이동은 전부 잡아내고,
@@ -89,12 +97,20 @@ const Duration kFootstepWarmupRef = Duration(milliseconds: 400);
 enum FootstepSurface { flat, stairsUp, stairsDown }
 
 class FootstepPlayer {
-  FootstepPlayer({required this.currentX});
+  FootstepPlayer({
+    required this.currentX,
+    this.volumeMultiplier = kFootstepVolumeMultiplier,
+  });
 
   // 지금 캐릭터의 x좌표를 읽어오는 콜백. 화면마다 다른 필드(_chaeonX, _playerX,
   // game.chaeon?.position.x 등)를 그대로 넘겨주면 됨 - 이 클래스는 그 값이 "자기가
   // 마지막으로 봤던 값"과 다른지만 비교함
   final double Function() currentX;
+
+  // 이 인스턴스가 쓸 발소리 음량 배수. 기본은 전역 kFootstepVolumeMultiplier고, 길거리
+  // 화면처럼 유독 안 들리는 곳에서만 생성 시점에 kStreetFootstepVolumeMultiplier 같은
+  // 값을 따로 넘기면 그 인스턴스만 더 크게 남
+  final double volumeMultiplier;
 
   Timer? _timer;
   double? _lastX;
@@ -227,7 +243,7 @@ class FootstepPlayer {
       AudioService.playSfx(
         sfxId,
         playbackRate: playbackRate,
-        volumeMultiplier: kFootstepVolumeMultiplier,
+        volumeMultiplier: volumeMultiplier,
       ),
     );
   }

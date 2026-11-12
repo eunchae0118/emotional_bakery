@@ -82,6 +82,13 @@ const Duration _memoryBlackoutFadeInDuration = Duration(milliseconds: 300);
 const Duration _memoryBlackoutHoldDuration = Duration(seconds: 2);
 const Duration _memoryBlackoutFadeOutDuration = Duration(milliseconds: 300);
 
+// 탭하면 닫히는 팝업(재료 획득, 완성된 빵 4종)이 뜬 직후 이 시간 동안은 탭해도 안 닫힘 -
+// 뜨자마자 연타하면 이미지를 보지도 못하고 넘어가 버리는 문제 때문에 넣음. 원래 재료
+// 팝업 하나만을 위한 상수(_ingredientPopupTapLockDuration)였는데, 완성된 빵 팝업
+// 4개(_showBreadPopup/_showChapter3BreadPopup/_showChapter4BreadPopup/
+// _showChapter5BreadPopup)에도 똑같이 적용하면서 이름을 일반화함
+const Duration _popupTapLockDuration = Duration(milliseconds: 700);
+
 // 챕터3 일기장 퍼즐 시퀀스(chapter3_after_first_game.json 끝난 뒤) 단계별 대기 시간.
 // chapter3_making_bread 암전이랑 별개로 여기 전용 상수로 분리함
 // 이 값을 조정하면 chapter3_after_first_game.json 대화가 끝나고 화면이 암전됐다가
@@ -295,6 +302,19 @@ class _KitchenScreenState extends State<KitchenScreen>
   // chapter2_ingredient_quiz.json의 재료 이름 대사(line_ingredient_reveal)가 끝나고 탭하면 뜨는,
   // 선택한 재료 이미지 팝업. 탭하면 닫힘
   bool _showIngredientPopup = false;
+  // 탭하면 닫히는 팝업(재료 획득 + 완성된 빵 4종)이 뜬 시각. 팝업을 true로 바꿀 때마다
+  // 같이 찍어두고, 탭이 들어오면 이 시각부터 _popupTapLockDuration이 지났는지만 비교함 -
+  // Timer를 따로 안 두니까 dispose에서 취소할 것도 없이 안전함.
+  // 필드 하나를 이 5개 팝업이 같이 씀 - widget.mode별로 챕터2/3/4/5 흐름이 서로 갈려서
+  // 한 KitchenScreen 인스턴스에서 이 중 두 개가 동시에 true가 되는 경로가 없음(각
+  // 팝업도 코드 전체에서 true로 바뀌는 지점이 한 곳씩뿐이라 겹칠 일도 없음) - 그래서
+  // 팝업마다 따로 필드를 두지 않고 하나로 단순화함
+  DateTime? _popupShownAt;
+  // 재료 팝업에 쓸 이미지(1024x1024, 500~800KB대)를 이미 precache 시도했는지. q1/q2/q3가
+  // 다 모이는 순간(choice_q3 선택 직후) 딱 한 번만 시도하면 되니까 플래그로 막음 - 안
+  // 그러면 선택지 고를 때마다 notifyListeners가 _onSceneControllerChanged를 불러서
+  // 매번 다시 시도하게 됨
+  bool _hasPrecachedIngredientImage = false;
   // 재료 팝업 닫고 chapter2_after_quiz.json을 이미 이어붙였는지
   bool _hasLoadedAfterQuizDialogue = false;
   // chapter2_after_quiz.json 대화가 끝나면 뜨는 빵만들기 미니게임
@@ -437,13 +457,20 @@ class _KitchenScreenState extends State<KitchenScreen>
           } else if (!_hasLoadedAfterQuizDialogue) {
             // line_ingredient_reveal 대사가 끝나면(next: null) 여기로 옴.
             // 선택한 재료 이미지 팝업을 띄우고, 팝업을 닫으면 다음 대사(after_quiz)로 이어짐
+            _popupShownAt = DateTime.now();
             setState(() => _showIngredientPopup = true);
           } else if (_hasLoadedMakingBreadDialogue &&
               !_hasLoadedAfterFirstGameDialogue) {
             // chapter2_making_bread.json이 끝나면(line_001) 여기로 옴. 암전 잠깐 띄웠다가
             // 재점등 후 salt_bread 팝업을 띄움. 실제 처리는 _startMemoryBlackout에서 함
             _startMemoryBlackout(
-              onComplete: () => setState(() => _showBreadPopup = true),
+              // 화면이 완전히 까매진 순간(hold 시작 시점)에 오븐 알림음 한 번 재생.
+              // 빵만들기 미니게임 쪽(bread_making_scene.dart)에 있던 호출을 여기로 옮김
+              onFullyBlack: () => AudioService.playSfx(AudioIds.ovenDing),
+              onComplete: () {
+                _popupShownAt = DateTime.now();
+                setState(() => _showBreadPopup = true);
+              },
             );
           } else if (!_hasLoadedAfterFirstGameDialogue) {
             // chapter2_after_quiz.json이 끝나면(line_021) 여기로 옴. 빵만들기 미니게임 시작.
@@ -861,7 +888,42 @@ class _KitchenScreenState extends State<KitchenScreen>
   }
 
   void _onSceneControllerChanged() {
+    _maybePrecacheIngredientImage();
     if (mounted) setState(() {});
+  }
+
+  // 탭하면 닫히는 팝업(재료 획득 + 완성된 빵 4종) 공통 잠금 체크. _popupShownAt을 안
+  // 찍어뒀으면(이론상 없음) 당연히 안 잠긴 걸로 치고, 찍혀있으면 그로부터
+  // _popupTapLockDuration이 지났는지만 봄. 각 팝업 onTap 맨 앞에서 이게 true면 그냥
+  // return해서 탭을 씹음
+  bool _isPopupTapLocked() {
+    final DateTime? shownAt = _popupShownAt;
+    return shownAt != null &&
+        DateTime.now().difference(shownAt) < _popupTapLockDuration;
+  }
+
+  // q1/q2/q3가 다 모이는 시점(choice_q3 선택 직후)에 재료 팝업 이미지를 미리 당겨둠.
+  // line_ingredient_reveal 대사 두 줄을 더 보고 나서야 팝업이 뜨니까, 그 사이 시간 동안
+  // 디코딩이 끝나 있으면 팝업이 뜨자마자 바로 보임. q1/q2/q3 조합에 해당하는 이미지 딱
+  // 하나만(27가지 조합이지만 실제 이미지는 9종류뿐) 당기는 거라 메모리 부담도 작음 -
+  // 가능한 조합 9개를 전부 미리 당기는 것도 생각해봤는데, 이미 답이 정해진 뒤라 그럴
+  // 필요가 없고(필요한 거 하나만 정확히 알 수 있음), 쓸데없이 8개를 더 당겨서 아이폰
+  // 메모리를 낭비할 이유도 없음
+  void _maybePrecacheIngredientImage() {
+    if (_hasPrecachedIngredientImage) return;
+    if (!mounted) return;
+    if (widget.mode != KitchenScreenMode.chapter2Start) return;
+    final String? imagePath = StoryState.resolveIngredientImage();
+    if (StoryState.vars['q1'] == null ||
+        StoryState.vars['q2'] == null ||
+        StoryState.vars['q3'] == null ||
+        imagePath == null) {
+      return;
+    }
+    _hasPrecachedIngredientImage = true;
+    // precache 자체가 실패해도(네트워크 에러 등) 여기서 막지 않고 조용히 넘어감 - 실패하면
+    // 그냥 팝업이 뜰 때 Image.asset이 그 자리에서 다시 디코딩할 뿐, 대사 진행이 막히면 안 됨
+    precacheImage(AssetImage(imagePath), context).catchError((Object _) {});
   }
 
   // 시계 맞추기 미니게임이 끝나면 chaeon_emotion_0to20.gif를 3초간 보여준 뒤,
@@ -1703,6 +1765,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    // 뜬 지 얼마 안 됐으면 탭을 그냥 무시함 - 연타로 재료 이미지를 보지도
+                    // 못하고 넘어가는 걸 막으려는 거라, 이미지/배경 같은 연출은 그대로 두고
+                    // 탭만 씹음
+                    if (_isPopupTapLocked()) return;
                     setState(() => _showIngredientPopup = false);
                     _hasLoadedAfterQuizDialogue = true;
                     _sceneController.loadDialogue(
@@ -1782,6 +1848,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    // 뜬 지 얼마 안 됐으면 탭을 그냥 무시함 - 연타로 빵 이미지를 보지도
+                    // 못하고 넘어가는 걸 막으려는 거라, 이미지/배경 같은 연출은 그대로 두고
+                    // 탭만 씹음
+                    if (_isPopupTapLocked()) return;
                     setState(() => _showBreadPopup = false);
                     _hasLoadedAfterFirstGameDialogue = true;
                     _sceneController.loadDialogue(
@@ -1867,10 +1937,15 @@ class _KitchenScreenState extends State<KitchenScreen>
                     // 까매진 뒤(onFullyBlack)에야 끔. 그래야 미니게임 -> 주방 화면 전환이
                     // 암전에 가려져서 안 보임
                     _startMemoryBlackout(
-                      onFullyBlack: () =>
-                          setState(() => _showChapter3BreadMakingGame = false),
-                      onComplete: () =>
-                          setState(() => _showChapter3BreadPopup = true),
+                      onFullyBlack: () {
+                        setState(() => _showChapter3BreadMakingGame = false);
+                        // 화면이 완전히 까매진 순간(hold 시작 시점)에 오븐 알림음 한 번 재생
+                        AudioService.playSfx(AudioIds.ovenDing);
+                      },
+                      onComplete: () {
+                        _popupShownAt = DateTime.now();
+                        setState(() => _showChapter3BreadPopup = true);
+                      },
                     );
                   },
                 ),
@@ -1885,6 +1960,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    // 뜬 지 얼마 안 됐으면 탭을 그냥 무시함 - 연타로 빵 이미지를 보지도
+                    // 못하고 넘어가는 걸 막으려는 거라, 이미지/배경 같은 연출은 그대로 두고
+                    // 탭만 씹음
+                    if (_isPopupTapLocked()) return;
                     setState(() => _showChapter3BreadPopup = false);
                     _hasLoadedChapter3AfterFirstGameDialogue = true;
                     _sceneController.loadDialogue(
@@ -2168,6 +2247,7 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: DialogueOverlay(
                   data: chapter4MakingBreadCutsceneData,
                   onComplete: () {
+                    _popupShownAt = DateTime.now();
                     setState(() {
                       _showChapter4MakingBreadCutscene = false;
                       _showChapter4BreadPopup = true;
@@ -2185,6 +2265,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    // 뜬 지 얼마 안 됐으면 탭을 그냥 무시함 - 연타로 빵 이미지를 보지도
+                    // 못하고 넘어가는 걸 막으려는 거라, 이미지/배경 같은 연출은 그대로 두고
+                    // 탭만 씹음
+                    if (_isPopupTapLocked()) return;
                     setState(() => _showChapter4BreadPopup = false);
                     _hasLoadedChapter4AfterMaking = true;
                     _sceneController.loadDialogue(
@@ -2242,10 +2326,15 @@ class _KitchenScreenState extends State<KitchenScreen>
                     // -> 주방 화면 전환이 암전에 가려져서 안 보임(예전엔 이 암전이 빠져있어서
                     // 미니게임 성공 화면에서 주방으로 바로 컷 전환되던 버그가 있었음)
                     _startMemoryBlackout(
-                      onFullyBlack: () =>
-                          setState(() => _showChapter5BreadMakingGame = false),
-                      onComplete: () =>
-                          setState(() => _showChapter5BreadPopup = true),
+                      onFullyBlack: () {
+                        setState(() => _showChapter5BreadMakingGame = false);
+                        // 화면이 완전히 까매진 순간(hold 시작 시점)에 오븐 알림음 한 번 재생
+                        AudioService.playSfx(AudioIds.ovenDing);
+                      },
+                      onComplete: () {
+                        _popupShownAt = DateTime.now();
+                        setState(() => _showChapter5BreadPopup = true);
+                      },
                     );
                   },
                 ),
@@ -2259,6 +2348,10 @@ class _KitchenScreenState extends State<KitchenScreen>
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    // 뜬 지 얼마 안 됐으면 탭을 그냥 무시함 - 연타로 빵 이미지를 보지도
+                    // 못하고 넘어가는 걸 막으려는 거라, 이미지/배경 같은 연출은 그대로 두고
+                    // 탭만 씹음
+                    if (_isPopupTapLocked()) return;
                     setState(() => _showChapter5BreadPopup = false);
                     _hasLoadedChapter5Eat = true;
                     _sceneController.loadDialogue(

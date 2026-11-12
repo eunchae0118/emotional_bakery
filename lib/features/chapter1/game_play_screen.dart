@@ -126,8 +126,12 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   // 중엔 chaeon.position.x가 멈춰있고 대신 _chaeonStairsDescentAnimation이 움직이는데,
   // 그 경우까지 같은 FootstepPlayer 하나로 같이 처리하려고 분기가 필요해져서 그럼. 평지일
   // 때 동작은 그대로임 - 릴리안 쪽(_currentLillianXForFootstep)이랑 같은 패턴)
+  // 이 화면은 챕터1 빵집 앞(길거리) 장면이라 BGM(pro_theme/main_theme)이 커서 기본 음량
+  // 배수로는 발소리가 잘 안 들림 - tutorial_screen.dart(골목길)랑 동일하게
+  // kStreetFootstepVolumeMultiplier를 씀
   late final FootstepPlayer _footstepPlayer = FootstepPlayer(
     currentX: _currentChaeonXForFootstep,
+    volumeMultiplier: kStreetFootstepVolumeMultiplier,
   );
 
   // 릴리안이 걸어서 등장하는 연출(_triggerLillianWalk/_triggerLillianStairsEntrance)에도
@@ -135,6 +139,7 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   // 넘겨서 FootstepPlayer를 재사용함(새 로직 없이 콜백만 다르게 연결)
   late final FootstepPlayer _lillianFootstepPlayer = FootstepPlayer(
     currentX: _currentLillianXForFootstep,
+    volumeMultiplier: kStreetFootstepVolumeMultiplier,
   );
 
   bool _isDialogueActive = false;

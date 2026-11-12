@@ -19,5 +19,5 @@ const List<Map<String, String>> chapter5EndingHappyData = [
   {"text": "그러던 어느 날 밤, 꿈에서 엄마를 다시 만나게 되었어요.", "image": "endig_happy_5.png"},
   {"text": "채온은 엄마를 향해 걸어갔어요. 그리고 환하게 웃어 보였어요.", "image": "endig_happy_6.png"},
   {"text": "눈물이 흘렀지만, 슬픈 눈물이 아니었어요.", "image": "endig_happy_7.png"},
-  {"text": "채온은 비로소 모든 감정을 되찾게 되었어요.", "image": "endig_happy_8.png"},
+  {"text": "채온은 비로소 모든 감정을 되찾게 되었어요.", "image": "endig_happy_7.png"},
 ];

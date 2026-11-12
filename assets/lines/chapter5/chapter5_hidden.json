@@ -44,6 +44,7 @@
       "speaker": "lillian",
       "text": "그렇다면 엣헴! 제가 도와줄게요.",
       "chaeonExpression": "assets/images/chaeon_100.gif",
+      "sfx": "surprise",
       "next": "null"
     }
   }

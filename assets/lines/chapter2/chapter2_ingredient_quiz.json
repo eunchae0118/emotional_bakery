@@ -95,6 +95,7 @@
       "type": "line",
       "speaker": "chaeon",
       "text": "..................?",
+      "sfx": "surprise",
       "next": "line_q2_intro"
     },
     "line_q2_intro": {

@@ -654,7 +654,11 @@ class WebAudioBackend implements AudioBackend {
   }
 
   @override
-  Future<void> playSfx({required String path, required double sfxLevel}) async {
+  Future<void> playSfx({
+    required String path,
+    required double sfxLevel,
+    double playbackRate = 1.0,
+  }) async {
     if (sfxLevel <= 0) return;
     web.AudioBuffer buffer;
     try {
@@ -666,6 +670,10 @@ class WebAudioBackend implements AudioBackend {
       final web.AudioBufferSourceNode source = _audioContext
           .createBufferSource();
       source.buffer = buffer;
+      // playBlip이랑 동일하게 AudioBufferSourceNode.playbackRate로 피치를 흔듦 -
+      // stopBlip() 추적 대상(_activeBlipSources)에는 안 넣어서, playBlip이 재생한 것만
+      // 끊고 여기서 재생한 건 전혀 안 건드림
+      source.playbackRate.value = playbackRate;
       final web.GainNode gainNode = _audioContext.createGain();
       gainNode.gain.setValueAtTime(sfxLevel, _audioContext.currentTime);
       source.connect(gainNode);
@@ -717,7 +725,8 @@ class WebAudioBackend implements AudioBackend {
     if (_activeBlipSources.isEmpty) return;
     // stop()이 onended를 바로 동기적으로 쏘기도 해서, 순회 중 집합이 바뀌는 걸 피하려고
     // 복사본을 만들어 돈 다음 한 번에 clear함
-    for (final web.AudioBufferSourceNode source in _activeBlipSources.toList()) {
+    for (final web.AudioBufferSourceNode source
+        in _activeBlipSources.toList()) {
       try {
         source.stop();
         source.disconnect();

@@ -12,6 +12,7 @@ import 'package:emotional_bakery/core/models/interaction_model.dart';
 import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/ending_unlocks.dart';
+import 'package:emotional_bakery/core/services/footstep_player.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
@@ -59,6 +60,21 @@ const Duration _moveTickInterval = Duration(milliseconds: 40);
 const Offset _stairsAscentStart = Offset(60, 220);
 const Offset _stairsAscentEnd = Offset(-120, 154);
 const Duration _stairsAscentDuration = Duration(milliseconds: 700);
+// 계단 다 오르고 챕터4 방으로 넘어갈 때(push 분기) fadeThroughBlackRoute에 넘기는
+// fadeOutDuration/holdDuration/fadeInDuration(400+1200+500)을 합친 값임. 암전이 끝날
+// 때까지 계단 발소리를 이어주는 용도로만 씀 - 저 세 값이 바뀌면 이 숫자도 같이 맞춰줘야 함
+const Duration _stairsAscentBlackScreenDuration = Duration(milliseconds: 2100);
+// 계단 다 오르고 Navigator.pop으로 돌아갈 때(pop 분기) 쓰는 값. pop도 fadeThroughBlackRoute가
+// reverseTransitionDuration을 push 때랑 똑같은 총 길이로 잡아두고 있어서(shared_ui.dart
+// 참고), push 들어올 때 썼던 암전 길이를 거꾸로 그대로 재생하면서 화면이 똑같이 검게
+// 덮임 - 겉보기엔 암전이 없을 거라 생각했는데 실제로는 있었음. 이 화면에 들어오는 대부분의
+// 경로(game_play_screen.dart/chapter_select_screen.dart)가 다 fadeThroughBlackRoute
+// 기본값(150+800+300)으로 push해서 여기 오니까 그 기본값을 그대로 씀 - choice_screen.dart의
+// "이어하기"처럼 MaterialPageRoute로 들어온 드문 경우엔 실제 전환이 더 빨리 끝나면서
+// dispose()가 먼저 불려 타이머가 취소되니 소리가 더 일찍 끊길 뿐, 남거나 새는 일은 없음
+const Duration _stairsAscentPopBlackScreenDuration = Duration(
+  milliseconds: 1250,
+);
 
 // chapter2_making_bread.json 끝나고 암전 페이드인/유지/페이드아웃 타이밍.
 // 유지 시간은 임시값, 나중에 실제 연출 보면서 조정 예정
@@ -156,6 +172,16 @@ class _KitchenScreenState extends State<KitchenScreen>
   double _chaeonX = kChaeonKitchenStartX;
   String _chaeonState = 'idle';
   bool _isChaeonFacingLeft = false;
+
+  // 채온이가 실제로 움직인 만큼만 발소리를 냄(dpad를 눌러도 벽에 막혀서 제자리면 안 남) -
+  // footstep_player.dart 참고
+  //
+  // (수정: currentX를 인라인 람다 대신 _currentChaeonXForFootstep으로 뺐음 - 계단 오르는
+  // 중엔 _chaeonX가 멈춰있고 대신 _stairsUpAnimation이 움직이는데, 그 경우까지 같은
+  // FootstepPlayer 하나로 같이 처리하려고 분기가 필요해져서 그럼. 평지일 때 동작은 그대로임)
+  late final FootstepPlayer _footstepPlayer = FootstepPlayer(
+    currentX: _currentChaeonXForFootstep,
+  );
 
   Timer? _moveTimer;
   // 대사 트리거 이후로는 이동 잠금 (dpad도 같이 숨김)
@@ -286,6 +312,9 @@ class _KitchenScreenState extends State<KitchenScreen>
   bool _showMemoryBlackout = false;
   double _memoryBlackoutOpacity = 0.0;
   Timer? _memoryBlackoutTimer;
+  // 계단 오르기 애니메이션 끝나고 암전 구간 동안 계단 발소리를 억지로 이어줄 때 쓰는
+  // 타이머(챕터4 방으로 넘어가는 push 분기에서만 씀). 암전이 끝나는 시점에 forceWalking을 꺼줌
+  Timer? _stairsAscentForceWalkingTimer;
   // chaeon_0_eat.gif 노출이 끝나면 뜨는 시계 맞추기 미니게임. 끝나면(onComplete) 임시 종료 화면으로 넘어감
   bool _showClockMinigame = false;
   // 시계 맞추기 미니게임이 끝나면, chapter2_after_second_game.json을 로드하기 전에
@@ -326,6 +355,7 @@ class _KitchenScreenState extends State<KitchenScreen>
     if (chapterNumber != null) {
       AudioService.playBgm(AudioIds.themeForChapter(chapterNumber));
     }
+    _footstepPlayer.start();
     _stairsUpController =
         AnimationController(vsync: this, duration: _stairsAscentDuration)
           ..addListener(() {
@@ -334,6 +364,19 @@ class _KitchenScreenState extends State<KitchenScreen>
     _stairsUpController.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
         if (_pendingChapter4RoomExit) {
+          // 계단 다 올라와도 화면이 검게 덮이는 동안은 계단 소리가 계속 이어지는
+          // 느낌을 주려고, 좌표 체크 없이 강제로 걷는 중으로 침(surface는 stairsUp
+          // 그대로 유지). 암전이 끝나는 시점(바로 아래 fadeOutDuration+holdDuration+
+          // fadeInDuration 합)에 맞춰서 꺼줌
+          _footstepPlayer.setForceWalking(true);
+          _stairsAscentForceWalkingTimer?.cancel();
+          _stairsAscentForceWalkingTimer = Timer(
+            _stairsAscentBlackScreenDuration,
+            () {
+              _footstepPlayer.setForceWalking(false);
+              _footstepPlayer.setSurface(FootstepSurface.flat);
+            },
+          );
           Navigator.push(
             context,
             fadeThroughBlackRoute(
@@ -352,6 +395,19 @@ class _KitchenScreenState extends State<KitchenScreen>
             ),
           );
         } else {
+          // pop도 push 때 썼던 fadeThroughBlackRoute가 reverseTransitionDuration을
+          // 똑같이 잡아둬서 암전이 똑같이 한 번 더 생김(위 _stairsAscentPopBlackScreenDuration
+          // 주석 참고) - push 분기랑 똑같은 이유로 여기서도 좌표 체크 없이 강제로 걷는
+          // 중으로 쳐서 암전이 끝날 때까지 계단 소리를 이어줌
+          _footstepPlayer.setForceWalking(true);
+          _stairsAscentForceWalkingTimer?.cancel();
+          _stairsAscentForceWalkingTimer = Timer(
+            _stairsAscentPopBlackScreenDuration,
+            () {
+              _footstepPlayer.setForceWalking(false);
+              _footstepPlayer.setSurface(FootstepSurface.flat);
+            },
+          );
           Navigator.pop(context);
         }
       }
@@ -1033,6 +1089,8 @@ class _KitchenScreenState extends State<KitchenScreen>
 
   @override
   void dispose() {
+    _footstepPlayer.stop();
+    _stairsAscentForceWalkingTimer?.cancel();
     _moveTimer?.cancel();
     _chaeonEatingTimer?.cancel();
     _chaeonEmotion0to20Timer?.cancel();
@@ -1048,6 +1106,20 @@ class _KitchenScreenState extends State<KitchenScreen>
     _sceneController.removeListener(_onSceneControllerChanged);
     _sceneController.dispose();
     super.dispose();
+  }
+
+  // _footstepPlayer가 40ms마다 이 값을 읽음. 계단을 오르는 중엔 _chaeonX가 멈춰있고
+  // (아래 _triggerChaeonStairsAscent 참고) 대신 _stairsUpAnimation이 움직이니까, 그
+  // 경우만 애니메이션 값(.value.dx)을 돌려주고 surface도 stairsUp으로 맞춰줌 - 그 외엔
+  // 원래 하던 대로 _chaeonX를 그대로 돌려주고 surface도 flat으로 맞춰서 기존 평지
+  // 동작이랑 완전히 동일함
+  double _currentChaeonXForFootstep() {
+    if (_isChaeonAscendingStairs && _stairsUpAnimation != null) {
+      _footstepPlayer.setSurface(FootstepSurface.stairsUp);
+      return _stairsUpAnimation!.value.dx;
+    }
+    _footstepPlayer.setSurface(FootstepSurface.flat);
+    return _chaeonX;
   }
 
   // 채온이를 delta만큼 옮기고(배경 밖으로는 안 나가게 clamp), 대사 트리거/왼쪽 끝(계단) 트리거 확인
@@ -1115,6 +1187,9 @@ class _KitchenScreenState extends State<KitchenScreen>
           CurvedAnimation(parent: _stairsUpController, curve: Curves.easeIn),
         );
     setState(() => _isChaeonAscendingStairs = true);
+    // 바로 다음 틱(최대 40ms)까지 기다리지 않고 지금 당장 계단 소리로 바꿔둠 - 오르기
+    // 시작하자마자 첫 걸음부터 계단 소리가 나야 해서
+    _footstepPlayer.setSurface(FootstepSurface.stairsUp);
     _stairsUpController.forward(from: 0);
   }
 

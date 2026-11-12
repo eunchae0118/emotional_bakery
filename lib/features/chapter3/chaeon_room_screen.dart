@@ -14,6 +14,7 @@ import 'package:emotional_bakery/core/models/interaction_model.dart';
 import 'package:emotional_bakery/core/services/audio_service.dart';
 import 'package:emotional_bakery/core/services/chapter_progress.dart';
 import 'package:emotional_bakery/core/services/ending_unlocks.dart';
+import 'package:emotional_bakery/core/services/footstep_player.dart';
 import 'package:emotional_bakery/core/services/interaction_loader.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
@@ -127,6 +128,12 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   String _chaeonState = 'idle';
   bool _isChaeonFacingLeft = false;
 
+  // 채온이가 실제로 움직인 만큼만 발소리를 냄(dpad를 눌러도 벽에 막혀서 제자리면 안 남) -
+  // footstep_player.dart 참고
+  late final FootstepPlayer _footstepPlayer = FootstepPlayer(
+    currentX: () => _chaeonX,
+  );
+
   Timer? _moveTimer;
   // 진입 대사가 끝나기 전까진 dpad랑 문 둘 다 숨김
   bool _dialogueFinished = false;
@@ -220,6 +227,7 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
     // 문으로 재진입(enterFromDoor)하든 체크포인트로 바로 복원되든, 이 화면이 뜨는 순간
     // 방 기본곡이 흐르고 있어야 함 - 이미 같은 곡이면 AudioService.playBgm이 무시함
     AudioService.playBgm(_roomBgmTrackId());
+    _footstepPlayer.start();
     _sceneController = SceneDialogueController(
       onDialogueEnd: () {
         // enterFromDoor 흐름(챕터4 방 복귀)에서만 room_choice -> 온도 분기 체이닝을 타고,
@@ -416,6 +424,7 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
 
   @override
   void dispose() {
+    _footstepPlayer.stop();
     _moveTimer?.cancel();
     _saveConfirmationTimer?.cancel();
     _sceneController.removeListener(_onSceneControllerChanged);

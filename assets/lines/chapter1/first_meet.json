@@ -7,6 +7,7 @@
       "speaker": "lillian",
       "text": [{ "text": "!", "color": "#FF0509", "bold": true, "size": 18 }],
       "animation": "lillian_hop",
+      "sfx": "surprise",
       "next": "line_002"
     },
     "line_002": {
@@ -177,6 +178,7 @@
       "speaker": "lillian",
       "text": "다들 안 믿더라고요, 슬프게도!",
       "expression": "assets/images/lillian_grieve.png",
+      "sfx": "shock",
       "next": "line_011"
     },
     "line_010b": {
@@ -191,6 +193,7 @@
       "text": "진짜거든요!",
       "effect": { "temperature": -1 },
       "expression": "assets/images/lillian_grudge.png",
+      "sfx": "pout",
       "next": "line_010b2"
     },
     "line_010b2": {
@@ -216,6 +219,7 @@
       "speaker": "chaeon",
       "text": [{ "text": "!", "color": "#FF0509", "bold": true, "size": 18 }],
       "animation": "chaeon_hop",
+      "sfx": "surprise",
       "next": "line_016"
     },
     "line_016": {
@@ -325,6 +329,7 @@
       "type": "line",
       "speaker": "lillian",
       "text": [{ "text": "!", "color": "#FF0509", "bold": true, "size": 18 }],
+      "sfx": "ovenDing",
       "next": "line_026"
     },
     "line_026": {
@@ -396,6 +401,7 @@
       "speaker": "lillian",
       "text": "에이 저를 뭘로 보시고!",
       "expression": "assets/images/lillian_thinking2.png",
+      "sfx": "pout",
       "next": "line_029a4"
     },
     "line_029a4": {

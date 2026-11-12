@@ -146,6 +146,7 @@
       "speaker": "lillian",
       "text": "하하! 제가 만든 빵이 맛있긴 하죠!",
       "expression": "assets/images/lillian_happy.png",
+      "sfx": "confident",
       "next": "line_003b6"
     },
     "line_003b6": {
@@ -255,6 +256,7 @@
       "speaker": "lillian",
       "text": "아... 아...쉽...네...요...",
       "expression": "assets/images/lillian_thinking2.png",
+      "sfx": "shock",
       "next": "line_014"
     },
     "line_014": {

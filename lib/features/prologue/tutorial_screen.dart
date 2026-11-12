@@ -5,6 +5,7 @@ import 'dart:async'; // 연속 이동 (화살표 꾹 누르기)
 import '../chapter1/game_play_screen.dart';
 import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/services/audio_service.dart';
+import 'package:emotional_bakery/core/services/footstep_player.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
@@ -162,6 +163,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
   bool _isPlayerInitialized = false;
   String? _interactionText;
 
+  // 캐릭터가 실제로 움직인 만큼만 발소리를 냄(dpad를 눌러도 벽에 막혀서 제자리면 안 남) -
+  // footstep_player.dart 참고
+  late final FootstepPlayer _footstepPlayer = FootstepPlayer(
+    currentX: () => _playerX,
+  );
+
   // 연속 이동 타이머 및 캐릭터 상태 관리 변수
   Timer? _moveTimer;
   String _currentAction = 'idle';
@@ -182,6 +189,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     // main_theme으로 안 돌아오고 street_theme이 그대로 이어짐 - 알려진 동작이고 고치는 건
     // 이번 범위 밖임
     AudioService.playBgm(AudioIds.streetTheme);
+    _footstepPlayer.start();
   }
 
   @override
@@ -198,6 +206,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   @override
   void dispose() {
+    _footstepPlayer.stop();
     _saveConfirmationTimer?.cancel();
     // 보통은 dpad onTapUp/onTapCancel에서 취소되지만, 멀티터치로 dpad 누른 채 빵집 문을 탭하는
     // 경우처럼 손 떼기 전에 화면이 사라지면 그게 보장 안 돼서 여기서도 확실히 취소함

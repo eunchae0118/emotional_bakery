@@ -10,7 +10,11 @@ const List<Map<String, String>> chapter4BackToBakeryData = [
   },
   {"text": "릴리는 채온을 말없이 반겼어요.", "image": "back_to_bakery_2.png"},
   {
-    "text": "채온은 아무런 말도 하지 않았지만 슬픔을 받아들인 듯 하였어요.",
+    "text": "릴리는 채온을 말없이 반겼어요.",
     "image": "back_to_bakery_3.png",
+  },
+  {
+    "text": "채온은 아무런 말도 하지 않았지만 슬픔을 받아들인 듯 하였어요.",
+    "image": "back_to_bakery_4.png",
   },
 ];

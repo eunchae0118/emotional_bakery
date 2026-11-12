@@ -6,6 +6,7 @@
       "type": "line",
       "speaker": "lillian",
       "text": "짜잔~! 따뜻할 때 한 입 먹어봐요!",
+      "sfx": "confident",
       "next": "line_002"
     },
     "line_002": {
@@ -117,6 +118,7 @@
       ],
       "expression": "assets/images/lillian_thinking2.png",
       "chaeonExpression": "assets/images/chaeon_laughing1.gif",
+      "sfx": "pout",
       "next": "line_004a5"
     },
     "line_004a5": {

@@ -5,6 +5,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:emotional_bakery/core/constants/audio_ids.dart';
 import 'package:emotional_bakery/core/services/audio_service.dart';
+import 'package:emotional_bakery/core/services/footstep_player.dart';
 import 'package:emotional_bakery/core/services/save_checkpoints.dart';
 import 'package:emotional_bakery/core/services/save_manager.dart';
 import 'package:emotional_bakery/core/services/story_state.dart';
@@ -46,6 +47,11 @@ const Offset _stairsOffscreenPoint = Offset(1800, 180);
 // 각도가 예전보다 완만해져서, x를 오른쪽으로 더 밀어서 각도를 다시 맞춤(y는 그대로)
 const Offset _chaeonStairsDescentEnd = Offset(1960, 232);
 const Duration _stairsDescentDuration = Duration(milliseconds: 700);
+// _navigateToKitchenScreen()이 fadeThroughBlackRoute를 기본값 그대로 쓰고 있어서(이 화면은
+// fadeOut/hold/fadeIn을 따로 안 넘김), 그 기본값들을 합친 값임(shared_ui.dart 기준
+// 150+800+300). 암전이 끝날 때까지 계단 발소리를 이어주는 용도로만 씀 - shared_ui.dart의
+// 기본값이 바뀌면 이 숫자도 같이 맞춰줘야 함
+const Duration _stairsDescentBlackScreenDuration = Duration(milliseconds: 1250);
 // 채온이 하강 애니메이션이 시작하는 y좌표. _stairsTopPoint.dy(172)를 그대로 쓰면 평소
 // 걷는 위치(bottom: rH(50) 기준, top으로 환산하면 rH(180))보다 rH(8)만큼 위에서 시작해버려서
 // 하강 시작 순간 살짝 위로 튀어 보임. 릴리안은 평소에도 top: rH(172) 기준이라 172가 맞지만,
@@ -113,6 +119,24 @@ class _GamePlayScreenState extends State<GamePlayScreen>
     with TickerProviderStateMixin {
   late final BakeryGame _game;
 
+  // 채온이가 실제로 움직인 만큼만 발소리를 냄(dpad를 눌러도 벽에 막혀서 제자리면 안 남) -
+  // footstep_player.dart 참고
+  //
+  // (수정: currentX를 인라인 람다 대신 _currentChaeonXForFootstep으로 뺐음 - 계단 하강
+  // 중엔 chaeon.position.x가 멈춰있고 대신 _chaeonStairsDescentAnimation이 움직이는데,
+  // 그 경우까지 같은 FootstepPlayer 하나로 같이 처리하려고 분기가 필요해져서 그럼. 평지일
+  // 때 동작은 그대로임 - 릴리안 쪽(_currentLillianXForFootstep)이랑 같은 패턴)
+  late final FootstepPlayer _footstepPlayer = FootstepPlayer(
+    currentX: _currentChaeonXForFootstep,
+  );
+
+  // 릴리안이 걸어서 등장하는 연출(_triggerLillianWalk/_triggerLillianStairsEntrance)에도
+  // 채온이랑 동일한 발소리를 붙임 - currentX로 _currentLillianXForFootstep을 그대로
+  // 넘겨서 FootstepPlayer를 재사용함(새 로직 없이 콜백만 다르게 연결)
+  late final FootstepPlayer _lillianFootstepPlayer = FootstepPlayer(
+    currentX: _currentLillianXForFootstep,
+  );
+
   bool _isDialogueActive = false;
   int _dialogueStep = 0;
   List<String> _dialogueTexts = [];
@@ -154,6 +178,13 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   Animation<Offset>? _lillianStairsAnimation;
   bool _isLillianSecondEntranceActive = false;
 
+  // _lillianStairsController.value가 이 값보다 작으면 아직 계단 구간(오르기), 그 이후는
+  // 평지 구간 - TweenSequenceItem의 weight(climbDist/walkDist) 비율 그대로라 0~1 범위에서
+  // 정확히 이 지점이 두 구간의 경계가 됨. _triggerLillianStairsEntrance()에서 계산해서
+  // 채워두고, _currentLillianXForFootstep()이 이 값으로 지금 발소리를 계단 소리로 할지
+  // 평지 소리로 할지 정함
+  double _lillianStairsClimbFraction = 0.0;
+
   // 왼쪽 끝에서 튜토리얼 화면으로 전환 중 중복 네비게이션 방지 플래그
   bool _isNavigatingToTutorial = false;
 
@@ -163,6 +194,9 @@ class _GamePlayScreenState extends State<GamePlayScreen>
   bool _isChaeonDescendingStairs = false;
   // 계단 하강 후 주방 화면으로 전환 중 중복 네비게이션 방지 플래그
   bool _isNavigatingToKitchen = false;
+  // 하강 애니메이션 끝나고 암전 구간 동안 계단 발소리를 억지로 이어줄 때 쓰는 타이머.
+  // 암전이 끝나는 시점에 맞춰서 forceWalking을 꺼줌
+  Timer? _stairsDescentForceWalkingTimer;
 
   // 릴리안/채온 "깜짝 놀람" 모션(살짝 위로 껑충)용 컨트롤러 및 오프셋 애니메이션
   late AnimationController _lillianHopController;
@@ -261,6 +295,7 @@ class _GamePlayScreenState extends State<GamePlayScreen>
       resumeSkipGuideTrigger: resumeSkipGuideTrigger,
       resumeSkipPostSceneEndTrigger: resumeSkipPostSceneEndTrigger,
     );
+    _footstepPlayer.start();
     // 챕터3 재진입 모드면, 릴리안-채온 첫 만남 대사/회상 컷씬/빵 먹는 대사 단계를 전부 건너뜀
     if (widget.skipChapter1Events) {
       _dialoguePhase = DialoguePhase.kitchenApproach;
@@ -353,6 +388,10 @@ class _GamePlayScreenState extends State<GamePlayScreen>
           ..addListener(() {
             setState(() {}); // 애니메이션 프레임마다 화면을 다시 그려 릴리안 이동 반영
           });
+    // _lillianController를 막 만들었으니 이제부터 _currentLillianXForFootstep()이
+    // 안전하게 값을 읽을 수 있음 - 더 일찍(예: _footstepPlayer.start() 옆) 부르면
+    // late 필드가 아직 없어서 터짐
+    _lillianFootstepPlayer.start();
 
     // 릴리안 계단 등장 애니메이션 제어기 설정
     _lillianStairsController = AnimationController(vsync: this)
@@ -377,6 +416,15 @@ class _GamePlayScreenState extends State<GamePlayScreen>
           });
     _chaeonStairsDescentController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
+        // 계단 다 내려와서 좌표(애니메이션 값)는 멈췄어도, 화면이 검게 덮이는 동안은
+        // 계단 소리가 계속 이어지는 느낌을 주려고 좌표 체크 없이 강제로 걷는 중으로 침.
+        // 암전이 끝나는 시점(fadeThroughBlackRoute 총 길이)에 맞춰서 꺼줌
+        _footstepPlayer.setForceWalking(true);
+        _stairsDescentForceWalkingTimer?.cancel();
+        _stairsDescentForceWalkingTimer = Timer(
+          _stairsDescentBlackScreenDuration,
+          () => _footstepPlayer.setForceWalking(false),
+        );
         _navigateToKitchenScreen();
       }
     });
@@ -840,6 +888,9 @@ class _GamePlayScreenState extends State<GamePlayScreen>
 
   @override
   void dispose() {
+    _footstepPlayer.stop();
+    _lillianFootstepPlayer.stop();
+    _stairsDescentForceWalkingTimer?.cancel();
     _sceneController.removeListener(_onSceneControllerChanged);
     _sceneController.dispose();
     _lillianController.dispose(); // 메모리 누수 방지용
@@ -874,7 +925,10 @@ class _GamePlayScreenState extends State<GamePlayScreen>
       setState(() => _dialoguePhase = DialoguePhase.memoryFlashback);
       // 회상 미니게임 전용곡
       AudioService.playBgm(
-        AudioIds.resolveReady(AudioIds.park, fallback: _bgmTrackIdForCurrentMode()),
+        AudioIds.resolveReady(
+          AudioIds.park,
+          fallback: _bgmTrackIdForCurrentMode(),
+        ),
       );
       _memoryFadeTimer = Timer(_memoryFadeHoldDuration, () {
         if (!mounted) return;
@@ -1096,6 +1150,10 @@ class _GamePlayScreenState extends State<GamePlayScreen>
     final double climbDist = (_stairsTopPoint - _stairsOffscreenPoint).distance;
     final double walkDist = (walkEnd - _stairsTopPoint).distance;
 
+    // TweenSequence가 weight(climbDist/walkDist) 비율대로 0~1 구간을 나눠주니까, 그
+    // 경계 지점을 그대로 계산해서 발소리 전환 기준으로 씀(_lillianStairsClimbFraction 참고)
+    _lillianStairsClimbFraction = climbDist / (climbDist + walkDist);
+
     _lillianStairsAnimation = TweenSequence<Offset>([
       TweenSequenceItem(
         tween: Tween<Offset>(
@@ -1157,6 +1215,9 @@ class _GamePlayScreenState extends State<GamePlayScreen>
       _isFreeWalkPhase = false; // 하강 중엔 방향키도 숨김
       _isChaeonDescendingStairs = true;
     });
+    // 바로 다음 틱(최대 40ms)까지 기다리지 않고 지금 당장 계단 소리로 바꿔둠 - 하강
+    // 시작하자마자 첫 걸음부터 계단 소리가 나야 해서
+    _footstepPlayer.setSurface(FootstepSurface.stairsDown);
 
     _chaeonStairsDescentController.forward(from: 0);
   }
@@ -1201,6 +1262,10 @@ class _GamePlayScreenState extends State<GamePlayScreen>
         _isFreeWalkPhase = true;
         _chaeonState = 'idle';
       });
+      // 계단 연출이 완전히 끝났으니 평지 소리로 반드시 되돌림 - 안 해도 다음 틱에서
+      // _currentChaeonXForFootstep이 알아서 flat으로 돌려놓긴 하지만, 그 사이(최대 40ms)
+      // 라도 계단 소리로 남는 걸 막으려고 여기서도 바로 바꿔둠
+      _footstepPlayer.setSurface(FootstepSurface.flat);
     });
   }
 
@@ -1222,6 +1287,54 @@ class _GamePlayScreenState extends State<GamePlayScreen>
       return;
     }
     _sceneController.goBackScene();
+  }
+
+  // _footstepPlayer가 40ms마다 이 값을 읽음. 계단 하강 중엔 chaeon.position.x가 멈춰있고
+  // (움직임이 막혀서) 대신 _chaeonStairsDescentAnimation이 움직이니까, 그 경우만 애니메이션
+  // 값(.value.dx)을 돌려주고 surface도 stairsDown으로 맞춰줌 - 그 외엔 원래 하던 대로
+  // chaeon.position.x를 그대로 돌려주고 surface도 flat으로 맞춰서 기존 평지 동작이랑
+  // 완전히 동일함. _triggerChaeonStairsDescent()/하강 끝나는 지점에서도 명시적으로
+  // setSurface를 불러두지만, 그거랑 상관없이 여기서 매 틱 다시 판단하니까 두 군데 호출
+  // 순서가 어긋나도(레이스) 결국 맞는 surface로 수렴함
+  double _currentChaeonXForFootstep() {
+    if (_isChaeonDescendingStairs && _chaeonStairsDescentAnimation != null) {
+      _footstepPlayer.setSurface(FootstepSurface.stairsDown);
+      return _chaeonStairsDescentAnimation!.value.dx;
+    }
+    _footstepPlayer.setSurface(FootstepSurface.flat);
+    return _game.chaeon?.position.x ?? 0.0;
+  }
+
+  // _lillianFootstepPlayer가 40ms마다 이 값을 읽어서 "지금 릴리안이 실제로 움직이고
+  // 있는지"를 판단함. build() 쪽 currentLillianX 계산부(아래 "릴리안 렌더링 좌표 계산"
+  // 주석 근처)랑 분기를 완전히 똑같이 맞춰야 실제로 그려지는 위치랑 발소리 판정이 어긋나지
+  // 않음 - 챕터5 분기(_lillianTargetX 고정값)는 애초에 안 변하는 값이라 자동으로 "정지"로
+  // 판정되니까 따로 안 걸러내도 됨
+  //
+  // (수정: 계단 등장 분기엔 setSurface() 호출도 같이 끼워넣음 - 매 틱 여기서 지금 계단
+  // 구간인지 평지 구간인지 다시 판단해서 _lillianFootstepPlayer에 알려주면, 그쪽은 그냥
+  // "지금 surface 기준으로" 다음 걸음 소리/간격을 고르기만 하면 돼서 깔끔하게 나뉨)
+  double _currentLillianXForFootstep() {
+    if (widget.reentryChapter == ReentryChapter.chapter5) {
+      _lillianFootstepPlayer.setSurface(FootstepSurface.flat);
+      return _lillianTargetX;
+    }
+    if (_isLillianSecondEntranceActive && _lillianStairsAnimation != null) {
+      // 계단 구간(climbFraction 이전)은 계단 오르기 소리, 그 다음 평지 구간은 평지
+      // 소리로 전환함. 매 틱마다 다시 판단해서 setSurface를 불러주는데, 타이머/누적값은
+      // 안 건드리는 함수라 전환이 끊기거나 겹치지 않고 매끄럽게 이어짐
+      final bool isClimbing =
+          _lillianStairsController.value < _lillianStairsClimbFraction;
+      _lillianFootstepPlayer.setSurface(
+        isClimbing ? FootstepSurface.stairsUp : FootstepSurface.flat,
+      );
+      return _lillianStairsAnimation!.value.dx;
+    }
+    _lillianFootstepPlayer.setSurface(FootstepSurface.flat);
+    return Tween<double>(
+      begin: _lillianStartX,
+      end: _lillianTargetX,
+    ).evaluate(_lillianController);
   }
 
   @override

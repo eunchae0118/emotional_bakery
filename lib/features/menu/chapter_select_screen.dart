@@ -20,6 +20,7 @@ import 'package:emotional_bakery/features/chapter1/game_play_screen.dart';
 import 'package:emotional_bakery/features/chapter1/game_play_widgets.dart'
     as widgets;
 import 'package:emotional_bakery/features/chapter1/kitchen_screen.dart';
+import 'package:emotional_bakery/features/menu/chapter_intro_screen.dart';
 import 'package:emotional_bakery/features/chapter3/chaeon_room_screen.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart'
     show kChoiceScreenRouteSettings;
@@ -105,6 +106,10 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
   Future<void> _enterCurrentChapter(
     Widget fallbackScreen,
     int chapterNumber,
+    // 간지 화면에 띄울 문구. 챕터 선택 카드에 이미 쓰고 있는 title/subTitle을 그대로
+    // 받아서 쓰고, 여기서 새로 하드코딩하지 않음
+    String title,
+    String subTitle,
   ) async {
     final SaveData? data = await SaveManager.load();
     if (mounted && data != null) {
@@ -112,6 +117,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
       if (checkpoint != null &&
           checkpointChapterNumber(checkpoint, data) == chapterNumber) {
         restoreStoryStateFromSave(data);
+        // 체크포인트로 이어서 들어가는 경로(챕터 중간 재개)는 간지를 안 보여줌 - 처음부터
+        // 시작하는 경우에만 아래에서 간지를 거침
         Navigator.push(
           context,
           fadeThroughBlackRoute(screenForCheckpoint(checkpoint, data)),
@@ -119,6 +126,15 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
         return;
       }
     }
+    if (!mounted) return;
+    // 챕터를 처음부터 시작하는 경로 - 간지를 먼저 보여주고, 닫히면(자동 종료든 탭으로
+    // 건너뛰기든) 원래 하려던 진입 로직을 그대로 이어서 실행함
+    await Navigator.push(
+      context,
+      fadeThroughBlackRoute(
+        ChapterIntroScreen(title: title, subtitle: subTitle),
+      ),
+    );
     if (!mounted) return;
     Navigator.push(context, fadeThroughBlackRoute(fallbackScreen));
   }
@@ -651,7 +667,30 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                         AudioIds.themeForChapter(chapterNumber),
                       );
                     }
+                    // 간지(소개 화면)에 쓸 gan.png를 여기서 미리 디코딩해둠 - Image.asset
+                    // cacheWidth랑 똑같은 크기(ganPngCacheWidth)로 줘야 캐시 키가 맞아서
+                    // 중복 디코딩이 안 일어남
+                    precacheImage(
+                      ResizeImage.resizeIfNeeded(
+                        ganPngCacheWidth(context),
+                        null,
+                        const AssetImage('assets/images/gan.png'),
+                      ),
+                      context,
+                    ).catchError((Object _) {});
                     if (title == "Prolog") {
+                      // 프롤로그는 체크포인트 재개 개념이 없어서(save_checkpoints.dart 주석
+                      // 참고) 탭할 때마다 항상 처음부터 시작함 - 그래서 간지도 매번 보여줌
+                      await Navigator.push(
+                        context,
+                        fadeThroughBlackRoute(
+                          ChapterIntroScreen(title: title, subtitle: subTitle),
+                        ),
+                      );
+                      // 여기 context는 State.context가 아니라 위 LayoutBuilder가 넘겨준
+                      // 지역 변수라서, State.mounted 체크로는 analyzer가 이 context가
+                      // 안전한지 못 증명함 - 그래서 이 context 자신의 mounted를 직접 봄
+                      if (!context.mounted) return;
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -679,7 +718,12 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                     } else if (title == "Chapter 1") {
                       // "현재 진행 중인 챕터"면 처음부터 다시 시작하는 대신 마지막 저장
                       // 지점으로 이어감(세이브 없으면 fallback으로 원래대로 튜토리얼부터)
-                      await _enterCurrentChapter(const TutorialScreen(), 1);
+                      await _enterCurrentChapter(
+                        const TutorialScreen(),
+                        1,
+                        title,
+                        subTitle,
+                      );
                     } else if (title == "Chapter 2") {
                       // 챕터2는 빵집/튜토리얼 없이 바로 주방 화면(챕터2 시작 모드)에서 시작
                       await _enterCurrentChapter(
@@ -687,16 +731,25 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                           mode: KitchenScreenMode.chapter2Start,
                         ),
                         2,
+                        title,
+                        subTitle,
                       );
                     } else if (title == "Chapter 3") {
                       // 챕터3도 챕터2랑 동일하게 중간 화면 없이 바로 시작. DEV 바로가기 버튼이랑
                       // 동일한 진입점(채온이 방 화면)으로 연결함
-                      await _enterCurrentChapter(const ChaeonRoomScreen(), 3);
+                      await _enterCurrentChapter(
+                        const ChaeonRoomScreen(),
+                        3,
+                        title,
+                        subTitle,
+                      );
                     } else if (title == "Chapter 4") {
                       // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
                       await _enterCurrentChapter(
                         const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
                         4,
+                        title,
+                        subTitle,
                       );
                     } else if (title == "Chapter 5") {
                       // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. DEV: 챕터5
@@ -707,6 +760,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                           reentryChapter: ReentryChapter.chapter5,
                         ),
                         5,
+                        title,
+                        subTitle,
                       );
                     }
                   } else {

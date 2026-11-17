@@ -23,6 +23,7 @@ import 'package:emotional_bakery/core/utils/image_warmup.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
+import 'package:emotional_bakery/features/menu/chapter_end_screen.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/chapter1/bakery_game.dart'
     show ReentryChapter;
@@ -156,6 +157,9 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
   // 배드엔딩/노말엔딩 컷씬이 끝나면 뜨는 임시 종료 화면.
   // 그 다음 내용이 아직 없어서 kitchen_screen.dart의 "챕터4 계속 준비 중" 자리표시자를 그대로 재사용
   bool _showChapterEndPlaceholder = false;
+  // 챕터5행(온도 8~10) 분기가 종료 화면(ChapterEndScreen)으로 넘어가는 처리가 두 번
+  // 겹쳐서 실행되는 걸 막는 잠금 플래그
+  bool _isNavigatingToChapterEnd = false;
 
   bool _isSettingOpen = false;
   // 메뉴 "저장" 버튼 누르면 잠깐 뜨는 확인 문구. null이면 안 보임. kitchen_screen.dart랑 동일한 패턴
@@ -932,12 +936,20 @@ class _ChaeonRoomScreenState extends State<ChaeonRoomScreen> {
                 child: DialogueOverlay(
                   data: chapter4BackToBakeryData,
                   onComplete: () async {
+                    if (_isNavigatingToChapterEnd) return;
+                    _isNavigatingToChapterEnd = true;
                     ChapterProgress.isChapter5Unlocked = true;
                     // (신규: 여기서 저장을 안 해두면 앱을 재시작했을 때 이어하기가 엉뚱한
                     // 지점으로 가버림 - 체크포인트 없이 지금 해금 플래그 그대로 저장함
                     await SaveManager.save(null);
-                    if (!mounted) return;
-                    goToChapterSelectClearingStack(context);
+                    if (!context.mounted) return;
+                    // 종료 화면이 이미 자기 스스로 검은 배경에서 페이드인을 하기 때문에,
+                    // 라우트 자체의 전환 효과는 안 넣음 - 안 그러면 암전이 겹쳐서 이중으로
+                    // 어색해짐. instantRoute(전환 시간 0ms)로 바로 보여줌
+                    Navigator.push(
+                      context,
+                      instantRoute(const ChapterEndScreen(chapterNumber: 4)),
+                    );
                   },
                 ),
               ),

@@ -20,6 +20,7 @@ import 'package:emotional_bakery/core/services/story_state.dart';
 import 'package:emotional_bakery/core/widgets/dialogue_overlay.dart';
 import 'package:emotional_bakery/core/widgets/menu_overlay.dart';
 import 'package:emotional_bakery/core/widgets/shared_ui.dart';
+import 'package:emotional_bakery/features/menu/chapter_end_screen.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart';
 import 'package:emotional_bakery/features/chapter2/bread_making_scene.dart';
 import 'package:emotional_bakery/features/chapter2/clock_minigame_scene.dart';
@@ -212,9 +213,13 @@ class _KitchenScreenState extends State<KitchenScreen>
   // 메뉴 "저장" 버튼 누르면 잠깐 뜨는 확인 문구. null이면 안 보임
   String? _saveConfirmationText;
   Timer? _saveConfirmationTimer;
-  // kitchen_arrival.json(챕터1)이나 chapter2_ingredient_quiz.json(챕터2)이 끝나면 true.
-  // 지금은 안내 문구만 있는 임시 화면으로 대체함
+  // (수정: 챕터1/2/3 진짜 종료는 이제 ChapterEndScreen으로 바로 넘어가게 바꿔서 이 플래그를
+  // 안 씀 - 지금은 챕터4 초반 배드엔딩(_isChapter4BadEnding)이나 챕터5 해피/히든엔딩처럼
+  // "엔딩이라 다음 챕터 연결 없이 그냥 챕터 선택창으로만 돌아가면 되는" 경우에만 씀)
   bool _showChapterEndPlaceholder = false;
+  // 챕터1/2/3 종료 화면(ChapterEndScreen)으로 넘어가는 처리가 두 번 겹쳐서 실행되는 걸
+  // 막는 잠금 플래그. _goToChapterEndScreen 참고
+  bool _isNavigatingToChapterEnd = false;
   // 챕터4 모드에서 chapter4_before_cutscene.json 끝나면 뜨는 오프닝 컷씬(과거 회상).
   // 프롤로그의 DialogueOverlay를 data/onComplete만 다르게 넘겨서 그대로 재사용함
   bool _showChapter4Cutscene = false;
@@ -504,8 +509,12 @@ class _KitchenScreenState extends State<KitchenScreen>
               });
             });
           } else {
-            // chapter2_after_second_game.json이 끝나면(line_013) 여기로 옴. 임시 종료 화면 표시
-            setState(() => _showChapterEndPlaceholder = true);
+            // chapter2_after_second_game.json이 끝나면(line_013) 여기로 옴. 챕터2 완전
+            // 종료 - 챕터3 해금하고 종료 화면으로 넘어감
+            _goToChapterEndScreen(
+              2,
+              () => ChapterProgress.isChapter3Unlocked = true,
+            );
           }
           return;
         }
@@ -528,10 +537,13 @@ class _KitchenScreenState extends State<KitchenScreen>
             // chapter3_after_eat.json). 실제 로드는 _startChapter3DiarySequence 체인 끝에서 처리
             _startChapter3DiarySequence();
           } else {
-            // (참고: 이제 이 분기는 빵만들기 미니게임도, chapter3_after_first_game.json도 아니라
-            // 일기장 퍼즐 시퀀스 끝에 로드되는 chapter3_after_eat.json이 끝나면 옴)
-            // chapter3_before_game.json이 끝나면(line_029, "네!") 여기로 옴. 임시 종료 화면 표시
-            setState(() => _showChapterEndPlaceholder = true);
+            // (참고: 이 분기는 빵만들기 미니게임도, chapter3_after_first_game.json도 아니라
+            // 일기장 퍼즐 시퀀스 끝에 로드되는 chapter3_after_eat.json이 끝나면 옴) 챕터3
+            // 완전 종료 - 챕터4 해금하고 종료 화면으로 넘어감
+            _goToChapterEndScreen(
+              3,
+              () => ChapterProgress.isChapter4Unlocked = true,
+            );
           }
           return;
         }
@@ -599,9 +611,11 @@ class _KitchenScreenState extends State<KitchenScreen>
           }
           return;
         }
-        // kitchen_arrival.json 종료 = 챕터 1 종료 시점.
-        // TODO: 나중에 진짜 챕터1 종료 연출/다음 챕터 연결로 교체할 예정. 지금은 임시 안내 문구만 표시
-        setState(() => _showChapterEndPlaceholder = true);
+        // kitchen_arrival.json 종료 = 챕터 1 종료 시점. 챕터2 해금하고 종료 화면으로 넘어감
+        _goToChapterEndScreen(
+          1,
+          () => ChapterProgress.isChapter2Unlocked = true,
+        );
       },
       // kitchen_arrival.json에는 hop 트리거용 animation 필드가 없어서 둘 다 안 씀
       onLillianHop: () {},
@@ -1399,33 +1413,40 @@ class _KitchenScreenState extends State<KitchenScreen>
     _sceneController.goBackScene();
   }
 
-  // 챕터 1 종료 임시 화면 탭하면 챕터 선택창으로 이동. tutorial_screen.dart에서 빵집 문 클릭 시
-  // GamePlayScreen으로 넘어가는 것과 동일하게 pushReplacement로 스택 정리
-  //
-  // (수정: 여기서 해금 플래그만 켜고 저장은 안 해서, 앱을 재시작한 뒤 "이어하기"를 누르면
-  // 예전 체크포인트(또는 세이브가 아예 없으면 처음부터)로 가버리는 버그가 있었음 - 해금
-  // 플래그가 켜진 챕터를 또 저장도 안 한 채로 재진입시키는 꼴이었음. 분기마다
-  // SaveManager.save(null)을 추가해서, 체크포인트 없이(이 챕터는 끝났고 다음 챕터는 아직
-  // 중간 저장이 없다는 뜻) 지금 해금 플래그 그대로 저장함 - choice_screen.dart의
-  // _handleContinue가 checkpoint==null을 보고 챕터 선택창으로 보내줌)
-  Future<void> _handleChapterEndTap() async {
-    // 챕터1 엔딩을 다 봤으니 챕터2 해금. 챕터2 모드(이미 해금된 상태)에서 탭할 땐 안 해도 됨
-    if (widget.mode == KitchenScreenMode.chapter1End) {
-      ChapterProgress.isChapter2Unlocked = true;
-      await SaveManager.save(null);
-    } else if (widget.mode == KitchenScreenMode.chapter2Start) {
-      // 챕터2 완전 종료(chapter2_after_second_game.json까지 다 봄)했으니 챕터3 해금
-      ChapterProgress.isChapter3Unlocked = true;
-      await SaveManager.save(null);
-    } else if (widget.mode == KitchenScreenMode.chapter3Start) {
-      // 챕터3 완전 종료(일기장 퍼즐 시퀀스 끝)했으니 챕터4 해금
-      ChapterProgress.isChapter4Unlocked = true;
-      await SaveManager.save(null);
-    }
-    if (!mounted) return;
+  // 챕터4 배드엔딩/챕터5 해피·히든엔딩(_showChapterEndPlaceholder) 탭했을 때만 이제
+  // 여기로 옴 - 챕터1/2/3 진짜 종료는 ChapterEndScreen으로 바로 넘어가게 바뀌면서 그
+  // 분기는 다 없어짐(_goToChapterEndScreen 참고). 이 세 경우는 전부 엔딩이라 다음 챕터를
+  // 해금할 필요가 없어서, 그냥 챕터 선택창으로 보내는 역할만 남음
+  void _handleChapterEndTap() {
     // ChoiceScreen 위에 쌓인 이전 챕터 화면들(빵집 GamePlayScreen/Flame 게임 등)까지 전부 정리하고
     // 챕터 선택창으로 감
     goToChapterSelectClearingStack(context);
+  }
+
+  // 챕터1/2/3이 끝나는 세 지점(kitchen_arrival.json/chapter2_after_second_game.json/
+  // chapter3_after_eat.json 종료)이 공통으로 쓰는 처리. 다음 챕터 해금 + 저장을 먼저
+  // 끝낸 뒤에 종료 화면(ChapterEndScreen)으로 넘어감 - 예전엔 탭했을 때만(_handleChapterEndTap)
+  // 해금/저장을 했어서, 화면이 뜬 채로 탭하기 전에 앱이 꺼지면 해금 상태가 저장 안 된 채로
+  // 날아갈 수 있었음. unlockNextChapter는 ChapterProgress의 해당 isChapterNUnlocked를
+  // 켜는 콜백만 받음(챕터마다 켜는 필드가 달라서 호출하는 쪽에서 넘겨줌).
+  // _isNavigatingToChapterEnd로 이 지점이 두 번 겹쳐 불려도(onDialogueEnd가 중복 호출되는
+  // 경우 등) 한 번만 실행되게 막음
+  Future<void> _goToChapterEndScreen(
+    int chapterNumber,
+    VoidCallback unlockNextChapter,
+  ) async {
+    if (_isNavigatingToChapterEnd) return;
+    _isNavigatingToChapterEnd = true;
+    unlockNextChapter();
+    await SaveManager.save(null);
+    if (!mounted) return;
+    // 종료 화면이 이미 자기 스스로 검은 배경에서 페이드인을 하기 때문에, 라우트 자체의
+    // 전환 효과(fadeThroughBlackRoute 등)는 안 넣음 - 안 그러면 암전이 겹쳐서 이중으로
+    // 어색해짐. instantRoute(전환 시간 0ms)로 바로 보여줌
+    Navigator.push(
+      context,
+      instantRoute(ChapterEndScreen(chapterNumber: chapterNumber)),
+    );
   }
 
   @override

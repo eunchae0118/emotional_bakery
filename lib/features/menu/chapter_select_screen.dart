@@ -232,9 +232,16 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     }
   }
 
+  // autoEnterChapterNumber로 들어온 경우, 자동 입장이 끝날 때까지 카드 목록을 검은 화면으로
+  // 가려둠 - 안 그러면 pushAndRemoveUntil로 이 화면이 뜨는 순간(암전이 끝나는 짧은 틈)
+  // 카드 목록이 번쩍 보였다가 다음 화면(간지)으로 다시 덮이는 게 눈에 띔. initState에서
+  // widget 값으로 바로 세팅해야 첫 build부터 가려짐
+  late bool _isAutoEntering;
+
   @override
   void initState() {
     super.initState();
+    _isAutoEntering = widget.autoEnterChapterNumber != null;
     // 메인 메뉴/엔딩보기/빵집이랑 같은 곡. 이미 main_theme이 재생 중이면(메인 메뉴에서
     // 넘어온 평소 경로) AudioService가 알아서 아무것도 안 함
     AudioService.playBgm(AudioIds.mainTheme);
@@ -259,8 +266,16 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
       // 진입을 한 번만 자동 실행함. addPostFrameCallback을 쓰는 이유는 build가 최소
       // 한 번 끝나야 context가 완전히 쓸 수 있는 상태가 되기 때문(_enterChapterByNumber
       // 안에서 precacheImage 등에 context를 씀)
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _enterChapterByNumber(widget.autoEnterChapterNumber!);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        try {
+          await _enterChapterByNumber(widget.autoEnterChapterNumber!);
+        } catch (_) {
+          // 자동 입장 도중 예상 못 한 예외가 나면(예: 잠긴 챕터라 못 들어가는 경우 등)
+          // 위에서 가려둔 검은 화면을 풀어서 카드 목록이 다시 보이게 함 - 안 풀면 검은
+          // 화면에 그대로 갇혀버림
+          if (mounted) setState(() => _isAutoEntering = false);
+        }
       });
     }
   }
@@ -623,6 +638,11 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
               ),
             ),
           ),
+
+          // 자동 입장 중엔 이 화면 전체를 검은 화면으로 가려둠(_isAutoEntering 주석 참고).
+          // Stack 맨 마지막이라 위에 그려진 것들(카드, DEV 버튼, 뒤로가기 버튼까지) 전부 덮음
+          if (_isAutoEntering)
+            const Positioned.fill(child: ColoredBox(color: Colors.black)),
         ],
       ),
     );
@@ -818,6 +838,21 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                           ChapterProgress.isChapter1Unlocked = true;
                         });
                         print("챕터 1 잠금장치가 해제되었습니다!");
+                        // (주의: 챕터1/2/3 종료 지점들처럼 여기서 SaveManager.save(null)을
+                        // 바로 이어서 부르려고 했는데, 프롤로그 카드는 chapterNumber가 null이라
+                        // 위쪽 "이미 완료한 챕터 재진입 방지" 체크 대상이 아니라서 언제든 다시
+                        // 탭할 수 있음 - 챕터3/4까지 진행한 플레이어가 프롤로그를 다시 눌러
+                        // 끝까지 보면, 여기서 저장을 해버리는 순간 그 사람의 진짜 체크포인트가
+                        // checkpoint: null로 덮어써져서 이어하기가 엉뚱한 지점(챕터 선택창)으로
+                        // 가버림. 그래서 저장은 일단 안 넣음 - 프롤로그 카드에도 재진입 방지를
+                        // 걸게 되면 그때 같이 넣는 게 안전함
+                        if (!context.mounted) return;
+                        Navigator.push(
+                          context,
+                          instantRoute(
+                            const ChapterEndScreen(chapterNumber: 0),
+                          ),
+                        );
                       }
                     } else if (title == "Chapter 1") {
                       await _enterChapterByNumber(1);

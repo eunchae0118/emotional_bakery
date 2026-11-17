@@ -20,11 +20,14 @@ const Duration kChapterIntroFadeOutDuration = Duration(milliseconds: 500);
 // u()/main_screen.dart의 s()랑 동일하게 가로세로 배율 중 작은 쪽으로 스케일해서, 아이패드
 // (4:3)처럼 가로세로 비율이 design 캔버스(874:402)랑 많이 다른 기기에서도 글자가 화면
 // 밖으로 안 나가게 함 - 화면 보면서 조정 예정
-const double _titleLeftRef = 60;
-const double _titleTopRef = 50;
-const double _titleSubtitleGapRef = 10;
-const double _titleFontSizeRef = 44;
-const double _subtitleFontSizeRef = 20;
+//
+// (수정: chapter_end_screen.dart도 간지랑 똑같은 제목/부제 위치·크기를 써야 해서 private
+// 접두사(_)를 떼고 공개 상수로 바꿈 - 값 자체는 안 바뀜, 이 파일 안에서 쓰던 곳도 이름만 바뀜)
+const double kChapterTitleLeftRef = 60;
+const double kChapterTitleTopRef = 50;
+const double kChapterTitleSubtitleGapRef = 10;
+const double kChapterTitleFontSizeRef = 44;
+const double kChapterSubtitleFontSizeRef = 20;
 
 // precacheImage(챕터 카드 탭 시점)랑 여기 Image.asset이 정확히 같은 크기를 줘야 ResizeImage
 // 캐시 키가 일치해서 미리 디코딩해둔 걸 그대로 재사용함 - 하나라도 다르면 두 번 디코딩됨
@@ -127,8 +130,8 @@ class _ChapterIntroScreenState extends State<ChapterIntroScreen> {
                       cacheWidth: ganPngCacheWidth(context),
                     ),
                     Positioned(
-                      left: offsetX + s(_titleLeftRef),
-                      top: offsetY + s(_titleTopRef),
+                      left: offsetX + s(kChapterTitleLeftRef),
+                      top: offsetY + s(kChapterTitleTopRef),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -136,18 +139,18 @@ class _ChapterIntroScreenState extends State<ChapterIntroScreen> {
                             widget.title,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: s(_titleFontSizeRef),
+                              fontSize: s(kChapterTitleFontSizeRef),
                               // chapter_select_screen.dart 카드 제목이랑 동일한 폰트/굵기
                               fontWeight: FontWeight.w800,
                               fontFamily: 'SCDream',
                             ),
                           ),
-                          SizedBox(height: s(_titleSubtitleGapRef)),
+                          SizedBox(height: s(kChapterTitleSubtitleGapRef)),
                           Text(
                             widget.subtitle,
                             style: TextStyle(
                               color: Colors.white70,
-                              fontSize: s(_subtitleFontSizeRef),
+                              fontSize: s(kChapterSubtitleFontSizeRef),
                               // chapter_select_screen.dart 카드 부제목이랑 동일한 폰트/굵기
                               fontWeight: FontWeight.w500,
                               fontFamily: 'SCDream',

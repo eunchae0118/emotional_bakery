@@ -30,9 +30,18 @@ const double kMainBgDesignHeight = 492;
 // 살아있었음(전시처럼 하루 종일 켜두면 플레이할 때마다 누적됨). ChoiceScreen(메인 메뉴) 위에
 // 쌓인 건 전부 제거하고 그 위에 ChapterSelectScreen을 올림. 혹시 스택에 ChoiceScreen이 없으면
 // 맨 아래 라우트에서 멈춰서 스택이 완전히 비지는 않게 함
-void goToChapterSelectClearingStack(BuildContext context) {
+//
+// (수정: autoEnterChapterNumber 추가 - 종료 화면의 "다음 챕터" 버튼이 이 값을 넘기면,
+// 스택 정리가 끝난 직후 ChapterSelectScreen이 그 번호의 챕터로 자동 입장함. 안 넘기면
+// null이라 기존 호출부들은 전혀 안 바뀜)
+void goToChapterSelectClearingStack(
+  BuildContext context, {
+  int? autoEnterChapterNumber,
+}) {
   Navigator.of(context).pushAndRemoveUntil(
-    fadeThroughBlackRoute(const ChapterSelectScreen()),
+    fadeThroughBlackRoute(
+      ChapterSelectScreen(autoEnterChapterNumber: autoEnterChapterNumber),
+    ),
     (route) =>
         route.settings.name == kChoiceScreenRouteSettings.name || route.isFirst,
   );

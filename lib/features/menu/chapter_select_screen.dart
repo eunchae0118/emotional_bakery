@@ -20,6 +20,7 @@ import 'package:emotional_bakery/features/chapter1/game_play_screen.dart';
 import 'package:emotional_bakery/features/chapter1/game_play_widgets.dart'
     as widgets;
 import 'package:emotional_bakery/features/chapter1/kitchen_screen.dart';
+import 'package:emotional_bakery/features/menu/chapter_end_screen.dart';
 import 'package:emotional_bakery/features/menu/chapter_intro_screen.dart';
 import 'package:emotional_bakery/features/chapter3/chaeon_room_screen.dart';
 import 'package:emotional_bakery/features/menu/choice_screen.dart'
@@ -52,8 +53,25 @@ const double kCompletedOverlayOpacity = 0.6;
 // 요청으로 바꿈 - 화면 보면서 조정 예정
 const Color kCompletedOverlayColor = Colors.black;
 
+// 챕터 번호 -> (title, subTitle). 바로 아래 build()의 _buildChapterCard 호출부에 쓰는
+// 문구랑 반드시 똑같아야 함 - 간지/종료 화면이 번호만 가지고 이 문구를 찾아 쓰는 용도로
+// 모아둠(프롤로그는 0). 카드 쪽 리터럴을 고치면 여기도 같이 고쳐야 함
+const Map<int, (String, String)> kChapterCardTitles = {
+  0: ("Prolog", "색을 잃은 아이"),
+  1: ("Chapter 1", "신비한 빵집"),
+  2: ("Chapter 2", "감정의 빵"),
+  3: ("Chapter 3", "잃는 것과 얻는 것"),
+  4: ("Chapter 4", "슬픔을 마주할 용기"),
+  5: ("Chapter 5", "진짜 감정을 마주할 시간"),
+};
+
 class ChapterSelectScreen extends StatefulWidget {
-  const ChapterSelectScreen({super.key});
+  const ChapterSelectScreen({super.key, this.autoEnterChapterNumber});
+
+  // null이면 평소처럼 카드 목록만 보여줌. 1~5 범위의 챕터 번호를 주면, 이 화면이 뜨자마자
+  // 그 카드를 탭한 것과 똑같이 자동으로 그 챕터에 들어감 - 종료 화면의 "다음 챕터" 버튼이
+  // goToChapterSelectClearingStack이랑 같이 써서 [챕터 선택 -> 다음 챕터] 스택을 만드는 용도
+  final int? autoEnterChapterNumber;
 
   @override
   State<ChapterSelectScreen> createState() => _ChapterSelectScreenState();
@@ -139,6 +157,58 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
     Navigator.push(context, fadeThroughBlackRoute(fallbackScreen));
   }
 
+  // 카드 onTap 안에서 title 문자열로 분기하던 걸 번호로도 부를 수 있게 뽑아낸 메서드.
+  // 카드를 직접 탭한 경우(onTap)랑 종료 화면의 "다음 챕터" 버튼으로 자동 입장하는
+  // 경우(initState의 autoEnterChapterNumber) 둘 다 여기로 들어옴 - "이미 완료한 챕터"
+  // 재진입 방지 체크는 카드 탭 전용이라 여기엔 없음(자동 입장은 방금 해금된 새 챕터로
+  // 들어가는 거라 그 체크 자체가 필요 없음)
+  Future<void> _enterChapterByNumber(int chapterNumber) async {
+    final (String title, String subTitle) = kChapterCardTitles[chapterNumber]!;
+    switch (chapterNumber) {
+      case 1:
+        // "현재 진행 중인 챕터"면 처음부터 다시 시작하는 대신 마지막 저장
+        // 지점으로 이어감(세이브 없으면 fallback으로 원래대로 튜토리얼부터)
+        await _enterCurrentChapter(const TutorialScreen(), 1, title, subTitle);
+      case 2:
+        // 챕터2는 빵집/튜토리얼 없이 바로 주방 화면(챕터2 시작 모드)에서 시작
+        await _enterCurrentChapter(
+          const KitchenScreen(mode: KitchenScreenMode.chapter2Start),
+          2,
+          title,
+          subTitle,
+        );
+      case 3:
+        // 챕터3도 챕터2랑 동일하게 중간 화면 없이 바로 시작. DEV 바로가기 버튼이랑
+        // 동일한 진입점(채온이 방 화면)으로 연결함
+        await _enterCurrentChapter(
+          const ChaeonRoomScreen(),
+          3,
+          title,
+          subTitle,
+        );
+      case 4:
+        // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
+        await _enterCurrentChapter(
+          const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
+          4,
+          title,
+          subTitle,
+        );
+      case 5:
+        // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. DEV: 챕터5
+        // 바로가기 버튼이랑 동일한 진입점 + 파라미터로 연결함
+        await _enterCurrentChapter(
+          const GamePlayScreen(
+            skipChapter1Events: true,
+            reentryChapter: ReentryChapter.chapter5,
+          ),
+          5,
+          title,
+          subTitle,
+        );
+    }
+  }
+
   // 뒤로가기 버튼이 부름. 이 화면으로 들어오는 경로가 두 가지라 둘 다 처리해야 함:
   // (1) ChoiceScreen에서 일반적으로 push해 들어온 경우(아래에 'choice' 라우트가 그대로 있음)
   // (2) 챕터 종료 후 goToChapterSelectClearingStack(pushAndRemoveUntil)으로 들어온
@@ -184,6 +254,15 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
         }
       });
     });
+    if (widget.autoEnterChapterNumber != null) {
+      // 종료 화면의 "다음 챕터" 버튼으로 들어온 경우 - 카드를 직접 탭한 것과 똑같이 챕터
+      // 진입을 한 번만 자동 실행함. addPostFrameCallback을 쓰는 이유는 build가 최소
+      // 한 번 끝나야 context가 완전히 쓸 수 있는 상태가 되기 때문(_enterChapterByNumber
+      // 안에서 precacheImage 등에 context를 씀)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _enterChapterByNumber(widget.autoEnterChapterNumber!);
+      });
+    }
   }
 
   // didChangeDependencies가 여러 번 불려도 워밍업이 중복으로 안 걸리게 막는 용도
@@ -448,6 +527,31 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                       ),
                     ),
                   ),
+                  SizedBox(height: sh(4)),
+                  // 종료 화면(ChapterEndScreen) 미리보기용 임시 버튼 모음. 번호별로 문구/다음
+                  // 챕터 버튼이 맞게 나오는지 확인하려고 만든 개발용 지름길. 실제 챕터 끝
+                  // 지점(kitchen_screen.dart 등)에 연결하는 건 다음 단계에서 함 - 여기선 그냥
+                  // 화면만 띄워봄. 나중에 지울 코드
+                  for (int n = 0; n <= 4; n++)
+                    Padding(
+                      padding: EdgeInsets.only(top: sh(4)),
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ChapterEndScreen(chapterNumber: n),
+                          ),
+                        ),
+                        child: Text(
+                          "DEV: 종료화면 미리보기($n)",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.3),
+                            fontSize: sh(10),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -716,53 +820,15 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                         print("챕터 1 잠금장치가 해제되었습니다!");
                       }
                     } else if (title == "Chapter 1") {
-                      // "현재 진행 중인 챕터"면 처음부터 다시 시작하는 대신 마지막 저장
-                      // 지점으로 이어감(세이브 없으면 fallback으로 원래대로 튜토리얼부터)
-                      await _enterCurrentChapter(
-                        const TutorialScreen(),
-                        1,
-                        title,
-                        subTitle,
-                      );
+                      await _enterChapterByNumber(1);
                     } else if (title == "Chapter 2") {
-                      // 챕터2는 빵집/튜토리얼 없이 바로 주방 화면(챕터2 시작 모드)에서 시작
-                      await _enterCurrentChapter(
-                        const KitchenScreen(
-                          mode: KitchenScreenMode.chapter2Start,
-                        ),
-                        2,
-                        title,
-                        subTitle,
-                      );
+                      await _enterChapterByNumber(2);
                     } else if (title == "Chapter 3") {
-                      // 챕터3도 챕터2랑 동일하게 중간 화면 없이 바로 시작. DEV 바로가기 버튼이랑
-                      // 동일한 진입점(채온이 방 화면)으로 연결함
-                      await _enterCurrentChapter(
-                        const ChaeonRoomScreen(),
-                        3,
-                        title,
-                        subTitle,
-                      );
+                      await _enterChapterByNumber(3);
                     } else if (title == "Chapter 4") {
-                      // 챕터4도 챕터3이랑 동일하게 채온이 방 화면부터 시작. mode만 chapter4로 넘겨줌
-                      await _enterCurrentChapter(
-                        const ChaeonRoomScreen(mode: ChaeonRoomMode.chapter4),
-                        4,
-                        title,
-                        subTitle,
-                      );
+                      await _enterChapterByNumber(4);
                     } else if (title == "Chapter 5") {
-                      // 챕터5는 골목길/방 없이 빵집(GamePlayScreen)에서 바로 시작. DEV: 챕터5
-                      // 바로가기 버튼이랑 동일한 진입점 + 파라미터로 연결함
-                      await _enterCurrentChapter(
-                        const GamePlayScreen(
-                          skipChapter1Events: true,
-                          reentryChapter: ReentryChapter.chapter5,
-                        ),
-                        5,
-                        title,
-                        subTitle,
-                      );
+                      await _enterChapterByNumber(5);
                     }
                   } else {
                     _showLockedChapterNotice();
